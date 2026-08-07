@@ -5,7 +5,10 @@ import { errorMessage } from "@/lib/utils/errors";
 import { prefersReducedMotion } from "@/lib/utils/motion";
 import { addDays, dateInZone } from "@/lib/utils/time";
 import { getWeekAvailability, type WeekDay } from "@/features/availability/api";
-import { dayStarts } from "@/features/availability/availabilityShare";
+import {
+  prijsPerPersoon,
+  vrijeBanenOpSlot,
+} from "@/features/availability/availabilityShare";
 import { ClubPicker } from "@/features/availability/components/ClubPicker";
 import { displayName } from "@/features/profiles/api";
 import {
@@ -39,7 +42,7 @@ import {
 import { shareOrCopyText } from "@/lib/utils/shareText";
 import type { GroupMember, Profile } from "@/types";
 import { openPollShareText } from "../pollShareText";
-import { floorHalfHour, shortDay } from "../planPollHelpers";
+import { shortDay } from "../planPollHelpers";
 import { PollWizard } from "./PollWizard";
 import { PollWizardSheet } from "./PollWizardSheet";
 import { WinnerCard } from "./WinnerCard";
@@ -153,14 +156,8 @@ export function PollCard({
   /** Live vrije banen binnen het datavenster; anders de momentopname. */
   function liveFree(o: PollOption): number | null {
     if (o.date >= today && o.date <= weekEnd) {
-      const day = week.find((d) => d.date === o.date);
-      if (day?.data) {
-        const starts = dayStarts(day, o.duration);
-        const slot = starts.find(
-          (s) => floorHalfHour(s.time) === floorHalfHour(o.start_time),
-        );
-        return slot ? slot.courts.length : 0;
-      }
+      const live = vrijeBanenOpSlot(week, o.date, o.start_time, o.duration);
+      if (live != null) return live;
     }
     return o.courts_free;
   }
@@ -271,14 +268,7 @@ export function PollCard({
 
   /** ± prijs per persoon voor een optie, uit de Playtomic-slotdata. */
   function perPersonAt(o: PollOption): string | null {
-    const day = week.find((d) => d.date === o.date);
-    if (!day?.data) return null;
-    for (const row of day.data.courts) {
-      const slotOptions = row.free.get(o.start_time);
-      const match = slotOptions?.find((s) => s.duration === o.duration);
-      if (match?.perPerson) return match.perPerson;
-    }
-    return null;
+    return prijsPerPersoon(week, o.date, o.start_time, o.duration);
   }
 
   // Wie stemde nog op geen enkele optie? Maakt de herinnering gericht.

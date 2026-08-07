@@ -4,7 +4,7 @@ import { useToast } from "@/ui/ToastProvider";
 import { Avatar } from "@/ui/Avatar";
 import { errorMessage } from "@/lib/utils/errors";
 import { fairTeams } from "@/features/groups/fairTeamsLogic";
-import { icsEvent, downloadIcs } from "@/lib/utils/ics";
+import { downloadSpeeldagIcs } from "@/features/groups/speeldagIcs";
 import { bookingUrl } from "@/features/availability/api";
 import { useBookingUrl } from "@/features/availability/useBookingUrl";
 import { shareOrCopyText } from "@/lib/utils/shareText";
@@ -122,28 +122,23 @@ export function WinnerCard({
     // dat je ze nodig hebt staan ze al in je agenda, zonder de app te openen.
     // Een ICS is een persoonlijke download, geen deelbare poster — dus geen
     // opt-in nodig.
-    const beschrijving = [
-      `Deelnemers: ${t.yes.map(name).join(", ") || "nog onbekend"}`,
-      ...(banenGeboekt != null ? [courtsLabel(banenGeboekt)] : []),
-      ...(code != null ? [`Toegangscode: ${code}`] : []),
-    ].join("\n");
-    downloadIcs(
-      `padel-${o.date}.ics`,
-      icsEvent({
-        title: `Padel — ${club.name}`,
-        description: beschrijving,
-        // De baan hoort bij de plek: zo zie je 'm in de agenda-melding zelf
-        // staan, niet pas na het openen van het item.
-        location:
-          banenGeboekt != null
-            ? `${club.name} · ${courtsLabel(banenGeboekt)}`
-            : club.name,
-        date: o.date,
-        startTime: o.start_time,
-        durationMin: o.duration,
-        uid: `vamos-poll-${poll.id}`,
-      }),
-    );
+    //
+    // Sinds #1121 via dezelfde helper als de agenda en als "haal uit je
+    // agenda". Deze kaart bouwde een eigen event met een eigen UID, waardoor
+    // een annulering het item dat je hier ophaalde nooit wiste — twee events
+    // over dezelfde speeldag, waarvan er één bleef staan.
+    downloadSpeeldagIcs({
+      pollId: poll.id,
+      groupName,
+      clubName: club.name,
+      date: o.date,
+      startTime: o.start_time,
+      duration: o.duration,
+      courts: banenGeboekt,
+      accessCode: code,
+      deelnemers: t.yes.map(name),
+      changedAt: poll.booked_at ?? poll.locked_at ?? poll.created_at,
+    });
   }
 
   /** Deeltekst voor de groepschat: het vastgelegde moment + deelnemers. */

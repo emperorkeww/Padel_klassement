@@ -26,6 +26,9 @@ export type SpeeldagAgenda = {
   duration: number;
   courts: string | null;
   accessCode: string | null;
+  /** Namen van de bevestigde deelnemers (#1121). Weglaten mag: de agenda kent
+   *  ze niet altijd, en dan blijft die regel gewoon weg. */
+  deelnemers?: string[];
   /** Laatste faseverandering van de poll; bepaalt de SEQUENCE. */
   changedAt: string;
 };
@@ -47,12 +50,17 @@ export function speeldagIcs(
     s.groupName,
     s.courts ? courtsLabel(s.courts) : null,
     s.accessCode ? `Toegangscode ${s.accessCode}` : null,
+    // De deelnemers op een eigen regel: in een agenda-item lees je die als
+    // lijstje, niet als vierde stukje achter een middelpunt.
+    s.deelnemers?.length ? `\nDeelnemers: ${s.deelnemers.join(", ")}` : null,
   ].filter(Boolean);
   return icsEvent(
     {
       title: `Padel: ${s.groupName}`,
       description: details.join(" · "),
-      location: s.clubName,
+      // De baan hoort bij de plek: zo staat hij in de agenda-melding zelf, en
+      // hoef je het item niet te openen als je voor de deur staat.
+      location: s.courts ? `${s.clubName} · ${courtsLabel(s.courts)}` : s.clubName,
       date: s.date,
       startTime: s.startTime,
       durationMin: s.duration,

@@ -6,6 +6,7 @@ import type {
   PollVoteStatus,
   PollWindow,
 } from "@/features/groups/pollsApi";
+import { PLAYERS_PER_COURT } from "@/features/groups/pollLogic";
 import type { GroupSummary } from "@/features/groups/api";
 
 /* ------------------------------------------------------------------ */
@@ -24,6 +25,10 @@ export type AgendaMarker = {
   groupId: string;
   groupName: string;
   clubName: string;
+  /** Playtomic-tenant en stad van de club: genoeg om er een Club van te maken
+   *  en de vrije banen van dít moment op te vragen (#1121). */
+  clubId: string;
+  clubCity: string;
   clubTimezone: string;
   /** Kalenderdatum in clubtijd — precies zoals de kolom hem bewaart. */
   date: string;
@@ -43,6 +48,13 @@ export type AgendaMarker = {
   voterCount: number;
   /** Spelers met "ik kan" op dít moment — de avatarstapel in het detail. */
   yesVoterIds: string[];
+  /** Spelers met "misschien" op dít moment (#1121). Juist bij "nog één speler
+   *  nodig" wil je weten wie je nog kunt porren — de Plannen-tab toonde die
+   *  rij wel, de agenda niet. */
+  maybeVoterIds: string[];
+  /** Groepsleden die op deze poll nog helemaal niets zeiden. Per poll en niet
+   *  per moment: wie één kandidaat beantwoordde, heeft gestemd. */
+  nietGestemdIds: string[];
   /** Geboekte banen (#802) en toegangscode (#675); null zolang onbekend. */
   courts: string | null;
   accessCode: string | null;
@@ -105,6 +117,7 @@ export function buildMarkers(
   nowMs: number,
 ): AgendaMarker[] {
   const groupName = new Map(groups.map((g) => [g.id, g.name]));
+  const groupMembers = new Map(groups.map((g) => [g.id, g.member_ids]));
   const pollById = new Map<string, PlayPoll>(
     window.polls.map((p) => [p.id, p]),
   );
@@ -113,6 +126,7 @@ export function buildMarkers(
   // één doorloop i.p.v. een filter per marker (een maandvenster kan honderden
   // stemmen dragen).
   const yesByOption = new Map<string, string[]>();
+  const maybeByOption = new Map<string, string[]>();
   const votersByPoll = new Map<string, Set<string>>();
   const mineByOption = new Map<string, PollVoteStatus>();
   const optionPoll = new Map(window.options.map((o) => [o.id, o.poll_id]));
@@ -121,6 +135,11 @@ export function buildMarkers(
       const list = yesByOption.get(vote.option_id);
       if (list) list.push(vote.player_id);
       else yesByOption.set(vote.option_id, [vote.player_id]);
+    }
+    if (vote.status === "maybe") {
+      const list = maybeByOption.get(vote.option_id);
+      if (list) list.push(vote.player_id);
+      else maybeByOption.set(vote.option_id, [vote.player_id]);
     }
     if (vote.player_id === myId) mineByOption.set(vote.option_id, vote.status);
     const pollId = optionPoll.get(vote.option_id);
@@ -150,6 +169,8 @@ export function buildMarkers(
       groupId: poll.group_id,
       groupName: groupName.get(poll.group_id) ?? "Groep",
       clubName: poll.club_name,
+      clubId: poll.club_id,
+      clubCity: poll.club_city ?? "",
       clubTimezone: poll.club_timezone,
       date: option.date,
       startTime: option.start_time,
@@ -160,6 +181,10 @@ export function buildMarkers(
       myVote: mineByOption.get(option.id) ?? null,
       voterCount: voters?.size ?? 0,
       yesVoterIds: yesByOption.get(option.id) ?? [],
+      maybeVoterIds: maybeByOption.get(option.id) ?? [],
+      nietGestemdIds: (groupMembers.get(poll.group_id) ?? []).filter(
+        (id) => !voters?.has(id),
+      ),
       courts: poll.courts,
       accessCode: poll.access_code,
       // Boeken is de laatste stap, vastleggen de stap ervoor; zonder beide is
@@ -168,6 +193,37 @@ export function buildMarkers(
     });
   }
   return markers;
+}
+
+/**
+ * Alleen de speeldagen van de gekozen groepen (#1121); een lege keuze is
+ * "alles".
+ *
+ * Bewust hier en niet in de query: `getPollWindow` haalt het venster toch al
+ * voor al je groepen op, dus schakelen kost geen ronde naar de server en de
+ * cache blijft één entry per maand.
+ */
+export function filterOpGroepen(
+  markers: AgendaMarker[],
+  groepIds: string[],
+): AgendaMarker[] {
+  if (groepIds.length === 0) return markers;
+  const gekozen = new Set(groepIds);
+  return markers.filter((m) => gekozen.has(m.groupId));
+}
+
+/**
+ * De onthouden filterkeuze, ontdaan van groepen die je intussen verlaten hebt.
+ * Zonder die schoonmaak zou een oude id de agenda leeg houden zonder dat er nog
+ * een chip staat om hem uit te zetten.
+ */
+export function leesGroepKeuze(
+  bewaard: string | null,
+  geldigeIds: string[],
+): string[] {
+  if (!bewaard) return [];
+  const bekend = new Set(geldigeIds);
+  return bewaard.split(",").filter((id) => bekend.has(id));
 }
 
 /** Volgorde binnen een dag: op tijd, dan op groep — stabiel tussen renders. */
@@ -392,6 +448,33 @@ export function metHoofdletter(tekst: string): string {
 /** Het statuswoord zoals het in een chip of legenda staat: "Open poll". */
 export function statusChip(status: AgendaStatus, past = false): string {
   return metHoofdletter(statusLabel(status, past));
+}
+
+/**
+ * Waar wacht deze speeldag op? (#1121)
+ *
+ * De Plannen-tab had hiervoor een fasebalk met één next-action-zin, maar die
+ * praatte over precies één "focus-poll". In een agenda over al je groepen heen
+ * bestaat die niet: er kunnen er drie tegelijk lopen, elk in een andere fase.
+ * Vandaar per speeldag, en afgeleid uit wat de marker al draagt.
+ *
+ * Een dag die geweest is wacht nergens meer op en krijgt niets.
+ */
+export function volgendeStap(m: AgendaMarker): string | null {
+  if (m.past) return null;
+  if (m.status === "open") {
+    // Jouw eigen stem eerst: dat is het enige waar jij iets aan kunt doen.
+    if (m.myVote == null) return "Jij moet nog stemmen.";
+    const wacht = m.nietGestemdIds.length;
+    if (wacht > 0)
+      return `Wacht op ${wacht} ${wacht === 1 ? "lid" : "leden"} van de groep.`;
+    return "Alle stemmen zijn binnen — het moment wordt gekozen.";
+  }
+  if (m.status === "locked") return "De baan moet nog geboekt worden.";
+  const tekort = PLAYERS_PER_COURT - m.yesVoterIds.length;
+  if (tekort > 0)
+    return `Nog ${tekort} bevestigde ${tekort === 1 ? "speler" : "spelers"} nodig voor wedstrijden.`;
+  return "Alles staat vast.";
 }
 
 /**

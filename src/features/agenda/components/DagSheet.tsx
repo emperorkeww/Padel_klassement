@@ -1,9 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Sheet } from "@/ui/Sheet";
 import { Avatar } from "@/ui/Avatar";
 import { useToast } from "@/ui/ToastProvider";
+import { useAsync } from "@/lib/hooks/useAsync";
 import { errorMessage } from "@/lib/utils/errors";
+import { addDays, dateInZone } from "@/lib/utils/time";
+import {
+  getClubAvailability,
+  type DayAvailability,
+} from "@/features/availability/api";
+import {
+  prijsPerPersoon,
+  vrijeBanenOpSlot,
+} from "@/features/availability/availabilityShare";
+import { displayName } from "@/features/profiles/api";
 import { downloadSpeeldagIcs } from "@/features/groups/speeldagIcs";
 import { courtsLabel, longDay, shortDay } from "@/features/groups/planPollHelpers";
 import {
@@ -17,6 +28,7 @@ import {
   momentVoorbij,
   statusLabel,
   tijdvak,
+  volgendeStap,
   type AgendaMarker,
 } from "../agendaLogic";
 import { StatusGlyph } from "./StatusGlyph";
@@ -94,6 +106,68 @@ export function DagSheet({
     return overlay.has(m.optionId) ? (overlay.get(m.optionId) ?? null) : m.myVote;
   }
 
+  /**
+   * Welke (club, dag) we de beschikbaarheid van willen weten (#1121).
+   *
+   * Alleen voor momenten waarop nog gestemd wordt: bij een vastgelegde dag is
+   * "is er nog een baan?" geen vraag meer. En alleen binnen een week, want
+   * verder vooruit zegt Playtomic nog niets. De momenten van dezelfde poll
+   * horen erbij — juist dáártussen kies je.
+   */
+  const teLaden = useMemo(() => {
+    if (datum == null) return [] as AgendaMarker[];
+    const uniek = new Map<string, AgendaMarker>();
+    for (const m of markers) {
+      if (m.status !== "open" || m.past) continue;
+      for (const kandidaat of [m, ...(momentenPerPoll[m.pollId] ?? [])]) {
+        if (kandidaat.date > addDays(dateInZone(kandidaat.clubTimezone), 6))
+          continue;
+        uniek.set(`${kandidaat.clubId}|${kandidaat.date}`, kandidaat);
+      }
+    }
+    return [...uniek.values()];
+  }, [datum, markers, momentenPerPoll]);
+
+  const baanSleutel = teLaden.map((m) => `${m.clubId}|${m.date}`).join(",");
+  const banen = useAsync<Record<string, DayAvailability>>(
+    async () => {
+      const uit: Record<string, DayAvailability> = {};
+      await Promise.all(
+        teLaden.map(async (m) => {
+          try {
+            uit[`${m.clubId}|${m.date}`] = await getClubAvailability(m.date, {
+              id: m.clubId,
+              name: m.clubName,
+              city: m.clubCity,
+              timezone: m.clubTimezone,
+            });
+          } catch {
+            // Playtomic plat of club onbereikbaar: dan staat er gewoon geen
+            // baantelling bij. Het sheet gaat daar niet aan kapot.
+          }
+        }),
+      );
+      return uit;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [baanSleutel],
+    { enabled: teLaden.length > 0 },
+  );
+
+  /** Vrije banen en prijs van één moment; null zolang er niets binnen is. */
+  function baanInfo(m: AgendaMarker): {
+    vrij: number | null;
+    prijs: string | null;
+  } {
+    const dag = banen.data?.[`${m.clubId}|${m.date}`];
+    if (!dag) return { vrij: null, prijs: null };
+    const week = [{ date: m.date, data: dag, error: null }];
+    return {
+      vrij: vrijeBanenOpSlot(week, m.date, m.startTime, m.duration),
+      prijs: prijsPerPersoon(week, m.date, m.startTime, m.duration),
+    };
+  }
+
   /** Stem zetten of wissen; opnieuw tikken op je eigen keuze haalt hem weg. */
   function stem(m: AgendaMarker, status: PollVoteStatus) {
     const vorige = stemVan(m);
@@ -138,6 +212,7 @@ export function DagSheet({
                 profielen={profielen}
                 stemVan={stemVan}
                 onStem={stem}
+                baanInfo={baanInfo}
                 nu={nu}
               />
             ))
@@ -183,6 +258,7 @@ function Speeldag({
   profielen,
   stemVan,
   onStem,
+  baanInfo,
   nu,
 }: {
   marker: AgendaMarker;
@@ -192,6 +268,8 @@ function Speeldag({
   profielen: Record<string, Profile>;
   stemVan: (m: AgendaMarker) => PollVoteStatus | null;
   onStem: (m: AgendaMarker, status: PollVoteStatus) => void;
+  /** Vrije banen en prijs van een moment; null zolang er niets binnen is. */
+  baanInfo: (m: AgendaMarker) => { vrij: number | null; prijs: string | null };
   nu: number;
 }) {
   const geboekt = marker.status === "booked" && !marker.past;
@@ -200,6 +278,9 @@ function Speeldag({
   // Niet `marker.past`: dat bevroor toen het venster laadde, en dit sheet kan
   // over het einde van het slot heen openstaan.
   const stembaar = marker.status === "open" && !momentVoorbij(marker, nu);
+  const stap = volgendeStap(marker);
+  const naam = (id: string) => displayName(profielen[id]);
+  const { vrij, prijs } = baanInfo(marker);
   return (
     <article className="dagsheet__speeldag">
       <header className="dagsheet__kop">
@@ -213,7 +294,22 @@ function Speeldag({
       <p className="dagsheet__chips">
         <span className="dagsheet__chip dagsheet__chip--groep">{marker.groupName}</span>
         <span className="dagsheet__chip">{marker.clubName}</span>
+        {/* Wat er nog vrij is en wat het kost (#1121): precies de twee dingen
+            waar je op zit te wachten als je nog moet beslissen of je "ik kan"
+            aantikt. Ze staan alleen bij een moment waarop nog gestemd wordt. */}
+        {vrij != null && (
+          <span className="dagsheet__chip">
+            {vrij === 0
+              ? "geen baan meer vrij"
+              : `${vrij} ${vrij === 1 ? "baan" : "banen"} vrij`}
+          </span>
+        )}
+        {prijs && <span className="dagsheet__chip">± {prijs} p.p.</span>}
       </p>
+
+      {/* Waar deze speeldag op wacht — dezelfde zin als op de kaart in het
+          dagpaneel, zodat het sheet niets nieuws hoeft te beweren (#1121). */}
+      {stap && <p className="dagsheet__stap">{stap}</p>}
 
       {toonBoeking ? (
         <div className="dagsheet__tegels">
@@ -232,13 +328,7 @@ function Speeldag({
             </div>
           )}
         </div>
-      ) : (
-        marker.status === "locked" && (
-          <p className="dagsheet__nogboeken">
-            Het moment ligt vast — de baan moet nog geboekt worden.
-          </p>
-        )
-      )}
+      ) : null}
 
       {stemmers.length > 0 && (
         <div className="dagsheet__stemmers">
@@ -256,6 +346,22 @@ function Speeldag({
             )}
           </p>
         </div>
+      )}
+
+      {/* Twijfelaars en stille leden bij naam (#1121). Juist bij "nog één
+          speler nodig" is dat de vraag: wie kan ik nog porren? De agenda gaf
+          tot nu toe alleen het aantal ja-stemmers. */}
+      {marker.maybeVoterIds.length > 0 && (
+        <p className="dagsheet__namenrij">
+          <span className="dagsheet__tegel-label">Misschien</span>
+          {marker.maybeVoterIds.map(naam).join(", ")}
+        </p>
+      )}
+      {marker.status === "open" && !marker.past && marker.nietGestemdIds.length > 0 && (
+        <p className="dagsheet__namenrij">
+          <span className="dagsheet__tegel-label">Nog niets gezegd</span>
+          {marker.nietGestemdIds.map(naam).join(", ")}
+        </p>
       )}
 
       {stembaar && (
@@ -281,6 +387,7 @@ function Speeldag({
                   titel={`${shortDay(m.date)} · ${m.startTime}`}
                   omschrijving={`${longDay(m.date)} ${m.startTime}`}
                   aantal={m.yesVoterIds.length}
+                  banen={baanInfo(m).vrij}
                   mine={stemVan(m)}
                   onVote={(s) => onStem(m, s)}
                 />
