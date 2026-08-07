@@ -30,6 +30,7 @@ import { RasterSkeleton } from "./components/RasterSkeleton";
 import { DagSheet } from "./components/DagSheet";
 import { PlanDagSheet } from "./components/PlanDagSheet";
 import { StatusGlyph } from "./components/StatusGlyph";
+import { AgendaAbonnement } from "./components/AgendaAbonnement";
 import "./Agenda.css";
 
 const LEEG_VENSTER: PollWindow = { polls: [], options: [], votes: [] };
@@ -244,6 +245,10 @@ export function Agenda() {
               </li>
             ))}
           </ul>
+
+          {/* Onder het raster: eerst zien wat er gepland staat, dan pas de
+              vraag of je het in je eigen agenda wil (#1099). */}
+          <AgendaAbonnement />
         </>
       )}
 
