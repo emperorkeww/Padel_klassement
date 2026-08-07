@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Sheet } from "@/ui/Sheet";
 import { DagKop } from "./DagKop";
 import { DayStats } from "./DayStats";
 import { MakeTeams } from "./MakeTeams";
+import { VolgendeRonde } from "./VolgendeRonde";
 import { RondeBlok } from "./RondeBlok";
 import { ShareEvening } from "./ShareEvening";
 import { VendettaCard } from "./VendettaCard";
@@ -112,8 +112,6 @@ export function VandaagTab({
   // Losse match loggen/plannen binnen de groep (telt mee in stand + avondsamenvatting).
   const [logOpen, setLogOpen] = useState(false);
   const [logMode, setLogMode] = useState<NewMatchMode>("score");
-  // De teamgenerator voor de volgende ronde, als sheet (#839).
-  const [volgendeOpen, setVolgendeOpen] = useState(false);
 
   // Rondes die de gebruiker zelf open- of dichtklapte. Wat er niet in staat
   // volgt de dag: een afgeronde ronde klapt dicht, de ronde met openstaande
@@ -145,18 +143,19 @@ export function VandaagTab({
     />
   );
 
-  const makeTeams = (
-    <MakeTeams
-      groupId={groupId}
-      members={members}
-      profiles={profiles}
-      myId={myId}
-      matches={matches}
-      teams={teams}
-      openRound={openRound}
-      onGenerated={onMatches}
-    />
-  );
+  // Dezelfde generator in twee vormen: kaal als de dag nog moet beginnen, en
+  // achter "+ Volgende ronde" zodra hij loopt. Zonder `speeldag`-prop zoekt hij
+  // zelf de poll van vandaag op — precies wat deze tab wil (#1133).
+  const generatorProps = {
+    groupId,
+    members,
+    profiles,
+    myId,
+    matches,
+    teams,
+    openRound,
+    onGenerated: onMatches,
+  };
 
   // Kop en woordkeuze gelijk aan de Losse match-kaart op de hub (#674 B5):
   // het bleef hetzelfde ding, maar het heette hier anders en had als enige
@@ -258,42 +257,13 @@ export function VandaagTab({
             ))}
           </div>
 
-          {/* De volgende ronde starten is een kernactie, geen instelling. Hij
-              zat achter <details> "Nog een ronde maken" — dezelfde low-key
-              behandeling als een lade, terwijl de rest van de tab alles direct
-              zichtbaar houdt. Nu een echte knop, met de generator als sheet
-              zodat hij de rondes niet omlaag duwt. */}
-          <div className="rondes__acties">
-            <button
-              className="btn btn--primary"
-              onClick={() => setVolgendeOpen(true)}
-            >
-              + Volgende ronde
-            </button>
-          </div>
+          <VolgendeRonde {...generatorProps} />
         </section>
       )}
 
       {/* Staat 1: de teamgenerator is de inhoud van de tab. Zodra de dag
           loopt verhuist hij naar de sheet achter "+ Volgende ronde". */}
-      {!dayStarted && makeTeams}
-
-      {dayStarted && (
-        <Sheet
-          open={volgendeOpen}
-          onClose={() => setVolgendeOpen(false)}
-          title="Volgende ronde"
-        >
-          {/* De drie routes naar een volgende ronde (deze generator, de
-              winner-card op Plannen en sinds #827 de cron) deelden niet
-              dezelfde vorm zonder dat de UI dat ergens zei. */}
-          <p className="card__subtitle">
-            De automaat deelt 's ochtends Americano; hier kies je zelf de vorm
-            voor deze ronde.
-          </p>
-          {makeTeams}
-        </Sheet>
-      )}
+      {!dayStarted && <MakeTeams {...generatorProps} />}
 
       {/* Vendetta's horen bij het spelen/de onderlinge duels (#524), niet bij
           de Stand — daar drukten ze de eigenlijke ranglijst weg. */}

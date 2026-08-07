@@ -36,12 +36,27 @@ import type { GroupMember, Match, Profile, Team } from "@/types";
 import "@/features/groups/Proposals.css";
 
 // "Maak teams": de ene teamgenerator van de groep (#106). Deelnemers komen
-// uit het speelvoorstel van vandaag (handmatig bij te sturen), het formaat is
-// een keuze — Eerlijk (Elo-gebalanceerd, met voorbeeld), Americano (wisselende
-// partners) of Mexicano (paren op de stand). Vervangt de losse "Vanavond"-,
-// eerlijke-teams- en Americano/Mexicano-kaarten.
+// uit het speelvoorstel van de speeldag (handmatig bij te sturen), het formaat
+// is een keuze — Eerlijk (Elo-gebalanceerd, met voorbeeld), Americano
+// (wisselende partners) of Mexicano (paren op de stand). Vervangt de losse
+// "Vanavond"-, eerlijke-teams- en Americano/Mexicano-kaarten.
+//
+// Welke speeldag dat is, hing tot #1133 vast aan vandaag: de generator zocht
+// zelf de poll van deze kalenderdag op. De speeldagpagina genereert voor een
+// dag die nog moet komen (of al geweest is) en geeft die daarom mee.
 
 type Format = Speelvorm;
+
+/** De speeldag waarvoor gegenereerd wordt: draagt de deelnemers en — via het
+ *  moment — de starttijden die de nieuwe rondes meekrijgen (#827). */
+export type GeneratorSpeeldag = {
+  /** Kalenderdag in clubtijd (YYYY-MM-DD). */
+  dag: string;
+  option: PollOption;
+  poll: PlayPoll;
+  /** Ja-stemmers van dat moment; het vertrekpunt van de selectie. */
+  yes: string[];
+};
 
 export function MakeTeams({
   groupId,
@@ -51,6 +66,7 @@ export function MakeTeams({
   matches,
   teams,
   openRound,
+  speeldag,
   onGenerated,
 }: {
   groupId: string;
@@ -61,11 +77,18 @@ export function MakeTeams({
   teams: Record<string, Team>;
   /** Ronde met nog openstaande uitslagen (blokkeert Mexicano), of null. */
   openRound: { round: number } | null;
+  /** De speeldag waarvoor gegenereerd wordt (#1133). Zonder waarde zoekt de
+   *  generator zelf de speeldag van vandaag op — het gedrag op de Spelen-tab. */
+  speeldag?: GeneratorSpeeldag | null;
   onGenerated: () => void;
 }) {
   const club = useClub();
   const toast = useToast();
+  // Zonder meegegeven speeldag draait de generator op vandaag en zoekt hij de
+  // poll zelf op; dan (en alleen dan) heeft hij de drie queries hieronder nodig.
+  const zelfZoeken = speeldag == null;
   const today = dateInZone(club.timezone);
+  const dag = speeldag?.dag ?? today;
   const [format, setFormat] = useState<Format>("eerlijk");
   const [roundsToGen, setRoundsToGen] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -73,12 +96,17 @@ export function MakeTeams({
   // vraagt, zodat het paneel niet meteen een half scherm aan teams uitrolt.
   const [eerlijkGevraagd, setEerlijkGevraagd] = useState(false);
 
-  const polls = useAsync<PlayPoll[]>(() => getGroupPolls(groupId), [groupId]);
+  const polls = useAsync<PlayPoll[]>(() => getGroupPolls(groupId), [groupId], {
+    enabled: zelfZoeken,
+  });
   const options = useAsync<PollOption[]>(
     () => getGroupPollOptions(groupId),
     [groupId],
+    { enabled: zelfZoeken },
   );
-  const votes = useAsync(() => getGroupPollVotes(groupId), [groupId]);
+  const votes = useAsync(() => getGroupPollVotes(groupId), [groupId], {
+    enabled: zelfZoeken,
+  });
   useRealtime("play_poll_votes", votes.reload, `group_id=eq.${groupId}`);
 
   // Het gekozen/meest gesteunde poll-moment van vandaag: de deelnemers, plus
@@ -117,18 +145,24 @@ export function MakeTeams({
     };
   }, [polls.data, options.data, votes.data, today]);
 
-  const tonightYes = vanavond?.yes ?? null;
+  // De speeldag waarvoor we genereren: meegegeven (speeldagpagina) of zelf
+  // gevonden (Spelen-tab). Beide dragen hetzelfde: wie er ja zei en op welk
+  // moment er gespeeld wordt.
+  const gekozen: {
+    yes: string[];
+    option: PollOption;
+    poll: PlayPoll | null;
+  } | null = speeldag ?? vanavond;
+
+  const tonightYes = gekozen?.yes ?? null;
 
   // Starttijd van de eerstvolgende ronde: tien minuten per al klaargezette
-  // ronde opschuivend vanaf het gekozen moment.
+  // ronde opschuivend vanaf het gekozen moment. De rondes die er op die dag al
+  // staan tellen mee, dus een tweede generatie landt niet bovenop de eerste.
   const startVanRonde = (index: number): string | null => {
-    if (!vanavond) return null;
-    const tz = vanavond.poll?.club_timezone ?? club.timezone;
-    return rondeStart(
-      vanavond.option,
-      tz,
-      rondesOpDag(matches, club.timezone, today) + index,
-    );
+    if (!gekozen) return null;
+    const tz = gekozen.poll?.club_timezone ?? club.timezone;
+    return rondeStart(gekozen.option, tz, rondesOpDag(matches, tz, dag) + index);
   };
 
   // Handmatig bij te sturen selectie; nieuwe stemmen zijn de bron van
@@ -141,8 +175,8 @@ export function MakeTeams({
   const ledenKey = members.map((m) => m.player_id).join(",");
   const [keuzes, setKeuzes] = useState<AanwezigKeuzes>({});
   useEffect(() => {
-    setKeuzes(leesKeuzes(groupId, today));
-  }, [groupId, today]);
+    setKeuzes(leesKeuzes(groupId, dag));
+  }, [groupId, dag]);
 
   const selected = useMemo(
     () =>
@@ -157,7 +191,7 @@ export function MakeTeams({
   /** Eén plek waar een keuze zowel in beeld als in de opslag terechtkomt. */
   const kiesAnders = (volgende: AanwezigKeuzes) => {
     setKeuzes(volgende);
-    bewaarKeuzes(groupId, today, volgende);
+    bewaarKeuzes(groupId, dag, volgende);
   };
 
   const toggle = (id: string) => {
@@ -233,10 +267,12 @@ export function MakeTeams({
         spelers={kiesbaar}
         profielen={profiles}
         gekozen={selected}
-        moment={vanavond?.option.start_time ?? null}
+        moment={gekozen?.option.start_time ?? null}
         herkomst={
           tonightYes
-            ? "Deelnemers uit de poll van vandaag."
+            ? speeldag
+              ? "Deelnemers uit de poll van deze speeldag."
+              : "Deelnemers uit de poll van vandaag."
             : "Geen poll voor vandaag — alle leden staan aan."
         }
         onToggle={toggle}

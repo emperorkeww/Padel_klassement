@@ -17,7 +17,7 @@ import {
   getGroupPollVotes,
   getPoll,
 } from "@/features/groups/pollsApi";
-import { pollOptions } from "@/features/groups/pollLogic";
+import { pollOptions, tallyOption } from "@/features/groups/pollLogic";
 import {
   matchesVoorSpeeldag,
   speeldagMoment,
@@ -26,6 +26,7 @@ import { rondesOpDag } from "@/features/groups/speeldagRondes";
 import { groupByRound } from "@/features/groups/groupDetailHelpers";
 import { PollCard } from "@/features/groups/components/PollCard";
 import { RondeBlok } from "@/features/groups/components/RondeBlok";
+import { VolgendeRonde } from "@/features/groups/components/VolgendeRonde";
 import type { Match } from "@/types";
 import "@/features/groups/Proposals.css";
 
@@ -203,6 +204,11 @@ export function SpeeldagPagina() {
     : 0;
   const rondes = groupByRound(dagMatches);
   const intensiteit = groep.roast_intensiteit ?? "radioactief";
+  // Een ronde van deze dag met openstaande uitslagen blokkeert Mexicano: die
+  // vorm paart op de volledige stand en heeft dus alle uitslagen nodig.
+  const openRonde =
+    rondes.find(({ list }) => list.some((m) => m.status !== "completed")) ??
+    null;
 
   return (
     <div>
@@ -276,6 +282,30 @@ export function SpeeldagPagina() {
               />
             ))}
           </div>
+
+          {/* Een ronde toevoegen aan déze speeldag (#1133). De eerste ronde
+              komt uit de kaart hierboven (Elo, in één tik); dit is dezelfde
+              generator als op de Spelen-tab, met de speeldag meegegeven zodat
+              de nieuwe rondes de starttijd van die avond krijgen in plaats van
+              die van vandaag. */}
+          {moment && (
+            <VolgendeRonde
+              groupId={groupId}
+              members={leden}
+              profiles={profiles.data ?? {}}
+              myId={myId}
+              matches={matches.data ?? []}
+              teams={teams.data ?? {}}
+              openRound={openRonde}
+              speeldag={{
+                dag: moment.dag,
+                option: moment.option,
+                poll: speeldag,
+                yes: tallyOption(moment.option, alleStemmen).yes,
+              }}
+              onGenerated={herlaadMatches}
+            />
+          )}
         </section>
       )}
     </div>

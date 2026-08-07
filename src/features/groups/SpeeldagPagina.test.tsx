@@ -21,6 +21,7 @@ vi.mock("@/features/auth/AuthProvider", () => ({
   useAuth: () => ({ user: { id: "p1" } }),
 }));
 
+import { supabase } from "@/lib/supabase/client";
 import { SpeeldagPagina } from "./SpeeldagPagina";
 import { GROUP_MEMBERS, GROUPS, PROFILES, TEAMS } from "@/test/fixtures";
 
@@ -260,6 +261,40 @@ describe("<SpeeldagPagina />", () => {
     // Twee rondeblokken (ronde 1 + los), niet drie: de match van de dag erna
     // valt buiten deze speeldag.
     expect(screen.getAllByText(/0\/1 uitslagen/i)).toHaveLength(2);
+  });
+
+  // De reden dat de generator een speeldag meekrijgt (#1133): hij zocht zelf
+  // de poll van vandáág op. Een ronde die je hier toevoegt hoort op het uur van
+  // déze speeldag te beginnen, niet op dat van vandaag.
+  it("geeft een nieuwe ronde de starttijd van deze speeldag mee", async () => {
+    tables.play_polls = [bookedPoll];
+    tables.teams = TEAMS;
+    tables.matches = [dagMatch()];
+    renderPagina("poll-booked");
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /\+ volgende ronde/i }),
+    );
+    // De deelnemers komen uit de poll van deze speeldag, niet uit die van
+    // vandaag of uit "alle leden".
+    expect(
+      await screen.findByText(/deelnemers uit de poll van deze speeldag/i),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("tab", { name: /americano/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /^start americano$/i }),
+    );
+
+    const call = vi
+      .mocked(supabase.rpc)
+      .mock.calls.find(([naam]) => naam === "create_fair_round");
+    // Ronde 1 staat er al, dus de nieuwe begint tien minuten later: 19:00 +
+    // 10 min clubtijd op 10 januari 2030.
+    expect(call?.[1]).toMatchObject({
+      p_group_id: "g1",
+      p_played_at: "2030-01-10T18:10:00.000Z",
+    });
   });
 
   // Zolang er geen moment vastligt is er geen dag, en dus ook geen dagfilter
