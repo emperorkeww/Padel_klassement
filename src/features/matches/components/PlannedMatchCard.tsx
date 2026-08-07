@@ -51,7 +51,9 @@ import { JokerBlock } from "@/features/matches/components/JokerBlock";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
 import { MatchCalendarButton } from "@/features/matches/components/MatchCalendarButton";
 import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
-import { TeamSide } from "@/features/matches/components/MatchList";
+import { TeamSide } from "@/features/matches/components/TeamSide";
+import { MatchProbability } from "@/features/matches/components/MatchProbability";
+import { matchRechten } from "@/features/matches/matchState";
 import "./PlannedMatchCard.css";
 
 const UNDO_MS = 6000;
@@ -241,6 +243,10 @@ export function PlannedMatchCard({
   const serveKant = m.status === "scheduled" ? serveerTeam(m) : null;
 
   const isGroupMatch = m.group_id != null;
+  // Teamlabels: één keer afgeleid, gebruikt door de winkansbalk, de steppers,
+  // de toto-tegel en de setinvoer.
+  const labelA = teamLabel(teams[m.team_a_id], profiles);
+  const labelB = teamLabel(teams[m.team_b_id], profiles);
   // De organisator van een speeldag staat vaak niet zelf op de baan en drukte
   // ook niet op "ronde maken", maar mag de uitslag wél invullen (RLS). Zijn
   // eigen groepen zijn genoeg om dat te weten; getMyGroups is gecacht en wordt
@@ -346,26 +352,18 @@ export function PlannedMatchCard({
   const saNum = sa === "" ? null : Number(sa);
   const sbNum = sb === "" ? null : Number(sb);
   const valid = saNum !== null && sbNum !== null && saNum >= 0 && sbNum >= 0;
-  // Verplaatsen/verwijderen mag de aanmaker en — sinds #978 — de eigenaar van
-  // de groep; de server dwingt dit ook af (policy "Groepseigenaar kan
-  // groepsmatch bijwerken" en delete_match, dat hem allang toestond). Toon die
-  // knoppen niet aan anderen om een voorspelbare fout te vermijden.
-  // De aanmaker-tak blijft op perspectiveId hangen (op een profielpagina is dat
-  // de profieleigenaar); het eigenaarschap gaat op de ingelogde gebruiker, want
-  // alleen díé kan de knop ook echt indrukken.
-  const canManage =
-    (!!perspectiveId && m.created_by === perspectiveId) || isGroupOwner;
-  // De uitslag invullen mag door de aanmaker, de spelers zelf (RLS #413) én de
-  // eigenaar van de groep; verberg de score-invoer voor anderen, die zouden op
-  // de server stuklopen. Op basis van de ingelogde gebruiker (myId), niet
-  // perspectiveId: op een profielpagina is dat de profieleigenaar, niet de kijker.
-  const canScore =
-    !!myId &&
-    (m.created_by === myId ||
-      isGroupOwner ||
-      [teams[m.team_a_id], teams[m.team_b_id]].some(
-        (t) => t && (t.player1_id === myId || t.player2_id === myId),
-      ));
+  // Wie wat mag, in één keer afgeleid (#1144). De regels zelf — en waarom
+  // beheer op `perspectiveId` hangt en invullen op `myId` — staan in
+  // matchState.ts, zodat kaart, detail en groepsronde niet uit elkaar lopen.
+  const rechten = matchRechten({
+    match: m,
+    teams,
+    myId,
+    perspectiveId,
+    isGroupOwner,
+  });
+  const canManage = rechten.magBeheren;
+  const canScore = rechten.magInvullen;
 
   async function save() {
     if (!valid || saved) return;
@@ -670,38 +668,18 @@ export function PlannedMatchCard({
           ratings={ratings.data ?? undefined}
         />
         {serveKant === "a" && (
-          <ServeChip teamName={teamLabel(teams[m.team_a_id], profiles)} />
+          <ServeChip teamName={labelA} />
         )}
         {canScore && open && (
           <ScoreStepper
             value={sa}
             onChange={setSa}
-            label={`Score ${teamLabel(teams[m.team_a_id], profiles)}`}
+            label={`Score ${labelA}`}
           />
         )}
       </div>
 
-      {pctA != null && (
-        <div
-          className="planned-card__prob"
-          role="img"
-          aria-label={`Verwachte winkans: ${teamLabel(teams[m.team_a_id], profiles)} ${pctA}%, ${teamLabel(teams[m.team_b_id], profiles)} ${100 - pctA}%`}
-          title="Verwachte winkans op basis van de huidige ratings"
-        >
-          <span className={`planned-card__prob-pct${pctA >= 50 ? " is-fav" : ""}`}>
-            {pctA}%
-          </span>
-          <span className="planned-card__prob-track">
-            <span
-              className="planned-card__prob-fill"
-              style={{ width: `${pctA}%` }}
-            />
-          </span>
-          <span className={`planned-card__prob-pct${pctA < 50 ? " is-fav" : ""}`}>
-            {100 - pctA}%
-          </span>
-        </div>
-      )}
+      <MatchProbability pctA={pctA} labelA={labelA} labelB={labelB} />
 
       <div className="planned-card__row">
         <TeamSide
@@ -711,13 +689,13 @@ export function PlannedMatchCard({
           ratings={ratings.data ?? undefined}
         />
         {serveKant === "b" && (
-          <ServeChip teamName={teamLabel(teams[m.team_b_id], profiles)} />
+          <ServeChip teamName={labelB} />
         )}
         {canScore && open && (
           <ScoreStepper
             value={sb}
             onChange={setSb}
-            label={`Score ${teamLabel(teams[m.team_b_id], profiles)}`}
+            label={`Score ${labelB}`}
           />
         )}
       </div>
@@ -748,8 +726,8 @@ export function PlannedMatchCard({
                 <SetScoresInput
                   sets={sets}
                   onChange={setSets}
-                  labelA={teamLabel(teams[m.team_a_id], profiles)}
-                  labelB={teamLabel(teams[m.team_b_id], profiles)}
+                  labelA={labelA}
+                  labelB={labelB}
                 />
               )}
             </div>
@@ -784,14 +762,14 @@ export function PlannedMatchCard({
                   <div className="bet-tile__options">
                     <TipOption
                       {...tipChipFor(m.team_a_id, chance)}
-                      teamName={teamLabel(teams[m.team_a_id], profiles)}
+                      teamName={labelA}
                       pct={pctA}
                       disabled={!tippingOpen || busyTip}
                       onClick={() => tip(m.team_a_id)}
                     />
                     <TipOption
                       {...tipChipFor(m.team_b_id, chance != null ? 1 - chance : null)}
-                      teamName={teamLabel(teams[m.team_b_id], profiles)}
+                      teamName={labelB}
                       pct={pctA != null ? 100 - pctA : null}
                       disabled={!tippingOpen || busyTip}
                       onClick={() => tip(m.team_b_id)}

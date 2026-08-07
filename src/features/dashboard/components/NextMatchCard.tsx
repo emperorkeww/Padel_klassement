@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { TeamSide } from "@/features/matches/components/MatchList";
+import { TeamSide } from "@/features/matches/components/TeamSide";
 import type { Match, Profile, Team } from "@/types";
 import { matchWhen } from "../dashboardHelpers";
 
