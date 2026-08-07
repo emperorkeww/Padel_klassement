@@ -74,8 +74,9 @@ describe("<PlannedMatchCard /> toto", () => {
   it("toont geen tip-chips op een match zonder groep", async () => {
     renderCard({ ...MATCH_PLANNED, group_id: null } as Match);
     await openPlannedCards();
-    // De kaart is er wel (score-invoer), maar zonder toto-tegel.
-    await screen.findByLabelText(/^score alice anders & bob boers$/i);
+    // De kaart is er wel — de uitslag kun je invullen — maar zonder toto-tegel:
+    // tippen bestaat alleen binnen een groep.
+    await screen.findByRole("button", { name: /^uitslag invullen$/i });
     expect(screen.queryByText(/🎯 toto/i)).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /^tip / }),

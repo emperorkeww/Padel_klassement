@@ -143,10 +143,6 @@
   gap: var(--sp-2);
   align-items: center;
 }
-.planned-card__actions .planned-card__save {
-  margin-left: auto;
-}
-
 /* Icoonknoppen in de kop (agenda, ⋯): comfortabel vierkant tapdoel. */
 .iconbtn {
   flex-shrink: 0;
@@ -352,24 +348,6 @@
 }
 
 /* Uitklapbare optionele set-invoer, direct onder de score-rijen. */
-.planned-card__sets {
-  display: grid;
-  justify-items: start;
-  gap: var(--sp-1);
-}
-.planned-card__sets-toggle {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px; /* tap-target ≥44px (WCAG 2.5.5) */
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--accent);
-  font: inherit;
-  font-weight: 600;
-  font-size: var(--fs-sm);
-  cursor: pointer;
-}
 
 /* Tijd wijzigen. */
 .planned-card__time {
@@ -480,9 +458,5 @@
   }
   .planned-card__row .match-card__side {
     flex: 1 1 100%;
-  }
-  .planned-card__row .stepper {
-    flex: 1 1 100%;
-    justify-content: space-between;
   }
 }

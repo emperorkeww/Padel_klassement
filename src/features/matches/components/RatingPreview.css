@@ -1,0 +1,67 @@
+/* Ratingpreview bij de uitslag-invoer (#1144). Rustige rij met een haarlijn,
+   geen eigen gekleurd vlak: op deze kaart staat de uitslag centraal. */
+
+.ratingpreview {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.ratingpreview__kop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.ratingpreview__titel {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+/* Pil met haarlijn i.p.v. een vol vlak — de kaart draagt al genoeg kleur. */
+.ratingpreview__modifier {
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--joker-line);
+  border-radius: 999px;
+  background: var(--joker-soft);
+  color: var(--joker);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ratingpreview__cijfers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+}
+.ratingpreview__cel {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+.ratingpreview__wat {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.ratingpreview__waarde {
+  font-size: var(--fs-lg);
+  font-variant-numeric: tabular-nums;
+}
+/* De woorden "bij winst"/"bij verlies" dragen de betekenis; de kleur versterkt
+   alleen. */
+.ratingpreview__waarde.is-up {
+  color: var(--accent-strong);
+}
+.ratingpreview__waarde.is-down {
+  color: var(--danger);
+}
+
+.ratingpreview__schild,
+.ratingpreview__voet {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}

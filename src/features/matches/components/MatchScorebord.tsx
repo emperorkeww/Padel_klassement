@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAsync } from "@/lib/hooks/useAsync";
+import { useToast } from "@/ui/ToastProvider";
+import { tap } from "@/lib/utils/haptics";
 import { formatDate } from "@/lib/utils/format";
-import { readSetScores, teamLabel } from "@/features/matches/api";
+import { readSetScores, teamLabel, updateMatchScore } from "@/features/matches/api";
 import { getGroup } from "@/features/groups/api";
 import { heeftUitslag } from "@/features/matches/matchState";
 import { MatchMomenten } from "@/features/matches/components/MatchMomenten";
-import { ScoreEditor } from "@/features/matches/components/ScoreEditor";
+import { ScoreSheet } from "@/features/matches/components/ScoreSheet";
 import { TeamBlock } from "@/features/matches/components/TeamBlock";
 import type { Highlight } from "@/features/feed/feedLogic";
 import type { Upset } from "@/features/matches/upset";
@@ -50,6 +52,7 @@ export function MatchScorebord({
   onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const toast = useToast();
 
   const teamA = teams[m.team_a_id];
   const teamB = teams[m.team_b_id];
@@ -161,34 +164,16 @@ export function MatchScorebord({
         <div className="md-board__foot">
           {canEdit ? (
             <>
-              {!editing && (
-                <div className="md-edit-actions">
-                  <button
-                    className="btn btn--sm"
-                    onClick={() => setEditing(true)}
-                  >
-                    {m.score_a != null ? "Score aanpassen" : "Score invoeren"}
-                  </button>
-                </div>
-              )}
-              {editing ? (
-                <ScoreEditor
-                  match={m}
-                  labelA={teamLabel(teamA, profiles)}
-                  labelB={teamLabel(teamB, profiles)}
-                  onClose={() => setEditing(false)}
-                  onSaved={() => {
-                    setEditing(false);
-                    onSaved();
-                  }}
-                />
-              ) : (
-                <p className="md-edit-note">
-                  {benIkInvoerder
-                    ? "Jij voerde deze uitslag in, dus jij kunt hem corrigeren."
-                    : "Jij beheert deze groep, dus jij kunt de uitslag corrigeren."}
-                </p>
-              )}
+              <div className="md-edit-actions">
+                <button className="btn btn--sm" onClick={() => setEditing(true)}>
+                  {heeftUitslag(m) ? "Score aanpassen" : "Score invoeren"}
+                </button>
+              </div>
+              <p className="md-edit-note">
+                {benIkInvoerder
+                  ? "Jij voerde deze uitslag in, dus jij kunt hem corrigeren."
+                  : "Jij beheert deze groep, dus jij kunt de uitslag corrigeren."}
+              </p>
             </>
           ) : (
             <p className="md-edit-note">
@@ -199,6 +184,37 @@ export function MatchScorebord({
           )}
         </div>
       )}
+
+      {/* Corrigeren gebeurt in dezelfde sheet als invullen (#1144). Deze kant
+          slaat blokkerend op: een correctie hoort pas te gelden als de server
+          hem heeft aangenomen — anders zie je een cijfer dat straks weer
+          terugspringt. */}
+      <ScoreSheet
+        open={editing}
+        match={m}
+        labelA={teamLabel(teamA, profiles)}
+        labelB={teamLabel(teamB, profiles)}
+        titel="Uitslag corrigeren"
+        opslaanLabel="Score opslaan"
+        onClose={() => setEditing(false)}
+        onSave={async (invoer) => {
+          await updateMatchScore({
+            matchId: m.id,
+            winnerTeamId:
+              invoer.scoreA === invoer.scoreB
+                ? null
+                : invoer.scoreA > invoer.scoreB
+                  ? m.team_a_id
+                  : m.team_b_id,
+            scoreA: invoer.scoreA,
+            scoreB: invoer.scoreB,
+            setScores: invoer.setScores,
+          });
+          tap();
+          toast.success("Score bijgewerkt.");
+          onSaved();
+        }}
+      />
     </section>
   );
 }
