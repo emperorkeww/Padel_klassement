@@ -581,6 +581,17 @@
   min-height: 44px;
 }
 
+/* Onder de speeldagen, los van hun eigen acties: dit gaat over de dag, niet
+   over één speeldag erop. Zwakker dan "Open speeldag" — een tweede speeldag op
+   dezelfde dag is de uitzondering, geen suggestie. */
+.dagsheet__ookplannen {
+  justify-content: center;
+  min-height: 44px;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft-strong);
+  border-style: dashed;
+}
+
 /* ---- Lege dag: plan een speeldag ---- */
 
 .plandag__veld {

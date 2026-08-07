@@ -268,6 +268,17 @@ export function Agenda() {
         profielen={profielen.data ?? {}}
         myId={myId}
         onGestemd={venster.reload}
+        // Alleen vooruit: een dag die geweest is valt niet meer te plannen. Het
+        // detail geeft het stokje door aan dezelfde keten als een lege dag
+        // (PlanDagSheet → wizard); er komt geen tweede aanmaakflow naast.
+        onPlan={
+          open != null && open >= vandaag
+            ? () => {
+                setOpen(null);
+                setPlanDag(open);
+              }
+            : undefined
+        }
         onClose={() => setOpen(null)}
       />
 
