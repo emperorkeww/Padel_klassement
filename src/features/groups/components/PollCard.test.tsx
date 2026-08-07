@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { ToastProvider } from "@/ui/ToastProvider";
+import { AuthProvider } from "@/features/auth/AuthProvider";
 import type { GroupMember, Profile } from "@/types";
 
 const NOW = "2026-07-08T10:00:00.000Z";
@@ -71,19 +72,23 @@ function vangDownload(): { tekst: () => Promise<string> } {
 function renderCard(poll: PlayPoll) {
   return render(
     <MemoryRouter>
-      <ToastProvider>
-        <PollCard
-          poll={poll}
-          groupName="Vrijdagavond padel"
-          members={GROUP_MEMBERS as GroupMember[]}
-          options={[option]}
-          votes={[]}
-          profiles={profileMap}
-          myId="p1"
-          isOwner
-          onChanged={() => {}}
-        />
-      </ToastProvider>
+      {/* AuthProvider omdat de kaart sinds #1159 vraagt of de kijker beheerder
+          van de app is (useIsAdmin → useAuth). */}
+      <AuthProvider>
+        <ToastProvider>
+          <PollCard
+            poll={poll}
+            groupName="Vrijdagavond padel"
+            members={GROUP_MEMBERS as GroupMember[]}
+            options={[option]}
+            votes={[]}
+            profiles={profileMap}
+            myId="p1"
+            isOwner
+            onChanged={() => {}}
+          />
+        </ToastProvider>
+      </AuthProvider>
     </MemoryRouter>,
   );
 }
@@ -184,7 +189,9 @@ describe("<PollCard /> — geboekte speeldag klapt dicht (#1141)", () => {
       await screen.findByText(/donderdag 10 januari/i),
     ).toBeInTheDocument();
     expect(screen.getByText("Baan 3")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /🖼 delen/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /🖼 delen/i }),
+    ).toBeInTheDocument();
 
     // De rest niet: die staat achter "Details".
     expect(

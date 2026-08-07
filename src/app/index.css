@@ -193,6 +193,13 @@
   --joker-line: #bfd9e8;
   --joker-ink: #ffffff; /* tekst op vol blauw (gespeelde kaart) */
 
+  /* Decoratieve effectkleuren (#1151): bewust helderder dan de bijbehorende
+     teksttokens. Ze dragen nooit tekst, maar liggen met 3–13% alpha als liquid
+     light over een neutrale matchkaart. */
+  --effect-lef: #7c3aed;
+  --effect-joker: #2563eb;
+  --effect-inzet: #f59e0b;
+
   /* Padelveld van de opstelling (#427). Puur decoratieve achtergrond (er staat
      geen lopende tekst direct op het veld), dus buiten de contrast-CI. */
   --court: #0d7a55;
@@ -509,6 +516,12 @@
   --joker-soft: #273540;
   --joker-line: #3b5160;
   --joker-ink: #0a1620;
+
+  /* Dezelfde semantische families op donker, iets lichter maar via de
+     component met lagere totale opacity zodat het geen neonkaart wordt. */
+  --effect-lef: #a78bfa;
+  --effect-joker: #60a5fa;
+  --effect-inzet: #f5b942;
 
   /* Padelveld (#427): gedempt donkergroen, lijnen zachter. */
   --court: #1b4636;

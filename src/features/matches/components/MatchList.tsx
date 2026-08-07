@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Match, Profile, Team } from "@/types";
-import { deleteMatch } from "@/features/matches/api";
+import { useIsAdmin } from "@/features/admin/useIsAdmin";
+import { verwijderMatchSlim } from "@/features/admin/matchBeheer";
 import { formatRelativeDay } from "@/lib/utils/format";
 import { outcomeFor } from "@/features/rating/results";
 import type { Upset } from "@/features/matches/upset";
@@ -9,6 +10,10 @@ import type { MatchExtras } from "@/features/matches/useMatchEffecten";
 import { matchEffecten, heeftEffect } from "@/features/matches/matchEffecten";
 import { historieMeta } from "@/features/matches/matchMeta";
 import { TeamSide } from "@/features/matches/components/TeamSide";
+import {
+  MatchEffectBadge,
+  MatchEffectSurface,
+} from "@/features/matches/components/MatchEffectSurface";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
@@ -62,12 +67,16 @@ export function MatchCard({
           ? "match-card--draw"
           : "";
 
-  // Effect-swirls (#1151): drie vlaggen, drie data-attributen, drie CSS-lagen
-  // die optellen. Bewust geen samengestelde klasse per combinatie — `data-fx`
-  // zegt alleen "er ligt iets" (voor de tekstkleur), de rest zet elk zijn eigen
-  // laag aan. Bij een vierde effect komt er één attribuut en één regel CSS bij.
+  // Effect-swirls (#1151): drie vlaggen, drie data-attributen, drie zelfstandige
+  // SVG-ribbons die optellen. Bewust geen samengestelde klasse per combinatie —
+  // `data-fx` zegt alleen "er ligt iets" (voor de tekstkleur), de rest zet elk
+  // zijn eigen laag aan. Bij een vierde effect komt er één attribuut en ribbon bij.
   const fx = matchEffecten({ match: m, lef, joker });
   const vlag = (aan: boolean) => (aan ? "" : undefined);
+  const metaIsEffect =
+    meta?.sleutel === "lef" ||
+    meta?.sleutel === "joker" ||
+    meta?.sleutel === "traktatie";
 
   return (
     <Link
@@ -78,6 +87,7 @@ export function MatchCard({
       data-fx-joker={vlag(fx.joker)}
       data-fx-inzet={vlag(fx.inzet)}
     >
+      <MatchEffectSurface effecten={fx} />
       <TeamSide team={teams[m.team_a_id]} profiles={profiles} won={aWon} />
       <span className="match-card__mid">
         <span className="match-card__score">
@@ -99,7 +109,10 @@ export function MatchCard({
             1v1
           </span>
         )}
-        {meta && (
+        {heeftEffect(fx) && (
+          <MatchEffectBadge match={m} effecten={fx} lef={lef} joker={joker} />
+        )}
+        {meta && !metaIsEffect && (
           <span
             className={`match-card__meta match-card__${meta.sleutel}`}
             title={
@@ -156,13 +169,21 @@ export function DeletableMatchCard({
   const toast = useToast();
   const [pending, setPending] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const canDelete = !!user && (m.created_by === user.id || canManage);
+  // De beheerder van de app mag ook andermans match weghalen (#1159). De check
+  // zit hier en niet in een extra prop: elke aanroeper (groepsdetail, ronde,
+  // historie) krijgt hem zo vanzelf, en useIsAdmin cachet per sessie.
+  const isAppAdmin = useIsAdmin() === true;
+  const eigenRecht = !!user && (m.created_by === user.id || canManage);
+  const canDelete = eigenRecht || isAppAdmin;
+  // Alleen wanneer het recht *uitsluitend* uit de beheerdersrol komt, loopt het
+  // langs de edge function — dat is ook de enige route die het logt.
+  const alsBeheerder = !eigenRecht && isAppAdmin;
 
   function startDelete() {
     setPending(true);
     timer.current = setTimeout(async () => {
       try {
-        await deleteMatch(m.id);
+        await verwijderMatchSlim(m.id, alsBeheerder);
         tap();
         onDeleted();
       } catch (err) {
@@ -181,7 +202,9 @@ export function DeletableMatchCard({
   if (pending) {
     return (
       <div className="match-card__undo" role="status">
-        <span>Match verwijderd.</span>
+        <span>
+          {alsBeheerder ? "Match verwijderd als beheerder." : "Match verwijderd."}
+        </span>
         <button className="btn btn--sm" onClick={undoDelete}>
           Ongedaan maken
         </button>

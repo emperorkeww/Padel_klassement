@@ -9,8 +9,9 @@ import {
   getPlayerMatches,
   getTeamsByIds,
   teamLabel,
-  updateMatchScore,
 } from "./api";
+import { useIsAdmin } from "@/features/admin/useIsAdmin";
+import { slaCorrectieOp } from "@/features/admin/matchBeheer";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import {
   MatchMetaRegel,
@@ -163,6 +164,10 @@ export function MatchDetail() {
   const inForm = useMemo(() => spelerVanDeWeek(hmap), [hmap]);
   // On-Fire (#632): actieve winstreaks uit dezelfde gedeelde histories.
   const onFire = useMemo(() => onFireSpelers(hmap), [hmap]);
+  // De beheerder van de app mag overal aan (#1159). Boven de vroege returns,
+  // zoals elke hook; useIsAdmin cachet per sessie, dus dit kost geen query per
+  // match.
+  const isAppAdmin = useIsAdmin() === true;
   const editieCtx: EditieContext = {
     dictatorId: dictator.data?.profileId ?? null,
     iconKey: iconKeyVoor(
@@ -242,6 +247,7 @@ export function MatchDetail() {
     teams: tmap,
     myId: user?.id ?? null,
     isGroupOwner: beheertGroep,
+    isAppAdmin,
   });
   // Verloor de kijker deze match? → de smoesjesmachine mag verschijnen.
   const iLost = !!user && outcomeFor(m, tmap, user.id) === "L";
@@ -268,7 +274,9 @@ export function MatchDetail() {
     beheerActies.push({
       sleutel: "corrigeren",
       label: heeftUitslag(m) ? "Score corrigeren" : "Score invoeren",
-      hint: "De winnaar volgt uit de score; de sets kun je meteen bijwerken.",
+      hint: rechten.alsBeheerder
+        ? "Je doet dit als beheerder van de app, niet als deelnemer. Het wordt gelogd."
+        : "De winnaar volgt uit de score; de sets kun je meteen bijwerken.",
       onClick: () => setCorrigeren(true),
     });
   }
@@ -482,20 +490,30 @@ export function MatchDetail() {
         opslaanLabel="Score opslaan"
         onClose={() => setCorrigeren(false)}
         onSave={async (invoer) => {
-          await updateMatchScore({
-            matchId: m.id,
-            winnerTeamId:
-              invoer.scoreA === invoer.scoreB
-                ? null
-                : invoer.scoreA > invoer.scoreB
-                  ? m.team_a_id
-                  : m.team_b_id,
-            scoreA: invoer.scoreA,
-            scoreB: invoer.scoreB,
-            setScores: invoer.setScores,
-          });
+          // Grijpt de beheerder in op andermans match, dan loopt het langs
+          // `admin-content` — de enige route die zijn rechten heeft én de enige
+          // die een auditrij achterlaat.
+          await slaCorrectieOp(
+            {
+              matchId: m.id,
+              winnerTeamId:
+                invoer.scoreA === invoer.scoreB
+                  ? null
+                  : invoer.scoreA > invoer.scoreB
+                    ? m.team_a_id
+                    : m.team_b_id,
+              scoreA: invoer.scoreA,
+              scoreB: invoer.scoreB,
+              setScores: invoer.setScores,
+            },
+            rechten.alsBeheerder,
+          );
           tap();
-          toast.success("Score bijgewerkt.");
+          toast.success(
+            rechten.alsBeheerder
+              ? "Score bijgewerkt als beheerder. De ingreep staat in het logboek."
+              : "Score bijgewerkt.",
+          );
           match.reload();
         }}
       />

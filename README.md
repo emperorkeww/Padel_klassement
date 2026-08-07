@@ -312,7 +312,18 @@ where user_id = (select id from auth.users where email = 'iemand@adres.nl');
 
 Elke muterende actie uit het paneel laat een rij achter in
 `public.admin_audit_log`, met wie het deed en voor wie — nooit het uitgedeelde
-wachtwoord of de herstel-link zelf.
+wachtwoord of de herstel-link zelf. Bij een actie op een match, groep of poll
+(#1159) staat het doel in `target_type`/`target_id` in plaats van in
+`target_user_id`.
+
+Een beheerder mag sinds #1159 ook aan de **inhoud**: uitslagen corrigeren,
+matches verplaatsen en verwijderen, polls annuleren of heropenen, een
+groepseigenaar aanwijzen (ook voor een groep die er geen meer heeft) en groepen
+opruimen. Dat loopt via de tweede function `admin-content` en **niet** via
+ruimere RLS-policies: zou de select-policy op `matches` verruimd worden, dan
+kreeg de beheerder de wedstrijden van alle vreemde groepen in zijn eigen
+dashboard-feed en kwartaalstand. De volledige redenering staat in de kop van
+`supabase/schemas/functions/40_admin_inhoud.sql`.
 
 > [!IMPORTANT]
 > De function heeft de secret **`ADMIN_SITE_URL`** nodig — de basis waarop de
@@ -354,6 +365,7 @@ Asynchrone processen en integraties buiten de client om worden afgehandeld via *
 | `remind-group` | Client-aanroep. Handmatige actie om groepsleden via een pushnotificatie te porren om te stemmen. |
 | `playtomic-availability` | Aangeroepen door de Cloudflare Worker (`env.PLAYTOMIC_EGRESS`). Egress-hop voor de baanbeschikbaarheid: Playtomic's WAF blokkeert Cloudflare-IP's maar laat Supabase-egress door (#385). Deployen met `--no-verify-jwt`. |
 | `admin-users` | Client-aanroep vanuit het adminpaneel (`/admin`, #1036). Valideert de user-JWT, checkt `public.is_app_admin()` met de service-role en voert pas dán de gevraagde actie uit: gebruikers-, gasten- en groepenoverzicht, herstel-link, tijdelijk wachtwoord, e-mail corrigeren, overal uitloggen, account verwijderen. Deployen **mét** JWT-verificatie (de standaard, dus géén entry in `config.toml`). Vereist de secret `ADMIN_SITE_URL`. |
+| `admin-content` | Client-aanroep vanuit het adminpaneel (#1159). Zelfde toegangsbeslissing als `admin-users`, maar dan voor de inhoud: alle matches over alle groepen heen, uitslagen corrigeren, matches verplaatsen en verwijderen, polls annuleren/heropenen/verwijderen, groepseigenaar aanwijzen, lid verwijderen, groep verwijderen. Loopt bewust via de service-role in plaats van via ruimere RLS-policies — zie de kop van `supabase/schemas/functions/40_admin_inhoud.sql`. Elke mutatie schrijft een rij in `admin_audit_log`. Geen eigen secrets. |
 
 *De definities voor database webhooks en de cron-schedules (`pg_cron`) zijn als SQL-snippets terug te vinden in `supabase/snippets/`.*
 

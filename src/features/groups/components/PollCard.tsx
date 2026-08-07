@@ -29,6 +29,8 @@ import {
   type PollVoteStatus,
   type NewPollOption,
 } from "@/features/groups/pollsApi";
+import { useIsAdmin } from "@/features/admin/useIsAdmin";
+import { zetPollStatus } from "@/features/admin/api";
 import {
   diffPollOptions,
   nonVoters,
@@ -121,6 +123,14 @@ export function PollCard({
   >(new Map());
 
   const isManager = poll.created_by === myId || isOwner;
+  // De beheerder van de app mag een speeldag afblazen die hij niet zelf startte
+  // (#1159) — bewust álleen dat. Vastleggen en boeken zijn groepsbeslissingen,
+  // en alle andere managerknoppen schrijven rechtstreeks op play_polls, wat RLS
+  // weigert voor wie geen maker of eigenaar is. Ze tonen zou een knop opleveren
+  // die niets doet.
+  const isAppAdmin = useIsAdmin() === true;
+  const magAnnuleren = isManager || isAppAdmin;
+  const annuleerAlsBeheerder = !isManager && isAppAdmin;
   const weekEnd = addDays(today, 6);
   const name = (id: string) => displayName(profiles[id]);
 
@@ -524,7 +534,7 @@ export function PollCard({
               Haal uit je agenda
             </button>
           )}
-          {isManager && poll.status !== "cancelled" && (
+          {magAnnuleren && poll.status !== "cancelled" && (
             <button
               className={`btn btn--sm proposal__withdraw${confirmCancel ? " is-confirm" : ""}`}
               disabled={busy}
@@ -538,7 +548,10 @@ export function PollCard({
                 // ieders agenda staan.
                 if (agendaDag) downloadSpeeldagIcs(agendaDag, "CANCELLED");
                 run(
-                  () => cancelPoll(poll.id),
+                  () =>
+                    annuleerAlsBeheerder
+                      ? zetPollStatus(poll.id, "cancelled")
+                      : cancelPoll(poll.id),
                   poll.status === "open" ? "Poll geannuleerd." : "Speeldag geannuleerd.",
                 );
               }}
