@@ -78,9 +78,6 @@ export function NetTouchesSection({
 
   return (
     <section className="card">
-      <div className="card__head">
-        <h2 className="card__title">🕸️ Netrollers</h2>
-      </div>
       {gescoord.length > 0 ? (
         <ul className="md-toto">
           {gescoord.map((t) => (

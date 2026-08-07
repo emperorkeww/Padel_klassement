@@ -26,6 +26,7 @@ vi.mock("@/lib/supabase/client", async () => {
   };
 });
 
+import userEvent from "@testing-library/user-event";
 import MatchDetail from "./MatchDetail";
 
 describe("<MatchDetail /> — gast vervangen is niet voor iedereen (#681)", () => {
@@ -43,8 +44,15 @@ describe("<MatchDetail /> — gast vervangen is niet voor iedereen (#681)", () =
     );
     // Wacht tot de pagina echt geladen is voor we de afwezigheid vaststellen.
     expect(await screen.findByText(/afgerond/i)).toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: /gast vervangen/i }),
-    ).not.toBeInTheDocument();
+    // De actie staat sinds #1144 in het ⋯-menu. Deze kijker mag hem niet, dus
+    // hij zit er niet in — en als er verder niets te beheren valt, verschijnt
+    // het menu zelf ook niet.
+    const menu = screen.queryByRole("button", { name: /meer acties/i });
+    if (menu) {
+      await userEvent.click(menu);
+      expect(
+        screen.queryByRole("button", { name: /gast vervangen/i }),
+      ).toBeNull();
+    }
   });
 });

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sheet } from "@/ui/Sheet";
 import { useToast } from "@/ui/ToastProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useCacheRevision } from "@/lib/hooks/useCacheRevision";
@@ -56,6 +55,7 @@ import {
 } from "@/features/matches/components/TotoTegel";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
 import { MatchCalendarButton } from "@/features/matches/components/MatchCalendarButton";
+import { MatchManagementSheet } from "@/features/matches/components/MatchManagementSheet";
 import { TeamSide } from "@/features/matches/components/TeamSide";
 import { MatchProbability } from "@/features/matches/components/MatchProbability";
 import {
@@ -156,7 +156,6 @@ export function PlannedMatchCard({
   const [manageOpen, setManageOpen] = useState(false);
 
   // Tijd wijzigen (uitklapbaar).
-  const [editingTime, setEditingTime] = useState(false);
   const [timeVal, setTimeVal] = useState(() => toLocalInput(m.played_at));
   const [busyTime, setBusyTime] = useState(false);
 
@@ -529,7 +528,6 @@ export function PlannedMatchCard({
       });
       tap();
       toast.success("Tijdstip bijgewerkt.");
-      setEditingTime(false);
       onSaved?.();
     } catch (err) {
       toast.error(errorMessage(err));
@@ -667,7 +665,7 @@ export function PlannedMatchCard({
     actie === "uitslag-invullen" || actie === "score-invoeren"
       ? { label: ACTIE_LABEL[actie], onClick: () => setScoreOpen(true) }
       : actie === "match-vervolledigen"
-        ? { label: ACTIE_LABEL[actie], onClick: () => setEditingTime(true) }
+        ? { label: ACTIE_LABEL[actie], onClick: () => setManageOpen(true) }
         : null;
   const meerLabel = actie === "tippen" ? "Tippen" : "Details";
 
@@ -840,32 +838,6 @@ export function PlannedMatchCard({
         </div>
       )}
 
-      {canManage && editingTime && (
-        <div className="planned-card__time">
-          <input
-            className="input"
-            type="datetime-local"
-            value={timeVal}
-            onChange={(e) => setTimeVal(e.target.value)}
-            aria-label="Nieuw tijdstip"
-          />
-          <button
-            className="btn btn--sm"
-            onClick={() => setEditingTime(false)}
-            disabled={busyTime}
-          >
-            Annuleren
-          </button>
-          <button
-            className="btn btn--primary btn--sm"
-            onClick={saveTime}
-            disabled={busyTime}
-          >
-            {busyTime ? "Opslaan…" : "Tijd opslaan"}
-          </button>
-        </div>
-      )}
-
       {/* Voet: links de ene primaire actie, rechts de uitklapper naar de rest.
           Welke actie primair is bepaalt matchState (#1144), niet een ternary
           hier — zo beloven kaart, detail en groepsronde hetzelfde.
@@ -912,37 +884,50 @@ export function PlannedMatchCard({
         />
       )}
 
-      {/* Beheeracties (de aanmaker en de groepseigenaar) in een compacte sheet
-          achter ⋯. */}
-      {canManage && (
-        <Sheet
-          open={manageOpen}
-          onClose={() => setManageOpen(false)}
-          title="Matchbeheer"
-          compact
-        >
-          <div className="planned-card__manage">
-            <button
-              className="btn"
-              onClick={() => {
-                setManageOpen(false);
-                setEditingTime(true);
-              }}
-            >
-              Tijd wijzigen
-            </button>
-            <button
-              className="btn btn--danger"
-              onClick={() => {
-                setManageOpen(false);
-                startDelete();
-              }}
-            >
-              Verwijderen
-            </button>
-          </div>
-        </Sheet>
-      )}
+      {/* Eén beheermenu (#1144), gedeeld met het matchdetail. Tijd wijzigen
+          klapt als paneel open; verwijderen valt meteen — met de undo-strook
+          als vangnet. */}
+      <MatchManagementSheet
+        open={manageOpen}
+        onClose={() => setManageOpen(false)}
+        acties={[
+          {
+            sleutel: "tijd",
+            label: "Tijd wijzigen",
+            hint: m.played_at
+              ? "Verzet deze match naar een ander moment."
+              : "Zet een starttijd; zonder tijd kan er geen lef of joker op.",
+            inhoud: (
+              <div className="planned-card__time">
+                <input
+                  className="input"
+                  type="datetime-local"
+                  value={timeVal}
+                  onChange={(e) => setTimeVal(e.target.value)}
+                  aria-label="Nieuw tijdstip"
+                />
+                <button
+                  className="btn btn--primary btn--sm"
+                  onClick={async () => {
+                    await saveTime();
+                    setManageOpen(false);
+                  }}
+                  disabled={busyTime}
+                >
+                  {busyTime ? "Opslaan…" : "Tijd opslaan"}
+                </button>
+              </div>
+            ),
+          },
+          {
+            sleutel: "verwijderen",
+            label: "Verwijderen",
+            hint: "Je kunt dit nog even ongedaan maken.",
+            gevaarlijk: true,
+            onClick: startDelete,
+          },
+        ]}
+      />
     </div>
   );
 }

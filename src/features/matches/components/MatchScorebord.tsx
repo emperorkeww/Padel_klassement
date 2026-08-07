@@ -1,14 +1,10 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAsync } from "@/lib/hooks/useAsync";
-import { useToast } from "@/ui/ToastProvider";
-import { tap } from "@/lib/utils/haptics";
 import { formatDate } from "@/lib/utils/format";
-import { readSetScores, teamLabel, updateMatchScore } from "@/features/matches/api";
+import { readSetScores, teamLabel } from "@/features/matches/api";
 import { getGroup } from "@/features/groups/api";
 import { heeftUitslag } from "@/features/matches/matchState";
 import { MatchMomenten } from "@/features/matches/components/MatchMomenten";
-import { ScoreSheet } from "@/features/matches/components/ScoreSheet";
 import { TeamBlock } from "@/features/matches/components/TeamBlock";
 import type { Highlight } from "@/features/feed/feedLogic";
 import type { Upset } from "@/features/matches/upset";
@@ -35,7 +31,6 @@ export function MatchScorebord({
   canEdit,
   benIkInvoerder,
   invoerderNaam,
-  onSaved,
 }: {
   match: Match;
   teams: Record<string, Team>;
@@ -49,10 +44,7 @@ export function MatchScorebord({
   /** Voerde de kijker deze uitslag zelf in? Bepaalt alleen de uitlegzin. */
   benIkInvoerder: boolean;
   invoerderNaam: string;
-  onSaved: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const toast = useToast();
 
   const teamA = teams[m.team_a_id];
   const teamB = teams[m.team_b_id];
@@ -66,33 +58,7 @@ export function MatchScorebord({
   return (
     <section className="card md-board">
       <div className="md-hero">
-        {/* Kalme metaregel: status · datum · ronde · groep. */}
-        <div className="md-meta">
-          <span className={`md-meta__status ${done ? "" : "is-open"}`}>
-            {done ? "Afgerond" : "Gepland"}
-          </span>
-          <span className="md-meta__sep" aria-hidden="true">
-            ·
-          </span>
-          <span>{formatDate(m.played_at ?? m.created_at) || "—"}</span>
-          {m.round_number != null && (
-            <>
-              <span className="md-meta__sep" aria-hidden="true">
-                ·
-              </span>
-              <span>Ronde {m.round_number}</span>
-            </>
-          )}
-          {m.format === "1v1" && (
-            <>
-              <span className="md-meta__sep" aria-hidden="true">
-                ·
-              </span>
-              <span title="Singles">1v1</span>
-            </>
-          )}
-          <GroupBadge groupId={m.group_id} />
-        </div>
+        <MatchMetaRegel match={m} />
 
         {/* `is-done` schakelt de teamkleuren uit zodra er een uitslag is
             (#948): op een gespeelde match hoort de kleur de úitslag te
@@ -163,18 +129,14 @@ export function MatchScorebord({
       {done && (
         <div className="md-board__foot">
           {canEdit ? (
-            <>
-              <div className="md-edit-actions">
-                <button className="btn btn--sm" onClick={() => setEditing(true)}>
-                  {heeftUitslag(m) ? "Score aanpassen" : "Score invoeren"}
-                </button>
-              </div>
-              <p className="md-edit-note">
-                {benIkInvoerder
-                  ? "Jij voerde deze uitslag in, dus jij kunt hem corrigeren."
-                  : "Jij beheert deze groep, dus jij kunt de uitslag corrigeren."}
-              </p>
-            </>
+            // Corrigeren is administratie en zit sinds #1144 in het ⋯-menu; hier
+            // blijft alleen de mededeling dát je het mag — zonder die regel las
+            // het ontbreken van een knop op deze plek als een bug.
+            <p className="md-edit-note">
+              {benIkInvoerder
+                ? "Jij voerde deze uitslag in, dus jij kunt hem corrigeren via ⋯ bovenaan."
+                : "Jij beheert deze groep, dus jij kunt de uitslag corrigeren via ⋯ bovenaan."}
+            </p>
           ) : (
             <p className="md-edit-note">
               {m.group_id
@@ -185,37 +147,46 @@ export function MatchScorebord({
         </div>
       )}
 
-      {/* Corrigeren gebeurt in dezelfde sheet als invullen (#1144). Deze kant
-          slaat blokkerend op: een correctie hoort pas te gelden als de server
-          hem heeft aangenomen — anders zie je een cijfer dat straks weer
-          terugspringt. */}
-      <ScoreSheet
-        open={editing}
-        match={m}
-        labelA={teamLabel(teamA, profiles)}
-        labelB={teamLabel(teamB, profiles)}
-        titel="Uitslag corrigeren"
-        opslaanLabel="Score opslaan"
-        onClose={() => setEditing(false)}
-        onSave={async (invoer) => {
-          await updateMatchScore({
-            matchId: m.id,
-            winnerTeamId:
-              invoer.scoreA === invoer.scoreB
-                ? null
-                : invoer.scoreA > invoer.scoreB
-                  ? m.team_a_id
-                  : m.team_b_id,
-            scoreA: invoer.scoreA,
-            scoreB: invoer.scoreB,
-            setScores: invoer.setScores,
-          });
-          tap();
-          toast.success("Score bijgewerkt.");
-          onSaved();
-        }}
-      />
     </section>
+  );
+}
+
+/**
+ * Kalme metaregel: status · datum · ronde · speelvorm · groep.
+ *
+ * Los component sinds #1144: een geplande match toont op het detail geen
+ * scorebord meer (de kaart eronder zegt hetzelfde én meer), maar deze regel —
+ * met de klikbare groepsbadge — hoort er wél te blijven staan.
+ */
+export function MatchMetaRegel({ match: m }: { match: Match }) {
+  const done = m.status === "completed";
+  return (
+    <div className="md-meta">
+      <span className={`md-meta__status ${done ? "" : "is-open"}`}>
+        {done ? "Afgerond" : "Gepland"}
+      </span>
+      <span className="md-meta__sep" aria-hidden="true">
+        ·
+      </span>
+      <span>{formatDate(m.played_at ?? m.created_at) || "—"}</span>
+      {m.round_number != null && (
+        <>
+          <span className="md-meta__sep" aria-hidden="true">
+            ·
+          </span>
+          <span>Ronde {m.round_number}</span>
+        </>
+      )}
+      {m.format === "1v1" && (
+        <>
+          <span className="md-meta__sep" aria-hidden="true">
+            ·
+          </span>
+          <span title="Singles">1v1</span>
+        </>
+      )}
+      <GroupBadge groupId={m.group_id} />
+    </div>
   );
 }
 
