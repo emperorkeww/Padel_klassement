@@ -5,6 +5,9 @@ import { deleteMatch } from "@/features/matches/api";
 import { formatRelativeDay } from "@/lib/utils/format";
 import { outcomeFor } from "@/features/rating/results";
 import type { Upset } from "@/features/matches/upset";
+import type { MatchExtras } from "@/features/matches/useMatchEffecten";
+import { traktatieRegel } from "@/features/matches/drankkaart";
+import { matchEffecten, heeftEffect } from "@/features/matches/matchEffecten";
 import { historieMeta } from "@/features/matches/matchMeta";
 import { TeamSide } from "@/features/matches/components/TeamSide";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -60,8 +63,22 @@ export function MatchCard({
           ? "match-card--draw"
           : "";
 
+  // Effect-swirls (#1151): drie vlaggen, drie data-attributen, drie CSS-lagen
+  // die optellen. Bewust geen samengestelde klasse per combinatie — `data-fx`
+  // zegt alleen "er ligt iets" (voor de tekstkleur), de rest zet elk zijn eigen
+  // laag aan. Bij een vierde effect komt er één attribuut en één regel CSS bij.
+  const fx = matchEffecten({ match: m, lef, joker });
+  const vlag = (aan: boolean) => (aan ? "" : undefined);
+
   return (
-    <Link className={`match-card ${outcomeClass}`} to={`/matches/${m.id}`}>
+    <Link
+      className={`match-card ${outcomeClass}`}
+      to={`/matches/${m.id}`}
+      data-fx={vlag(heeftEffect(fx))}
+      data-fx-lef={vlag(fx.lef)}
+      data-fx-joker={vlag(fx.joker)}
+      data-fx-inzet={vlag(fx.inzet)}
+    >
       <TeamSide team={teams[m.team_a_id]} profiles={profiles} won={aWon} />
       <span className="match-card__mid">
         <span className="match-card__score">
@@ -218,6 +235,7 @@ export function MatchList({
   empty = "Nog geen matches.",
   perspectiveId,
   upsets,
+  extras,
 }: {
   matches: Match[];
   teams: Record<string, Team>;
@@ -226,6 +244,10 @@ export function MatchList({
   perspectiveId?: string;
   /** Upsets per match-id (#85); ontbrekend = geen upset-chip. */
   upsets?: Map<string, Upset>;
+  /** Lef- en jokerregel per match (#1151), uit useMatchEffecten. Ontbrekend =
+   *  geen regels; die stonden hier tot dat issue helemaal niet, waardoor het
+   *  profiel dezelfde match zonder inzet toonde en de Spelen-pagina mét. */
+  extras?: (match: Match) => MatchExtras;
 }) {
   if (matches.length === 0) return <p className="empty">{empty}</p>;
 
@@ -239,6 +261,8 @@ export function MatchList({
             profiles={profiles}
             perspectiveId={perspectiveId}
             upset={upsets?.get(m.id) ?? null}
+            lef={extras?.(m).lef}
+            joker={extras?.(m).joker}
           />
         </li>
       ))}
