@@ -189,21 +189,29 @@
 }
 
 /* ---------- Varianten ---------- */
-/* Dekking en blur zijn hier factoren op --glas-dekking-basis en
-   --glas-blur-basis uit index.css, en geen kale getallen (#1083). Een custom
-   property die op het element zelf staat wint van dezelfde property op :root;
-   zolang elke variant hier een eigen getal neerzette, kon een thema het
-   materiaal dus helemaal niet bijstellen — de donkere `--glas-dekking: 0.8`
-   uit #1062 kwam nergens aan en donker draaide gewoon op de lichte dekking.
-   Op het lichte thema geven de factoren hieronder exact dezelfde waarden als
-   voorheen; het verschil is dat het thema nu bepaalt hoevéél materiaal er is
-   en de variant alleen nog de verhouding tussen de varianten onderling. */
+/* Dekking, blur en saturatie zijn hier factoren op de basis-tokens uit
+   index.css, en geen kale getallen (#1083). Een custom property die op het
+   element zelf staat wint van dezelfde property op :root; zolang elke variant
+   hier een eigen getal neerzette, kon een thema het materiaal dus helemaal
+   niet bijstellen — de donkere `--glas-dekking: 0.8` uit #1062 kwam nergens
+   aan en donker draaide gewoon op de lichte dekking. Op het lichte thema geven
+   de factoren hieronder exact dezelfde waarden als voorheen; het verschil is
+   dat het thema nu bepaalt hoevéél materiaal er is en de variant alleen nog de
+   verhouding tussen de varianten onderling.
+
+   En élke variant zet alle drie, ook waar de basiswaarde ongewijzigd blijft.
+   Custom properties érven namelijk: een glasvlak ín een ander glasvlak — de
+   keuzebaan in het match-sheet, de selectiebalk van de poll-wizard — pikt
+   anders de waarde van zijn ouder op. Dat gebeurde met --glas-saturatie: een
+   `subtiel` vlak binnen een `sterk` paneel draaide op 185% in plaats van op de
+   165% van het thema. */
 
 /* Grote vlakken: net genoeg materiaal om zich van de pagina te scheiden. */
 .glas--subtiel {
   --glas-blur: calc(var(--glas-blur-basis) * 0.5);
   /* min(), want boven 1 is een dekking geen dekking meer. */
   --glas-dekking: min(1, calc(var(--glas-dekking-basis) * 1.05));
+  --glas-saturatie: var(--glas-saturatie-basis);
   --glas-rand-kracht: 0.3;
   --glas-schaduw: var(--shadow-sm);
 }
@@ -211,6 +219,7 @@
 .glas--standaard {
   --glas-blur: var(--glas-blur-basis);
   --glas-dekking: var(--glas-dekking-basis);
+  --glas-saturatie: var(--glas-saturatie-basis);
   --glas-rand-kracht: 0.55;
   --glas-schaduw: var(--shadow-md);
 }
@@ -218,7 +227,7 @@
    liggen, dus meer blur, meer saturatie en een diepere slagschaduw. */
 .glas--sterk {
   --glas-blur: calc(var(--glas-blur-basis) * 1.375);
-  --glas-saturatie: 185%;
+  --glas-saturatie: calc(var(--glas-saturatie-basis) * 1.12);
   --glas-dekking: calc(var(--glas-dekking-basis) * 0.93);
   --glas-rand-kracht: 0.8;
   --glas-schaduw: var(--shadow-lg);
@@ -227,6 +236,7 @@
 .glas--interactief {
   --glas-blur: var(--glas-blur-basis);
   --glas-dekking: var(--glas-dekking-basis);
+  --glas-saturatie: var(--glas-saturatie-basis);
   --glas-rand-kracht: 0.7;
   --glas-schaduw: var(--shadow-md);
 }

@@ -109,7 +109,12 @@ describe("glas.css", () => {
     // basis-tokens uitdrukken.
     for (const variant of ["subtiel", "standaard", "sterk", "interactief"]) {
       const regels = blok(`\n.glas--${variant} {`);
-      for (const eigenschap of ["dekking", "blur"]) {
+      // Alle drie, ook waar de basiswaarde ongewijzigd blijft: custom
+      // properties érven, dus een glasvlak ín een ander glasvlak pikt anders de
+      // waarde van zijn ouder op. Zo draaide de keuzebaan in het match-sheet op
+      // de 185% saturatie van het sheet eromheen in plaats van op de 165% van
+      // het thema (#1083).
+      for (const eigenschap of ["dekking", "blur", "saturatie"]) {
         const waarde = regels.match(
           new RegExp(`--glas-${eigenschap}:\\s*([^;]+);`),
         );

@@ -227,7 +227,7 @@ Moet er iets vervagen, doe het dan op een laag die het glas niet omsluit.
 
 ### Wat de app er nu voor betaalt
 
-Zeven glasvlakken, waarvan er hooguit drie tegelijk in beeld staan:
+Acht soorten glasvlak, waarvan er hooguit drie tegelijk écht blurren:
 
 | Vlak | Variant | Blur | Kost per frame? |
 |---|---|---|---|
@@ -235,21 +235,28 @@ Zeven glasvlakken, waarvan er hooguit drie tegelijk in beeld staan:
 | `.tabbar` (mobiel) | sterk + balk + levend | 14px | ja, staat vast tijdens scrollen |
 | `.sheet` | sterk + scrollbaar | 16px | alleen zolang hij open is |
 | `.wizard-footer` | sterk + balk | 22px | alleen in de poll-wizard |
+| `.tabs` in het match-sheet | subtiel + pil | 8px | alleen in dat sheet |
 | `.card--next` | standaard | 16px | nee, scrollt gewoon mee |
 | `.me-chip` | interactief + pil | uit | nee |
+| `.pick-chip` (×20) | interactief + pil | uit | nee |
 
 De twee balken zijn de enige die de blur elke scrollframe opnieuw laten
 uitrekenen; daarom staan ze op 14px in plaats van de 22px die `sterk` normaal
 geeft. Het sheet zakte in #1083 van 22 naar 16px, maar om een andere reden: op
-22px bleef er van de pagina eronder geen herkenbare vorm over. Op de
-positie-chip staat de blur helemaal uit: die heeft een dekkende vulling, dus er
-zou toch niets van te zien zijn.
+22px bleef er van de pagina eronder geen herkenbare vorm over.
 
-De selectiebalk van de poll-wizard is de enige geneste blur in de app: hij zit
-ín een sheet dat zelf al `backdrop-filter` draagt. Dat is geen verspilde laag —
-een element met `backdrop-filter` is zelf een backdrop root, dus de balk frost
-de wizard-inhoud die eronderdoor scrollt plus het materiaal van het sheet. Hij
-bestaat alleen zolang de wizard open staat.
+Op de positie-chip en de spelerspillen staat de blur helemaal uit: die hebben
+een dekkende vulling, dus er zou toch niets van te zien zijn — en bij de
+spelerspillen staan er twintig-plus tegelijk in een scrollende lijst, wat op een
+telefoon domweg te veel is. Dat is de regel voor chips: **glas in de rand, het
+licht en de indrukbeweging; niet in de doorkijk.**
+
+Er zijn twee geneste blurs, allebei binnen een sheet dat zelf al
+`backdrop-filter` draagt: de selectiebalk van de poll-wizard en de keuzebanen in
+het match-sheet. Dat is geen verspilde laag — een element met `backdrop-filter`
+is zelf een backdrop root, dus die vlakken frosten wat er binnen het sheet
+achter ze ligt, inclusief het sheetmateriaal zelf. Ze bestaan alleen zolang dat
+sheet open staat.
 
 Waar meerdere glasvlakken elkaar overlappen — een geopend sheet boven de
 balken — kost dat geen dubbele blur: de balken vallen onder de scrim en worden
