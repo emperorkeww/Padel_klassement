@@ -40,7 +40,9 @@ export function WeekStrook({
               <span className="agenda-week__glyph">
                 {eerste && <StatusGlyph status={eerste.status} past={eerste.past} />}
               </span>
-              <span className="sr-only">{dagLabel(date, markers)}</span>
+              <span className="sr-only">
+                {dagLabel(date, markers, date < vandaag)}
+              </span>
             </li>
           );
         })}

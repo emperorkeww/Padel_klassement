@@ -6,8 +6,10 @@ import { useRealtime } from "@/lib/hooks/useRealtime";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { EmptyState } from "@/ui/EmptyState";
 import { ErrorRetry } from "@/ui/ErrorRetry";
-import { dateInZone } from "@/lib/utils/time";
-import { useClub } from "@/features/availability/club";
+import { addDays, dateInZone } from "@/lib/utils/time";
+import { useClub, type Club } from "@/features/availability/club";
+import { readFlag, writeFlag } from "@/lib/utils/localFlag";
+import { NieuweSpeeldagSheet } from "@/features/groups/components/NieuweSpeeldagSheet";
 import { getMyGroups } from "@/features/groups/api";
 import { getProfilesMap } from "@/features/profiles/api";
 import { getPollWindow, type PollWindow } from "@/features/groups/pollsApi";
@@ -26,10 +28,15 @@ import { MaandRaster } from "./components/MaandRaster";
 import { WeekStrook } from "./components/WeekStrook";
 import { RasterSkeleton } from "./components/RasterSkeleton";
 import { DagSheet } from "./components/DagSheet";
+import { PlanDagSheet } from "./components/PlanDagSheet";
 import { StatusGlyph } from "./components/StatusGlyph";
 import "./Agenda.css";
 
 const LEEG_VENSTER: PollWindow = { polls: [], options: [], votes: [] };
+
+/** Onthoudt voor welke groep je het laatst plande — bij drie groepen scheelt
+ *  dat elke keer dezelfde keuze opnieuw maken. */
+const LAATSTE_GROEP = "agenda-laatste-groep";
 
 /* ------------------------------------------------------------------ */
 /* Agenda (#1091): alle speeldagen van al je groepen in de tijd.       */
@@ -43,13 +50,22 @@ export function Agenda() {
   usePageTitle("Agenda");
   const { user } = useAuth();
   const myId = user?.id ?? "";
+  const globaleClub = useClub();
   // "Vandaag" hangt aan de tijdzone van je clubkeuze, niet aan die van je
   // toestel: om 00:30 in een andere zone is het hier nog gisteren (#783).
-  const vandaag = dateInZone(useClub().timezone);
+  const vandaag = dateInZone(globaleClub.timezone);
 
   const [maand, setMaand] = useState<Maand>(() => maandVan(vandaag));
   const [focusDag, setFocusDag] = useState(vandaag);
   const [open, setOpen] = useState<string | null>(null);
+  // De aangetikte lege dag; los van `open`, want het plan-sheet geeft het stokje
+  // door aan de wizard en moet die dag ondertussen vasthouden.
+  const [planDag, setPlanDag] = useState<string | null>(null);
+  const [wizardDag, setWizardDag] = useState<string | null>(null);
+  const [planGroep, setPlanGroep] = useState<string | null>(() =>
+    readFlag(LAATSTE_GROEP),
+  );
+  const [nieuwClub, setNieuwClub] = useState<Club>(globaleClub);
 
   const groepen = useAsync(getMyGroups, []);
   const profielen = useAsync(getProfilesMap, []);
@@ -78,6 +94,12 @@ export function Agenda() {
     [lijst],
   );
 
+  // De groep waarvoor we plannen: de onthouden keuze, of bij één groep die ene.
+  // Een onthouden groep die je intussen verlaten hebt telt niet meer mee.
+  const planGroepId =
+    lijst.find((g) => g.id === planGroep)?.id ??
+    (lijst.length === 1 ? lijst[0].id : null);
+
   const dezeMaand = zelfdeMaand(maand, maandVan(vandaag));
   // Alleen de eerste keer een skeleton. Bij het bladeren blijft het raster
   // staan en vullen de markers zich bij: een leeg raster laten flitsen is
@@ -95,6 +117,17 @@ export function Agenda() {
   function verplaatsFocus(date: string) {
     setFocusDag(date);
     if (date < from || date > to) setMaand(maandVan(date));
+  }
+
+  /**
+   * Een aangetikte dag. Staat er iets op, dan opent het detail; een lege dag
+   * vanaf vandaag is de uitnodiging om er een speeldag voor te starten. Een
+   * lege dag in het verleden valt terug op het detail, dat dan gewoon meldt
+   * dat er niets gespeeld is — plannen kan daar niet meer.
+   */
+  function kiesDag(date: string) {
+    if ((perDag[date] ?? []).length === 0 && date >= vandaag) setPlanDag(date);
+    else setOpen(date);
   }
 
   function naarMaand(delta: number) {
@@ -199,7 +232,7 @@ export function Agenda() {
               vandaag={vandaag}
               focusDag={focusDag}
               onFocusDag={verplaatsFocus}
-              onPick={setOpen}
+              onPick={kiesDag}
             />
           )}
 
@@ -221,6 +254,49 @@ export function Agenda() {
         profielen={profielen.data ?? {}}
         onClose={() => setOpen(null)}
       />
+
+      <PlanDagSheet
+        datum={planDag}
+        groepen={lijst}
+        gekozenGroep={planGroep}
+        onGroep={(id) => {
+          setPlanGroep(id);
+          writeFlag(LAATSTE_GROEP, id);
+        }}
+        club={nieuwClub}
+        onClub={setNieuwClub}
+        vensterEinde={addDays(vandaag, 6)}
+        onClose={() => setPlanDag(null)}
+        onDoor={() => {
+          // Het plan-sheet sluit en geeft de dag door aan de wizard; de
+          // groepskeuze blijft staan, ook als je 'm nooit aanpaste.
+          if (planGroep == null && lijst.length === 1) {
+            setPlanGroep(lijst[0].id);
+            writeFlag(LAATSTE_GROEP, lijst[0].id);
+          }
+          setWizardDag(planDag);
+          setPlanDag(null);
+        }}
+      />
+
+      {/* Dezelfde aanmaakflow als op de Plannen-tab, met die ene dag al
+          gekozen. Geen aparte "één-dag-poll" ernaast: een poll is meerdere
+          momenten en de wizard kan dat al. */}
+      {wizardDag != null && planGroepId != null && (
+        <NieuweSpeeldagSheet
+          open
+          groupId={planGroepId}
+          myId={myId}
+          club={nieuwClub}
+          onClub={setNieuwClub}
+          initialDay={wizardDag}
+          onClose={() => setWizardDag(null)}
+          onCreated={() => {
+            setWizardDag(null);
+            venster.reload();
+          }}
+        />
+      )}
     </div>
   );
 }

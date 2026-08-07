@@ -29,6 +29,7 @@ export function PollWizard({
   week,
   weekLoading,
   club,
+  initialDay,
   initialPicked,
   storageKey,
   submitLabel,
@@ -42,6 +43,14 @@ export function PollWizard({
   weekLoading: boolean;
   /** Club waarvoor deze wizard beschikbaarheid/weer toont (#322). */
   club: Club;
+  /** Dag waarop de wizard opent (#1091), bv. een dag uit de agenda. Binnen het
+   *  7-daagse beschikbaarheidsvenster wordt hij de gekozen dag in de navigator;
+   *  daarbuiten landt hij in het handmatige pad — daar bestaan geen vrije-banen-
+   *  gegevens, en een dag-navigator zonder die dag zou hem stil negeren.
+   *
+   *  Bewust de dág en niet een moment: een poll-optie is dag plus tijd, en die
+   *  tijd kan niemand voor de maker verzinnen. */
+  initialDay?: string;
   /** Bestaande selectie voor de "Dagen aanpassen"-modus (#128). */
   initialPicked?: Map<string, NewPollOption>;
   /** sessionStorage-sleutel: selectie overleeft een uitstap naar /banen. */
@@ -55,7 +64,13 @@ export function PollWizard({
 }) {
   const toast = useToast();
   const [duration, setDuration] = useState<number>(90);
-  const [selectedDay, setSelectedDay] = useState(today);
+  // Valt de meegegeven dag binnen het venster waarvoor we vrije banen hebben?
+  const binnenVenster =
+    initialDay != null && initialDay >= today && initialDay <= addDays(today, 6);
+  const buitenVenster = initialDay != null && !binnenVenster && initialDay >= today;
+  const [selectedDay, setSelectedDay] = useState(
+    binnenVenster ? (initialDay as string) : today,
+  );
   const [wholeDay, setWholeDay] = useState(false);
   // Weericoontjes in de dag-navigator (#83-bonus): alleen bij buitenbanen,
   // en stil bij ontbrekende data — zelfde regels als op de Banen-pagina.
@@ -98,7 +113,10 @@ export function PollWizard({
       /* opslag niet beschikbaar — geen probleem */
     }
   }, [picked, storageKey]);
-  const [manualDate, setManualDate] = useState("");
+  // Een dag verder vooruit dan het beschikbaarheidsvenster opent meteen het
+  // handmatige pad, met die dag al ingevuld: alleen het uur is nog aan jou.
+  const [manualDate, setManualDate] = useState(buitenVenster ? (initialDay as string) : "");
+  const [manualOpen, setManualOpen] = useState(buitenVenster);
   const [manualTime, setManualTime] = useState("20:00");
   const [saving, setSaving] = useState(false);
   // Twee-taps bevestiging wanneer de wijziging iets laat vervallen.
@@ -340,7 +358,11 @@ export function PollWizard({
         </label>
       </div>
 
-      <details className="poll-wizard__manual-details">
+      <details
+        className="poll-wizard__manual-details"
+        open={manualOpen}
+        onToggle={(e) => setManualOpen(e.currentTarget.open)}
+      >
         <summary>Ander moment (verder vooruit)</summary>
         <div className="poll-wizard__manual">
           <label className="proposal-form__field">

@@ -114,7 +114,7 @@ export function MaandRaster({
                     tabIndex={dag.date === focusDag ? 0 : -1}
                     onFocus={() => onFocusDag(dag.date, false)}
                     onClick={() => onPick(dag.date)}
-                    aria-label={dagLabel(dag.date, markers)}
+                    aria-label={dagLabel(dag.date, markers, dag.date < vandaag)}
                     aria-current={isVandaag ? "date" : undefined}
                     className={[
                       "agenda-dag",

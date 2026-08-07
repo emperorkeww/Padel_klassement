@@ -307,9 +307,18 @@ export function statusLabel(status: AgendaStatus, past = false): string {
  * vertelt zelf wat erop staat, inclusief de status in woorden — de glyph-vorm
  * alleen is geen naam (WCAG 1.4.1 én 4.1.2).
  */
-export function dagLabel(date: string, markers: AgendaMarker[]): string {
+export function dagLabel(
+  date: string,
+  markers: AgendaMarker[],
+  /** Een dag die geweest is nodigt niet uit om te plannen (#1091). */
+  verleden = false,
+): string {
   const dag = longDay(date);
-  if (markers.length === 0) return `${dag}, niets gepland, plan een speeldag`;
+  if (markers.length === 0) {
+    return verleden
+      ? `${dag}, niets gespeeld`
+      : `${dag}, niets gepland, plan een speeldag`;
+  }
   const beschrijf = (m: AgendaMarker) =>
     `speeldag ${statusLabel(m.status, m.past)} om ${m.startTime}, ${m.groupName}, ${m.clubName}`;
   if (markers.length === 1) return `${dag}, ${beschrijf(markers[0])}`;

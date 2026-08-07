@@ -537,8 +537,136 @@
   color: var(--ink-soft);
 }
 
+.dagsheet__acties {
+  display: flex;
+  gap: var(--sp-2);
+}
+
 .dagsheet__actie {
-  width: 100%;
+  flex: 1;
+  justify-content: center;
+  /* Raakdoel in een sheet: minstens 44px (#374). */
+  min-height: 44px;
+}
+
+/* ---- Lege dag: plan een speeldag ---- */
+
+.plandag__veld {
+  display: grid;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.plandag__keuzes {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.plandag__keuze,
+.plandag__club {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 10px var(--sp-3);
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.plandag__keuze {
+  cursor: pointer;
+}
+.plandag__keuze:hover {
+  background: var(--surface-hover);
+}
+.plandag__keuze.is-actief {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+/* De radio zelf is visueel verborgen; de rij draagt de focusring. */
+.plandag__keuze:has(input:focus-visible) {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.plandag__initialen {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--surface-2);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  color: var(--ink-soft-strong);
+}
+.plandag__keuze.is-actief .plandag__initialen {
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.plandag__tekst {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.plandag__naam {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plandag__meta {
+  font-size: 0.71875rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.plandag__vink {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  font-size: 0.6875rem;
+  font-weight: 900;
+}
+.plandag__keuze.is-actief .plandag__vink {
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.plandag__waarschuwing {
+  margin: 0;
+  padding: var(--sp-3);
+  border: 1px solid var(--warn-line);
+  border-radius: 12px;
+  background: var(--warn-soft);
+  /* Niet `--warn` op `--warn-soft`: dat haalt licht maar 2,92 (zie
+     scripts/contrast-check.mjs). Met --ink erop is het ruim AA, in beide
+     thema's — zelfde keuze als .plan-other__badge.is-jij in Proposals.css. */
+  color: var(--ink);
+  font-size: 0.78125rem;
+  line-height: 1.45;
+}
+
+.plandag__acties {
+  display: flex;
+  gap: var(--sp-2);
+}
+.plandag__acties .btn {
+  min-height: 44px;
+}
+.plandag__door {
+  flex: 1;
   justify-content: center;
 }
 
