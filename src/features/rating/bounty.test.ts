@@ -22,8 +22,8 @@ const team = (id: string, p1: string, p2: string | null): Team =>
   ({ id, player1_id: p1, player2_id: p2 }) as Team;
 
 describe("BOUNTY_POOL", () => {
-  it("spiegelt de vaste databasewaarde", () => {
-    expect(BOUNTY_POOL).toBe(8);
+  it("spiegelt de vaste databasewaarde: nul, de feature staat uit (#1168)", () => {
+    expect(BOUNTY_POOL).toBe(0);
   });
 });
 

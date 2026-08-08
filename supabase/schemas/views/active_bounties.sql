@@ -10,6 +10,13 @@
 -- security_invoker: group_members valt onder RLS, dus je ziet alleen de kroon
 -- van je eigen groepen. player_ratings en profiles zijn al clubbreed leesbaar,
 -- dus de troon is voor iedereen zichtbaar — precies zoals de troon zelf.
+--
+-- Staat de bounty uit (bounty_value = 0, #1168), dan levert deze view geen
+-- enkele rij op — zie de where onderaan. Dat is bewust het enige punt waarop de
+-- UI stilvalt: het klassement, de groepsstand, de banner op de matchkaart en de
+-- feed lezen allemaal hiervandaan, dus ze zwijgen samen en komen samen terug
+-- zodra de waarde weer boven nul staat. Een drager met een pool van 0
+-- aankondigen zou alleen maar een lege belofte zijn.
 create view public.active_bounties
 with (security_invoker = true) as
 with gekwalificeerd as (
@@ -42,6 +49,7 @@ select
   s.streak,
   public.bounty_value(s.streak) as pool
 from dragers d
-cross join lateral (select public.bounty_streak(d.player_id) as streak) s;
+cross join lateral (select public.bounty_streak(d.player_id) as streak) s
+where public.bounty_value(s.streak) > 0;
 
 grant select on public.active_bounties to authenticated, anon;

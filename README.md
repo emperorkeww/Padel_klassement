@@ -148,7 +148,7 @@ scripts/
 | Tabel | Omschrijving |
 | :--- | :--- |
 | [`player_ratings`](supabase/schemas/tables/08_ratings.sql) | Actuele Elo-rating per speler (startwaarde: 1000). |
-| [`rating_history`](supabase/schemas/tables/08_ratings.sql) | Rating na elke match, met de losse verklaringen erbij: lef-multiplier, bounty-verschuiving en de troostdemper van de [Pechvogel-meter](supabase/schemas/functions/34_pechvogel.sql). |
+| [`rating_history`](supabase/schemas/tables/08_ratings.sql) | Rating na elke match, met de losse verklaringen erbij: lef-multiplier, bounty-verschuiving en de troostdemper van de [Pechvogel-meter](supabase/schemas/functions/34_pechvogel.sql). De [bounty](supabase/schemas/functions/31_bounty.sql) staat uit, dus die kolom is overal 0. |
 | `dictator_termijnen` | Historie en actieve ambtstermijnen van dictators (El Padelissimo) ten behoeve van machtsbehoud. |
 
 ### Plannen & Aanwezigheid
