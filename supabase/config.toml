@@ -418,6 +418,9 @@ verify_jwt = false
 [functions.calendar-feed]
 verify_jwt = false
 
+[functions.client-error]
+verify_jwt = false
+
 [functions.club-page]
 verify_jwt = false
 

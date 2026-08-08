@@ -161,12 +161,21 @@ async function handleClubSlug(rawUuid, request, env, ctx) {
   return res;
 }
 
-// Neemt een crashmelding van de browser aan en logt hem (#733). Bewust
-// schriel: alleen POST, een harde bovengrens op de body en een eigen per-IP
-// rate-limit, want dit is een publiek endpoint zonder authenticatie. Het
+// Neemt een crashmelding van de browser aan (#733) en bewaart hem (#1049).
+// Bewust schriel: alleen POST, een harde bovengrens op de body en een eigen
+// per-IP rate-limit, want dit is een publiek endpoint zonder authenticatie. Het
 // antwoord is altijd 204 — de client heeft er niets aan en mag er ook nooit
 // op wachten.
-async function handleClientError(request, env) {
+//
+// Tot #1049 eindigde de melding hier als console.error: zichtbaar in een live
+// `wrangler tail`, weg voor wie een uur later kijkt. Nu gaat hij door naar de
+// edge function `client-error`, die hem met de service-role in
+// public.client_errors zet.
+//
+// De doorgifte hangt aan ctx.waitUntil: de bezoeker wacht niet op de databank,
+// en zijn 204 valt niet weg als Supabase traag is. De console.error blijft
+// staan — als de doorgifte zelf stuk is, is dat de enige plek waar je het ziet.
+async function handleClientError(request, env, ctx) {
   if (request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
   }
@@ -187,7 +196,25 @@ async function handleClientError(request, env) {
 
   // Ook zónder content-length afkappen: die header is niet gegarandeerd.
   const melding = (await request.text()).slice(0, FOUT_MAX_BYTES);
-  if (melding) console.error("client-error", melding);
+  if (melding) {
+    console.error("client-error", melding);
+    // Zonder sink of geheim blijft het bij de logregel — precies het gedrag
+    // van vóór #1049, en dus geen reden om de melding te laten vallen.
+    if (env.FOUT_SINK && env.CRON_SECRET) {
+      const doorgeven = fetch(env.FOUT_SINK, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-cron-secret": env.CRON_SECRET,
+        },
+        body: melding,
+      }).catch((e) => {
+        // Rapporteren mag nooit zelf een fout opleveren.
+        console.error("client-error doorgeven mislukte", e?.message ?? e);
+      });
+      ctx.waitUntil(doorgeven);
+    }
+  }
   return new Response(null, { status: 204 });
 }
 
@@ -196,7 +223,7 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === FOUT_PAD) {
-      return handleClientError(request, env);
+      return handleClientError(request, env, ctx);
     }
 
     if (url.pathname.startsWith(PREFIX)) {

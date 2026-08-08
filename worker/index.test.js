@@ -216,3 +216,115 @@ describe("Worker crashmeldingen (/api/client-error)", () => {
     log.mockRestore();
   });
 });
+
+// Doorgifte naar de edge function die de melding bewaart (#1049). Tot dan
+// eindigde alles hier als logregel; die blijft, maar is niet langer het enige.
+describe("Worker crashmeldingen doorgeven aan client-error (#1049)", () => {
+  const melding = (init) =>
+    new Request("https://app.test/api/client-error", { method: "POST", ...init });
+
+  function sinkEnv(over = {}) {
+    return {
+      ...makeEnv(),
+      FOUT_RL: { limit: vi.fn(async () => ({ success: true })) },
+      FOUT_SINK: "https://db.test/functions/v1/client-error",
+      CRON_SECRET: "geheim",
+      ...over,
+    };
+  }
+
+  /** ctx.waitUntil vangt de belofte op; de test moet erop kunnen wachten. */
+  function vangCtx() {
+    const beloftes = [];
+    return { ctx: { waitUntil: (p) => beloftes.push(p) }, beloftes };
+  }
+
+  let log;
+  beforeEach(() => {
+    log = vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+  afterEach(() => log.mockRestore());
+
+  it("stuurt de melding door met het cron-geheim", async () => {
+    const doorgeef = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", doorgeef);
+    const { ctx: c, beloftes } = vangCtx();
+
+    const body = JSON.stringify({ bron: "render", bericht: "kapot" });
+    const res = await worker.fetch(melding({ body }), sinkEnv(), c);
+    await Promise.all(beloftes);
+
+    expect(res.status).toBe(204);
+    expect(doorgeef).toHaveBeenCalledTimes(1);
+    const [url, init] = doorgeef.mock.calls[0];
+    expect(url).toBe("https://db.test/functions/v1/client-error");
+    expect(init.method).toBe("POST");
+    expect(init.headers["x-cron-secret"]).toBe("geheim");
+    expect(init.body).toBe(body);
+  });
+
+  it("laat de bezoeker niet op de databank wachten", async () => {
+    // De doorgifte lost nooit op; de 204 moet er tóch meteen zijn.
+    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
+    const { ctx: c } = vangCtx();
+
+    const res = await worker.fetch(
+      melding({ body: JSON.stringify({ bericht: "traag" }) }),
+      sinkEnv(),
+      c,
+    );
+    expect(res.status).toBe(204);
+  });
+
+  it("blijft 204 geven als het doorgeven faalt", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new Error("supabase plat");
+    }));
+    const { ctx: c, beloftes } = vangCtx();
+
+    const res = await worker.fetch(
+      melding({ body: JSON.stringify({ bericht: "kapot" }) }),
+      sinkEnv(),
+      c,
+    );
+    await Promise.all(beloftes);
+
+    expect(res.status).toBe(204);
+    // En het valt op in de logs in plaats van stil te verdwijnen.
+    expect(log.mock.calls.some((c) => String(c[0]).includes("doorgeven mislukte"))).toBe(true);
+  });
+
+  it("valt terug op alleen loggen zonder sink of geheim", async () => {
+    const doorgeef = vi.fn();
+    vi.stubGlobal("fetch", doorgeef);
+    const { ctx: c } = vangCtx();
+    const body = JSON.stringify({ bericht: "kapot" });
+
+    await worker.fetch(melding({ body }), sinkEnv({ FOUT_SINK: undefined }), c);
+    await worker.fetch(melding({ body }), sinkEnv({ CRON_SECRET: undefined }), c);
+
+    expect(doorgeef).not.toHaveBeenCalled();
+    // De logregel van #733 staat er nog steeds.
+    expect(log).toHaveBeenCalledWith("client-error", body);
+  });
+
+  it("geeft een lege body niet door", async () => {
+    const doorgeef = vi.fn();
+    vi.stubGlobal("fetch", doorgeef);
+    const { ctx: c } = vangCtx();
+
+    await worker.fetch(melding({ body: "" }), sinkEnv(), c);
+    expect(doorgeef).not.toHaveBeenCalled();
+  });
+
+  it("geeft de afgekapte body door, niet het origineel", async () => {
+    const doorgeef = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", doorgeef);
+    const { ctx: c, beloftes } = vangCtx();
+
+    await worker.fetch(melding({ body: "x".repeat(9000) }), sinkEnv(), c);
+    await Promise.all(beloftes);
+
+    expect(doorgeef.mock.calls[0][1].body.length).toBe(8192);
+  });
+});

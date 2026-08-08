@@ -18,10 +18,16 @@
   // Cloudflare-egress (CloudFront-WAF, 403); de Supabase Edge Function mag er
   // wél doorheen. De URL is publiek (zelfde project als de frontend-API).
   "vars": {
-    "PLAYTOMIC_EGRESS": "https://fuxjxorbbebbxxgsnyon.supabase.co/functions/v1/playtomic-availability"
+    "PLAYTOMIC_EGRESS": "https://fuxjxorbbebbxxgsnyon.supabase.co/functions/v1/playtomic-availability",
+    // Waar crashmeldingen heen gaan om bewaard te worden (#1049). De Worker
+    // stuurt ze door met x-cron-secret; de function schrijft ze met de
+    // service-role in public.client_errors. Bewust niet de service-role key
+    // hier: die mag álles, en dit endpoint hoeft maar één ding.
+    "FOUT_SINK": "https://fuxjxorbbebbxxgsnyon.supabase.co/functions/v1/client-error"
   },
-  // Crashmeldingen (#733) komen als logregel binnen via /api/client-error;
-  // zonder observability zou die regel nergens naartoe gaan.
+  // Crashmeldingen (#733) komen binnen via /api/client-error. De logregel blijft
+  // ook na #1049 staan: als het doorgeven naar client-error stuk is, is dit de
+  // enige plek waar je dat ziet.
   "observability": { "enabled": true },
   // Per-IP rate limiting voor de publieke Playtomic-proxy: max 20 verzoeken
   // per 10 seconden per IP. period mag alleen 10 of 60 zijn.

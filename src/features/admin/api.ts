@@ -11,6 +11,7 @@ import type {
   AdminGroepLid,
   AdminMatch,
   AdminPoll,
+  FoutGroep,
   SysteemStatus,
 } from "./types";
 
@@ -394,5 +395,24 @@ export function systeemStatus(): Promise<SysteemStatus> {
     "admin:systeem",
     () => roepAdmin<SysteemStatus>("system_status"),
     10_000,
+  );
+}
+
+// ---- Foutenlogboek (#1049) -------------------------------------------------
+
+/**
+ * Crashmeldingen uit de browser, gegroepeerd op boodschap + scope.
+ *
+ * Gegroepeerd en niet als losse rijen: één kapotte route levert honderden
+ * identieke meldingen op, en als lijst verbergt dat juist de tweede, zeldzamere
+ * fout die er misschien echt toe doet.
+ */
+export function foutenLogboek(dagen = 7): Promise<FoutGroep[]> {
+  return cached(
+    `admin:fouten:${dagen}`,
+    async () =>
+      (await roepAdmin<{ groepen: FoutGroep[] }>("client_errors", { dagen }))
+        .groepen,
+    30_000,
   );
 }

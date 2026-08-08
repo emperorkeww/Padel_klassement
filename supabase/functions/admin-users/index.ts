@@ -62,6 +62,8 @@ Deno.serve(async (req) => {
     user_id?: unknown;
     email?: unknown;
     username?: unknown;
+    /** Venster van het foutenlogboek in dagen (#1049). */
+    dagen?: unknown;
   };
   try {
     body = await req.json();
@@ -177,6 +179,16 @@ Deno.serve(async (req) => {
           ontbrekend: f.vereist.filter((s) => !gezet(s)),
         })),
       });
+    }
+
+    // ---- Foutenlogboek (#1049) ---------------------------------------------
+    case "client_errors": {
+      const dagen = typeof body.dagen === "number" ? body.dagen : 7;
+      const { data, error } = await admin.rpc("admin_client_errors", {
+        p_dagen: dagen,
+      });
+      if (error) return json({ error: error.message }, 500);
+      return json({ groepen: data ?? [] });
     }
 
     // ---- Muterende acties (#1036 deel 2) ------------------------------------
