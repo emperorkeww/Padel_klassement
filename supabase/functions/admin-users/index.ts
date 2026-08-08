@@ -17,6 +17,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { bepaalToegang, type AdminActie } from "../_shared/adminAuth.ts";
 import { veiligeDetails } from "../_shared/adminAudit.ts";
+import { alleSecrets, EDGE_FUNCTIES } from "../_shared/edgeFuncties.ts";
+import { beoordeelCron, type CronJobFeiten } from "../_shared/cronGezondheid.ts";
 import { genereerWachtwoord } from "../_shared/adminWachtwoord.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -60,6 +62,14 @@ Deno.serve(async (req) => {
     user_id?: unknown;
     email?: unknown;
     username?: unknown;
+    /** Venster van het foutenlogboek in dagen (#1049). */
+    dagen?: unknown;
+    /** Schakelaars (#1049). */
+    sleutel?: unknown;
+    aan?: unknown;
+    dagbudget?: unknown;
+    /** Welk onderdeel herberekend moet worden (#1049). */
+    wat?: unknown;
   };
   try {
     body = await req.json();
@@ -137,6 +147,142 @@ Deno.serve(async (req) => {
       return json({ regels: data ?? [] });
     }
 
+    // ---- Systeemgezondheid (#1049) -----------------------------------------
+    //
+    // Drie bronnen in één antwoord. De databankkant komt uit de RPC; de
+    // secrets kan alléén een edge function beantwoorden, want die env is
+    // projectbreed en nergens anders zichtbaar. Er gaat uitsluitend "gezet
+    // ja/nee" over de lijn — nooit een waarde, ook niet afgekapt.
+    case "system_status": {
+      const { data, error } = await admin.rpc("admin_systeem_status");
+      if (error) return json({ error: error.message }, 500);
+
+      const gezet = (naam: string): boolean => {
+        const v = Deno.env.get(naam);
+        return v !== undefined && v !== "";
+      };
+
+      // Het oordeel valt hier en niet in de client: cronGezondheid.ts is één
+      // getoetste implementatie, en de klok van de server is betrouwbaarder dan
+      // die van de browser die het paneel toevallig openslaat.
+      const nu = new Date();
+      const databank = data as Record<string, unknown> | null;
+      const jobs = Array.isArray(databank?.cron)
+        ? (databank.cron as CronJobFeiten[]).map((j) => ({
+            ...j,
+            oordeel: beoordeelCron(j, nu),
+          }))
+        : null;
+
+      return json({
+        databank: { ...databank, cron: jobs },
+        secrets: Object.fromEntries(alleSecrets().map((s) => [s, gezet(s)])),
+        functies: EDGE_FUNCTIES.map((f) => ({
+          naam: f.naam,
+          rol: f.rol,
+          verifyJwt: f.verifyJwt,
+          cronGeheim: f.cronGeheim,
+          ontbrekend: f.vereist.filter((s) => !gezet(s)),
+        })),
+      });
+    }
+
+    // ---- Foutenlogboek (#1049) ---------------------------------------------
+    case "client_errors": {
+      const dagen = typeof body.dagen === "number" ? body.dagen : 7;
+      const { data, error } = await admin.rpc("admin_client_errors", {
+        p_dagen: dagen,
+      });
+      if (error) return json({ error: error.message }, 500);
+      return json({ groepen: data ?? [] });
+    }
+
+    // ---- Schakelaars zonder deploy (#1049) ----------------------------------
+    case "list_settings": {
+      const { data, error } = await admin.rpc("admin_app_settings");
+      if (error) return json({ error: error.message }, 500);
+      return json({ instellingen: data ?? [] });
+    }
+
+    // Muterend, maar niet via voerMutatieUit: die functie is gebouwd rond een
+    // doelgebruiker (`user_id` verplicht) en een schakelaar heeft er geen.
+    // Vandaar hier, mét dezelfde auditregel: mislukt het spoor, dan is de actie
+    // mislukt.
+    case "set_setting": {
+      const sleutel = body.sleutel;
+      const aan = body.aan;
+      if (typeof sleutel !== "string" || sleutel === "") {
+        return json({ error: "sleutel vereist" }, 400);
+      }
+      if (typeof aan !== "boolean") {
+        return json({ error: "aan moet true of false zijn" }, 400);
+      }
+      const dagbudget =
+        typeof body.dagbudget === "number" && Number.isFinite(body.dagbudget)
+          ? Math.round(body.dagbudget)
+          : null;
+
+      const { data, error } = await admin.rpc("admin_zet_app_setting", {
+        p_sleutel: sleutel,
+        p_aan: aan,
+        p_actor: toegang.uid,
+        p_dagbudget: dagbudget,
+      });
+      if (error) return json({ error: error.message }, 500);
+
+      const heen = data as { oud?: Record<string, unknown> } | null;
+      const { error: auditFout } = await admin.from("admin_audit_log").insert({
+        actor_id: toegang.uid,
+        action: "set_setting",
+        details: veiligeDetails("set_setting", {
+          sleutel,
+          van: heen?.oud?.aan === false ? "uit" : "aan",
+          naar: aan ? "aan" : "uit",
+          dagbudget,
+        }),
+      });
+      if (auditFout) {
+        return json(
+          { error: "Schakelaar omgezet, maar het auditspoor mislukte" },
+          500,
+        );
+      }
+      return json({ ok: true });
+    }
+
+    // ---- Herberekenen (#1049) -----------------------------------------------
+    //
+    // Net als set_setting buiten voerMutatieUit: er is geen doelgebruiker.
+    //
+    // Eén onderdeel per aanroep, bewust niet alle vijf achter elkaar: vijf
+    // volledige herberekeningen in één HTTP-verzoek lopen tegen de tijdslimiet
+    // van de edge function aan. De client roept ze op volgorde aan en houdt de
+    // beheerder op de hoogte; elke stap krijgt zijn eigen auditrij.
+    case "recompute": {
+      const wat = body.wat;
+      if (typeof wat !== "string" || wat === "") {
+        return json({ error: "wat vereist" }, 400);
+      }
+      const { data, error } = await admin.rpc("admin_herbereken", {
+        p_wat: wat,
+      });
+      if (error) return json({ error: error.message }, 500);
+
+      const uitkomst = (data ?? {}) as Record<string, unknown>;
+      const { error: auditFout } = await admin.from("admin_audit_log").insert({
+        actor_id: toegang.uid,
+        action: "recompute",
+        details: veiligeDetails("recompute", uitkomst),
+      });
+      if (auditFout) {
+        return json(
+          { error: "Herberekend, maar het auditspoor mislukte" },
+          500,
+        );
+      }
+      return json(uitkomst);
+    }
+
     // ---- Muterende acties (#1036 deel 2) ------------------------------------
     default:
       return await voerMutatieUit(toegang.actie, toegang.uid, body);
@@ -154,7 +300,7 @@ Deno.serve(async (req) => {
 async function voerMutatieUit(
   actie: AdminActie,
   actorId: string,
-  body: { user_id?: unknown; email?: unknown; username?: unknown },
+  body: { user_id?: unknown; email?: unknown; username?: unknown; wat?: unknown },
 ): Promise<Response> {
   const targetId = body.user_id;
   if (typeof targetId !== "string" || targetId === "") {
@@ -264,6 +410,34 @@ async function voerMutatieUit(
       if (error) return json({ error: error.message }, 500);
       antwoord = { ok: true, sessies: data ?? 0 };
       auditPayload = { sessies: data ?? 0 };
+      break;
+    }
+
+    // Gegevensexport vóór een ander (#1049).
+    //
+    // exporteerMijnGegevens() in de app stelt hem client-side samen en leunt
+    // bewust op RLS — die bepaalt al precies wat jij mag zien. Precies daarom
+    // kan een beheerder hem niet vóór een ander draaien, en dat is nou net het
+    // geval waarin je hem nodig hebt: iemand die er niet meer in komt.
+    //
+    // Géén mutatie, wél een auditrij: iemands volledige gegevens ophalen is
+    // even gevoelig als een wachtwoord uitdelen. Wat er in het logboek belandt
+    // is de omvang, niet de inhoud — het spoor hoort geen tweede kopie te zijn.
+    case "export_user": {
+      const { data, error } = await admin.rpc("admin_export_user", {
+        p_uid: targetId,
+      });
+      if (error) return json({ error: error.message }, 500);
+      if (data === null) return json({ error: "Gebruiker niet gevonden" }, 404);
+
+      const uitvoer = data as Record<string, unknown>;
+      const profiel = uitvoer.profiel as { username?: string } | null;
+      antwoord = { export: uitvoer };
+      auditPayload = {
+        username: profiel?.username ?? null,
+        matches: Array.isArray(uitvoer.matches) ? uitvoer.matches.length : 0,
+        groepen: Array.isArray(uitvoer.groepen) ? uitvoer.groepen.length : 0,
+      };
       break;
     }
 

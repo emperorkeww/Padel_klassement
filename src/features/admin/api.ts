@@ -11,6 +11,9 @@ import type {
   AdminGroepLid,
   AdminMatch,
   AdminPoll,
+  AppInstelling,
+  FoutGroep,
+  SysteemStatus,
 } from "./types";
 
 // Clientkant van het adminpaneel (#1036, #1159). Twee ingangen, allebei een edge
@@ -375,4 +378,119 @@ export function auditRecent(limiet = 100): Promise<AdminAuditRegel[]> {
         .regels,
     30_000,
   );
+}
+
+// ---- Systeemgezondheid (#1049) ---------------------------------------------
+
+/**
+ * Draait alles nog? Eén antwoord uit drie bronnen: de databank (cron-jobs,
+ * rijtellingen, laatste migratie, push), de projectbrede secrets — die alleen
+ * een edge function kan zien — en het functiemanifest uit de repo.
+ *
+ * Korte cache: dit is een dashboard dat je openslaat om te kíjken, dus een
+ * versie van tien seconden oud is prima, maar een minuut is te lang als je
+ * naast iemand staat die net een secret heeft gezet.
+ */
+export function systeemStatus(): Promise<SysteemStatus> {
+  return cached(
+    "admin:systeem",
+    () => roepAdmin<SysteemStatus>("system_status"),
+    10_000,
+  );
+}
+
+// ---- Foutenlogboek (#1049) -------------------------------------------------
+
+/**
+ * Crashmeldingen uit de browser, gegroepeerd op boodschap + scope.
+ *
+ * Gegroepeerd en niet als losse rijen: één kapotte route levert honderden
+ * identieke meldingen op, en als lijst verbergt dat juist de tweede, zeldzamere
+ * fout die er misschien echt toe doet.
+ */
+export function foutenLogboek(dagen = 7): Promise<FoutGroep[]> {
+  return cached(
+    `admin:fouten:${dagen}`,
+    async () =>
+      (await roepAdmin<{ groepen: FoutGroep[] }>("client_errors", { dagen }))
+        .groepen,
+    30_000,
+  );
+}
+
+// ---- Schakelaars zonder deploy (#1049) -------------------------------------
+
+export function lijstInstellingen(): Promise<AppInstelling[]> {
+  return cached(
+    "admin:instellingen",
+    async () =>
+      (await roepAdmin<{ instellingen: AppInstelling[] }>("list_settings"))
+        .instellingen,
+    30_000,
+  );
+}
+
+/**
+ * Zet een schakelaar om. Werkt zonder deploy — dat is het hele punt.
+ *
+ * `dagbudget` alleen meesturen als je het wilt wijzigen; null laat het staan.
+ */
+export async function zetInstelling(
+  sleutel: string,
+  aan: boolean,
+  dagbudget?: number,
+): Promise<void> {
+  await roepAdmin<{ ok: true }>("set_setting", { sleutel, aan, dagbudget });
+  verversAdmin();
+}
+
+// ---- Onderhoud en export (#1049) -------------------------------------------
+
+/**
+ * De onderdelen van de klassementketen, in de volgorde waarin de triggers op
+ * `matches` ze zouden draaien. Ratings is een row-trigger en gaat voorop; de
+ * rest volgt de alfabetische volgorde van de triggernamen.
+ *
+ * Wie deze volgorde omgooit, krijgt een klassement dat subtiel afwijkt van wat
+ * een gewone matchwijziging zou opleveren.
+ */
+export const HERBEREKEN_STAPPEN = [
+  { id: "ratings", label: "Elo-ratings" },
+  { id: "pias", label: "Pias van de week" },
+  { id: "rank_state", label: "Stijgers en dalers" },
+  { id: "dictator", label: "Dictator-termijnen" },
+  { id: "zwarte_piet", label: "Zwarte Piet" },
+] as const;
+
+export type HerberekenStap = (typeof HERBEREKEN_STAPPEN)[number]["id"];
+
+/**
+ * Herberekent één onderdeel. Eén per aanroep en niet alle vijf achter elkaar:
+ * vijf volledige herberekeningen in één verzoek lopen tegen de tijdslimiet van
+ * de edge function aan.
+ *
+ * Anders dan de dummy-update op `matches` die tot nu toe de enige route was,
+ * raakt dit `matches` niet — en vuurt het dus geen push-webhooks af.
+ */
+export async function herbereken(
+  wat: HerberekenStap,
+): Promise<{ wat: string; duur_ms: number }> {
+  const uit = await roepAdmin<{ wat: string; duur_ms: number }>("recompute", {
+    wat,
+  });
+  verversAdmin();
+  invalidateMatchData();
+  return uit;
+}
+
+/** De volledige gegevensexport van een ánder account, als JSON. */
+export async function exporteerGebruiker(
+  userId: string,
+): Promise<Record<string, unknown>> {
+  const uit = await roepAdmin<{ export: Record<string, unknown> }>(
+    "export_user",
+    { user_id: userId },
+  );
+  verversAdmin();
+  return uit.export;
 }

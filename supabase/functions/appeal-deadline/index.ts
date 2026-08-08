@@ -4,7 +4,13 @@
 // Sinds #1090 is er een tweede, ongerelateerde taak: prune_notifications() ruimt
 // meldingen ouder dan 90 dagen op. Die hangt hier omdat dit de enige uurlijkse
 // cron is die verder niets in de weg zit, en omdat een eigen pg_cron-snippet pas
-// werkt als iemand hem met de hand in de SQL-editor plakt.
+// werkt als iemand hem met de hand in de SQL-editor plakt. Sinds #1049 geldt
+// hetzelfde voor prune_client_errors().
+//
+// LET OP wat dat betekende zolang deze function achter de JWT-gate stond (zie
+// #1049): niet alleen bleven verlopen zaken open, ook de meldingen-inbox werd
+// nooit opgeruimd. Eén ontbrekende regel in config.toml legde stilletjes drie
+// dingen tegelijk stil.
 //
 // Eén taak, en die zit al in de databank: expire_point_appeals() loopt de
 // openstaande beroepen af waarvan het stemvenster verlopen is en laat
@@ -61,7 +67,23 @@ Deno.serve(async (req) => {
     console.log(`[appeal-deadline] ${geprund} melding(en) opgeruimd`);
   }
 
-  return new Response(JSON.stringify({ gesloten, geprund }), {
+  // Retentie van het foutenlogboek (#1049), om precies dezelfde reden als
+  // hierboven: geen tweede snippet die iemand met de hand moet plakken.
+  // prune_client_errors hanteert twee grenzen — 30 dagen tegen de langzame
+  // groei, en een rijplafond tegen een renderlus die er duizenden per uur
+  // inpompt. Ook hier is een fout niet fataal.
+  const { data: foutenWeg, error: foutPruneFout } = await admin.rpc(
+    "prune_client_errors",
+  );
+  if (foutPruneFout) {
+    console.error("[appeal-deadline] fouten opruimen faalde", foutPruneFout);
+  }
+  const foutenGeprund = typeof foutenWeg === "number" ? foutenWeg : 0;
+  if (foutenGeprund > 0) {
+    console.log(`[appeal-deadline] ${foutenGeprund} foutmelding(en) opgeruimd`);
+  }
+
+  return new Response(JSON.stringify({ gesloten, geprund, foutenGeprund }), {
     headers: { "content-type": "application/json" },
   });
 });

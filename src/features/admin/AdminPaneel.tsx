@@ -1,8 +1,9 @@
 // Adminpaneel (#1036): één scherm om gebruikers op te volgen.
 //
-// Vijf tabbladen: gebruikers, gasten en groepen (accounts, #1036) plus matches
-// en het logboek (inhoud, #1159). De eerste drie praten met de edge function
-// `admin-users`, de laatste twee met `admin-content`; zie ./api.
+// Zeven tabbladen: gebruikers, gasten en groepen (accounts, #1036), matches en
+// het logboek (inhoud, #1159), plus systeemgezondheid en het foutenlogboek
+// (#1049). Gebruikers, gasten, groepen, systeem en fouten praten met de edge
+// function `admin-users`, matches en logboek met `admin-content`; zie ./api.
 //
 // Twee dingen om in het oog te houden bij het uitbreiden:
 //  1. Geen enkele query loopt buiten ./api om. app_admins en admin_audit_log
@@ -28,11 +29,20 @@ import { AdminFilters } from "./components/AdminFilters";
 import { GastenTab } from "./components/GastenTab";
 import { GroepenTab } from "./components/GroepenTab";
 import { MatchesTab } from "./components/MatchesTab";
+import { SysteemTab } from "./components/SysteemTab";
+import { FoutenTab } from "./components/FoutenTab";
 import { LogboekTab } from "./components/LogboekTab";
 import type { AdminGebruiker } from "./types";
 import "./AdminPaneel.css";
 
-type Tab = "gebruikers" | "gasten" | "groepen" | "matches" | "logboek";
+type Tab =
+  | "gebruikers"
+  | "gasten"
+  | "groepen"
+  | "matches"
+  | "systeem"
+  | "fouten"
+  | "logboek";
 
 export function AdminPaneel() {
   usePageTitle("Beheer");
@@ -95,6 +105,8 @@ export function AdminPaneel() {
           { id: "gasten", label: "Gasten" },
           { id: "groepen", label: "Groepen" },
           { id: "matches", label: "Matches" },
+          { id: "systeem", label: "Systeem" },
+          { id: "fouten", label: "Fouten" },
           { id: "logboek", label: "Logboek" },
         ]}
         value={tab}
@@ -154,6 +166,8 @@ export function AdminPaneel() {
         {tab === "gasten" && <GastenTab />}
         {tab === "groepen" && <GroepenTab />}
         {tab === "matches" && <MatchesTab />}
+        {tab === "systeem" && <SysteemTab />}
+        {tab === "fouten" && <FoutenTab />}
         {tab === "logboek" && <LogboekTab />}
       </TabPanel>
 

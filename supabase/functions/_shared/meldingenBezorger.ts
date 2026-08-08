@@ -23,6 +23,8 @@ import {
   zonderUitgezet,
 } from "./meldingen.ts";
 
+import { isAan } from "./instellingen.ts";
+
 export type { Melding, Soort } from "./meldingen.ts";
 
 const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY");
@@ -82,7 +84,17 @@ export async function bezorg(
     }
   }
 
-  // 2 + 3. Per melding: filteren op de voorkeur en bezorgen.
+  // 2. De kill switch (#1049). Bewust hier en niet bij stap 1: de inbox blijft
+  //    gevuld, alleen de web-push gaat niet de deur uit. Wie de schakelaar
+  //    omzet omdat de bezorging spamt of stuk is, wil niet ook de meldingen
+  //    zelf kwijt — die staan bij de volgende app-opening gewoon in de inbox
+  //    (#1090). Dit is het enige knooppunt waar álle uitgaande push langskomt.
+  if (!(await isAan(admin, "push"))) {
+    console.log("[meldingen] push staat uit (app_settings), enkel inbox");
+    return resultaat;
+  }
+
+  // 3 + 4. Per melding: filteren op de voorkeur en bezorgen.
   for (const melding of meldingen) {
     const ontvangers = await metVoorkeur(admin, melding);
     if (ontvangers.length === 0) continue;
