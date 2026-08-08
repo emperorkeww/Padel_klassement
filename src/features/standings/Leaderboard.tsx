@@ -102,10 +102,12 @@ import { TierDivisions } from "./components/TierDivisions";
 import { KlassementUitleg } from "./components/KlassementUitleg";
 import { StandingsTable } from "./components/StandingsTable";
 import { RankList } from "./components/RankList";
+import { RaceLeaderboard } from "./components/RaceLeaderboard";
 import type { Match, PlayerStanding, Profile, RatingPoint, TeamStanding } from "@/types";
 import "./Leaderboard.css";
 
 type Tab = "player" | "team" | "divisies" | "kaarten";
+type RankingView = "table" | "race";
 
 // Eén gedeelde tabbalk voor de hele app (#910): PageTabs levert tablist-
 // semantiek en pijltjesnavigatie die de losse buttons hier niet hadden.
@@ -114,6 +116,11 @@ const KLASSEMENT_TABS: { id: Tab; label: string }[] = [
   { id: "team", label: "Teams" },
   { id: "divisies", label: "Divisies" },
   { id: "kaarten", label: "🃏 Kaarten" },
+];
+
+const RANKING_VIEWS: { id: RankingView; label: string }[] = [
+  { id: "table", label: "Tabel" },
+  { id: "race", label: "Race" },
 ];
 
 // Rotatieteller voor Coach Rudy's knieval onder de troon (#535): elke nieuwe
@@ -166,6 +173,17 @@ export function Leaderboard() {
   // deelbaar en refresh-bestendig. Ongeldige waarde → "Alle tijden".
   const [params, setParams] = useSearchParams();
   const season = seasonFromId(params.get("seizoen") ?? "");
+  // Tweede gezicht van het spelersklassement: deelbaar, refresh-bestendig en
+  // met browser back/forward. Een ontbrekende of ongeldige waarde blijft de
+  // bestaande tabel tonen.
+  const rankingView: RankingView = params.get("view") === "race" ? "race" : "table";
+  const setRankingView = (view: RankingView) => {
+    const next = new URLSearchParams(params);
+    if (view === "race") next.set("view", "race");
+    else next.delete("view");
+    setParams(next);
+  };
+  const isRaceView = tab === "player" && rankingView === "race";
   // Seizoen en "stand op datum" sluiten elkaar uit; tot #913 wisten we de
   // andere param stil, waardoor je keuze zonder uitleg verdween. Deze melding
   // staat als regel onder de filterchips en verdwijnt bij de volgende wissel.
@@ -584,7 +602,7 @@ export function Leaderboard() {
   // De Kaarten-tab (#497) is een tweede gezicht van het spelersklassement:
   // podium, troon en coach gedragen zich er hetzelfde als op de Spelers-tab.
   const spelerTab = tab === "player" || tab === "kaarten";
-  const showPodium = spelerTab && !loading && !error && rows.length >= 3;
+  const showPodium = spelerTab && !isRaceView && !loading && !error && rows.length >= 3;
 
   // Kampioensbanner: de nummer 1 van een volledig afgesloten kwartaal.
   const champion =
@@ -630,7 +648,7 @@ export function Leaderboard() {
   let klassementCoach: { tekst: string; mood: CoachMood } | null = null;
   const mijnIdx =
     tab !== "team" ? displayRows.findIndex((r) => r.isMe) : -1;
-  if (mijnIdx >= 0 && !usingScope && !q.trim() && !loading && !error) {
+  if (mijnIdx >= 0 && !isRaceView && !usingScope && !q.trim() && !loading && !error) {
     const feiten = klassementFeiten(
       displayRows.map((r) => ({
         playerId: r.key,
@@ -693,6 +711,7 @@ export function Leaderboard() {
   // gewoon op het podium staan — mét z'n Big Daddy-kroon.
   const canThrone =
     spelerTab &&
+    !isRaceView &&
     !nq &&
     !loading &&
     !error &&
@@ -791,10 +810,10 @@ export function Leaderboard() {
   // geen "deze week".
   const schandpaal = useMemo(
     () =>
-      usingScope || !spelerTab
+      usingScope || !spelerTab || isRaceView
         ? null
         : schandpaalUit(globalePias.data ?? [], profilesMap.data ?? {}, myId),
-    [usingScope, spelerTab, globalePias.data, profilesMap.data, myId],
+    [usingScope, spelerTab, isRaceView, globalePias.data, profilesMap.data, myId],
   );
 
   // AI pias-portret (#682): vangnet voor het geval de server-trigger op
@@ -856,7 +875,9 @@ export function Leaderboard() {
           {tab === "kaarten"
             ? "De hele club als kaartenwand — tik op een kaart voor de close-up."
             : tab === "player"
-              ? "Wie is de koning en wie is het slofje? Puur gesorteerd op rating."
+              ? isRaceView
+                ? "Zie meteen wie voorop ligt, wie in je buurt rijdt en waar de volgende divisie wacht."
+                : "Wie is de koning en wie is het slofje? Puur gesorteerd op rating."
               : "Vaste duo's gesorteerd op pure puntenheerschappij."}
         </p>
       </header>
@@ -917,6 +938,19 @@ export function Leaderboard() {
             menuknop; een telbadge toont hoeveel er actief zijn. */}
         <LeaderboardFilterMenu waarden={filterWaarden} acties={filterActies} />
       </div>
+
+      {tab === "player" && (
+        <div className="lb-view-switcher">
+          <span className="lb-view-switcher__label">Weergave</span>
+          <PageTabs
+            tabs={RANKING_VIEWS}
+            value={rankingView}
+            onChange={setRankingView}
+            ariaLabel="Spelersklassement-weergave"
+            variant="segment"
+          />
+        </div>
+      )}
 
       {/* Elke actieve keuze bij naam, apart te wissen (#913). */}
       <LeaderboardFilterChips waarden={filterWaarden} acties={filterActies} />
@@ -1100,6 +1134,11 @@ export function Leaderboard() {
           <p className="empty">
             Geen speler in de ranglijst gevonden voor “{q.trim()}”.
           </p>
+        ) : isRaceView ? (
+          <RaceLeaderboard
+            rows={visibleRows}
+            allowReplay={!usingScope && !nq}
+          />
         ) : tab === "kaarten" ? (
           <KaartRaster
             rows={visibleRows}
@@ -1181,11 +1220,13 @@ export function Leaderboard() {
           checken krijgt die meteen bovenaan te zien. */}
       <KlassementUitleg />
 
-      {/* Op elke spelersweergave (#913), niet alleen de Spelers-tab: op de
-          kaartenwand en tussen de divisies ben je jezelf net zo goed kwijt.
+      {/* Op elke klassieke spelersweergave (#913), niet alleen de Spelers-tab:
+          op de kaartenwand en tussen de divisies ben je jezelf net zo goed kwijt.
+          Race heeft bovenaan al een eigen persoonlijke positiesamenvatting en
+          markeert de eigen lane; daar zou deze zwevende chip informatie bedekken.
           De drempel van 8 rijen blijft — bij een korte lijst zie je jezelf al —
           net als de troon-uitzondering: wie erop zit staat bovenaan in beeld. */}
-      {tab !== "team" && myRankIdx >= 0 && rows.length > 8 && !nq &&
+      {tab !== "team" && !isRaceView && myRankIdx >= 0 && rows.length > 8 && !nq &&
         !throneRow?.isMe && (
         <button
           className={`me-chip zwevende-actie glas glas--interactief glas--pil${
