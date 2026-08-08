@@ -205,3 +205,23 @@ export type SysteemStatus = {
   secrets: Record<string, boolean>;
   functies: SysteemFunctie[];
 };
+
+// ---- Foutenlogboek (#1049) -------------------------------------------------
+
+export type FoutGroep = {
+  boodschap: string;
+  scope: string | null;
+  bron: string;
+  /** Een verdwenen chunk na een deploy is verwacht gedrag, geen bug (#733). */
+  chunk: boolean;
+  aantal: number;
+  /** Hoeveel verschillende tabs dit raakte — één sessie is meestal één lus. */
+  sessies: number;
+  eerste: string;
+  laatste: string;
+  /** Hoogstens vijf, door de RPC afgekapt. */
+  paden: string[] | null;
+  releases: string[] | null;
+  voorbeeld_stack: string | null;
+  voorbeeld_component_stack: string | null;
+};

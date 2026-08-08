@@ -87,6 +87,14 @@ export const EDGE_FUNCTIES: readonly EdgeFunctie[] = [
     rol: "ICS-agenda-abonnement (#1099)",
   },
   {
+    naam: "client-error",
+    verifyJwt: false,
+    cronGeheim: true,
+    vereist: ["CRON_SECRET"],
+    optioneel: [],
+    rol: "Crashmeldingen uit de browser wegschrijven (#1049)",
+  },
+  {
     naam: "club-page",
     verifyJwt: false,
     cronGeheim: true,

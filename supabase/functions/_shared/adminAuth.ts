@@ -19,6 +19,7 @@ export const ADMIN_ACTIES = [
   // laten nergens in dit paneel een spoor achter, en een dashboard dat je
   // openslaat is er daar één van.
   "system_status",
+  "client_errors",
   // Muterend vanaf hier (#1036 deel 2).
   "recovery_link",
   "temp_password",
