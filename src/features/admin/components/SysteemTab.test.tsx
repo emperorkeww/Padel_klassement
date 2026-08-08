@@ -5,12 +5,14 @@ import { ToastProvider } from "@/ui/ToastProvider";
 import { SysteemTab } from "./SysteemTab";
 import type { SysteemStatus } from "../types";
 
-// Sinds #1049 hangt SchakelaarsBlok in dit tabblad; die haalt zijn eigen data
-// op, dus die api-functies moeten hier mee gemockt worden.
+// Sinds #1049 hangen SchakelaarsBlok en HerberekenBlok in dit tabblad; die
+// halen hun eigen data op, dus die api-exports moeten hier mee gemockt worden.
 vi.mock("../api", () => ({
   systeemStatus: vi.fn(),
   lijstInstellingen: vi.fn(),
   zetInstelling: vi.fn(),
+  herbereken: vi.fn(),
+  HERBEREKEN_STAPPEN: [{ id: "ratings", label: "Elo-ratings" }],
 }));
 
 const { systeemStatus, lijstInstellingen } = await import("../api");

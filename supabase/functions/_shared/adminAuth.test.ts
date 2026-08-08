@@ -101,6 +101,10 @@ describe("MUTERENDE_ACTIES", () => {
         // gedrag van de hele app. Zonder spoor is "wie zette de push uit?"
         // onbeantwoordbaar.
         "set_setting",
+        "recompute",
+        // Geen mutatie, wél een auditrij: iemands volledige gegevens ophalen is
+        // even gevoelig als een wachtwoord uitdelen.
+        "export_user",
       ].sort(),
     );
     for (const lees of [

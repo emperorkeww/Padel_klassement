@@ -5,6 +5,7 @@ import { errorMessage } from "@/lib/utils/errors";
 import { displayName } from "@/features/profiles/api";
 import {
   corrigeerEmail,
+  exporteerGebruiker,
   herstelLink,
   herstelmailOpnieuw,
   tijdelijkWachtwoord,
@@ -23,6 +24,11 @@ import type { AdminDetail, AdminGebruiker } from "../types";
 //   b. een tijdelijk wachtwoord — voor wie een link in de chat niet vertrouwt of
 //      gewoon aan de telefoon hangt.
 // Allebei worden ze exact één keer getoond en nergens bewaard.
+//
+// Sinds #1049 staat de gegevensexport hier ook. Zelfbediening bestaat al in de
+// instellingen, maar die leunt op RLS en ziet dus alleen wat de ingelogde
+// gebruiker zélf mag zien — precies daarom kan een beheerder hem niet vóór een
+// ander draaien, en dat is nou net wanneer je hem nodig hebt.
 
 export function GebruikerActies({
   gebruiker,
@@ -185,9 +191,21 @@ export function GebruikerActies({
                           <strong>Let op:</strong> hij is eigenaar van{" "}
                           {eigenGroepen.map((g) => g.name).join(", ")}. Die
                           groep(en) blijven zonder eigenaar achter en zijn daarna
-                          niet meer te beheren — ook hun uitslagen niet.
+                          niet meer te beheren — ook hun uitslagen niet.{" "}
+                          {/* De missende helft van deze waarschuwing (#1049):
+                              sinds #1164 is er wél iets aan te doen, maar alleen
+                              vooraf. Ná het verwijderen is created_by null en is
+                              de overdrachtsknop de enige uitweg die er dan nog
+                              is — dus wijs hem nú aan. */}
+                          Draag ze eerst over via <em>Groepen → Beheren →
+                          Eigenaar aanwijzen</em>, en verwijder daarna.
                         </p>
                       )}
+                      <p>
+                        Wil je zijn gegevens bewaren, gebruik dan eerst{" "}
+                        <em>Gegevens exporteren</em>. Na het verwijderen kan dat
+                        niet meer — de gegevens zijn dan weg.
+                      </p>
                     </>
                   ),
                   bevestigWoord: gebruiker.username,
@@ -204,6 +222,32 @@ export function GebruikerActies({
           }
         >
           Account verwijderen
+        </button>
+
+        <button
+          type="button"
+          className="btn btn--sm"
+          disabled={bezig}
+          onClick={() =>
+            doe(async () => {
+              const data = await exporteerGebruiker(gebruiker.id);
+              const blob = new Blob([JSON.stringify(data, null, 2)], {
+                type: "application/json",
+              });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `vamos-gegevens-${gebruiker.username}-${new Date()
+                .toISOString()
+                .slice(0, 10)}.json`;
+              a.click();
+              // Zonder dit blijft de blob hangen tot de pagina herlaadt.
+              URL.revokeObjectURL(url);
+              toast.success(`Gegevens van ${naam} gedownload.`);
+            })
+          }
+        >
+          Gegevens exporteren
         </button>
       </div>
 

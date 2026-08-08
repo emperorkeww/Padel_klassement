@@ -195,7 +195,20 @@ begin
 end;
 $$;
 
-revoke execute on function public.recompute_zwarte_piet() from public;
+-- #1049: `from public` alléén was niet genoeg. Supabase geeft anon en
+-- authenticated een eigen EXECUTE-grant op nieuwe functies in `public`, en een
+-- revoke van PUBLIC laat die staan. Deze functie was daardoor met een gewone
+-- rpc()-aanroep te starten door élke bezoeker, ook uitgelogd — een security
+-- definer-functie die het hele klassement herschrijft. Zelfde formulering als
+-- expire_point_appeals() al had.
+revoke execute on function public.recompute_zwarte_piet()
+  from public, anon, authenticated;
+
+-- #1049: expliciete grant voor de service-role, zodat het beheerpaneel de keten
+-- opnieuw kan laten lopen na een handmatige correctie. Tot nu toe was de enige
+-- route een dummy-update op `matches` — en die vuurt óók de push-webhooks af.
+-- Zelfde patroon als expire_point_appeals() al had.
+grant execute on function public.recompute_zwarte_piet() to service_role;
 
 -- Trigger-wrapper: herberekent na elke wijziging aan matches. Naam sorteert ná
 -- de matches_ratings_*-triggers ("r" < "z"), zodat rating_history al vernieuwd is

@@ -30,6 +30,9 @@ export const ADMIN_ACTIES = [
   "delete_user",
   // Schakelaars zonder deploy (#1049).
   "set_setting",
+  // Onderhoud en export (#1049).
+  "recompute",
+  "export_user",
 ] as const;
 
 export type AdminActie = (typeof ADMIN_ACTIES)[number];
@@ -48,6 +51,11 @@ export const MUTERENDE_ACTIES: readonly AdminActie[] = [
   "sign_out_all",
   "delete_user",
   "set_setting",
+  "recompute",
+  // Geen mutatie, wél een auditrij: iemands volledige gegevens ophalen is
+  // precies zo gevoelig als een wachtwoord uitdelen, en hoort een spoor te
+  // hebben om dezelfde reden.
+  "export_user",
 ];
 
 export function isMuterend(actie: AdminActie): boolean {
