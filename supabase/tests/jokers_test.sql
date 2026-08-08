@@ -5,11 +5,11 @@
 -- rating is toegepast, niet wat een losse functieaanroep achteraf zou zeggen.
 --
 -- Sectie 1 t/m 6 spelen zich af in één groep waarin het winnende team steeds
--- hetzelfde is. Dat is geen luiheid maar noodzaak: de Big Daddy van een groep
--- draagt een bounty (#805), en die zou de deltas vertroebelen zodra hij aan de
--- verliezende kant staat. Door de hoogst gerate speler altijd te laten winnen
--- blijft de bounty buiten beeld — behalve in sectie 7, waar hij juist het punt
--- is. De vier spelers starten allemaal op 1000, zodat de eerste match exact
+-- hetzelfde is. Dat was noodzaak toen de Big Daddy van een groep nog een bounty
+-- droeg (#805): die vertroebelde de deltas zodra hij aan de verliezende kant
+-- stond. Sinds #1168 staat de bounty uit, maar de opzet blijft — hij houdt de
+-- getallen leesbaar en overleeft het weer aanzetten. Sectie 7 gaat er expliciet
+-- over. De vier spelers starten allemaal op 1000, zodat de eerste match exact
 -- ±12 oplevert (K = 24, E = 0,5) en de verdubbeling op een rond getal valt.
 --
 -- Elke match staat in een eigen kalendermaand: één joker per speler per maand,
@@ -327,9 +327,12 @@ select is((select count(*)::int from public.match_jokers
   3, 'drie maanden, drie kaarten: het tegoed loopt per kalendermaand door');
 
 ------------------------------------------------------------------------
--- 7. Een schild schermt de bounty niet af. De pool is een overdracht: zou de
---    verslagen drager niets betalen terwijl de winnaars wél ontvangen, dan
---    maakt elke claim Elo bij.
+-- 7. Een schild schermt de bounty niet af — een schild schermt álles af zolang
+--    de bounty uit staat (#1168), want er valt niets te betalen. De opzet
+--    blijft staan omdat ze de afspraak bewaakt: de pool is een overdracht, dus
+--    zou de verslagen drager niets betalen terwijl de winnaars wél ontvangen,
+--    dan maakt elke claim Elo bij. Zet je de bounty weer aan, dan horen de
+--    nullen hieronder weer −8 te worden.
 --
 --    Maand 7 en niet maand 1: een afgeronde match die chronologisch vóór een
 --    al verwerkte match valt, dwingt de trigger tot een volledige recompute.
@@ -357,11 +360,11 @@ select is((select stake_factor from public.rating_history
 select is((select bounty_delta from public.rating_history
     where match_id = '3a000000-0000-0000-0000-00000000e007'
       and player_id = '3a000000-0000-0000-0000-000000000201'),
-  -8, 'de prijs op zijn hoofd betaalt hij onverkort');
+  0, 'er staat geen prijs meer op zijn hoofd om te betalen');
 select is((select delta from public.rating_history
     where match_id = '3a000000-0000-0000-0000-00000000e007'
       and player_id = '3a000000-0000-0000-0000-000000000201'),
-  -8, 'zijn mutatie is precies de bounty: de uitslag zelf is afgeschermd');
+  0, 'zijn mutatie is nul: het schild dekt nu de hele match');
 select is((select sum(bounty_delta)::int from public.rating_history
     where match_id = '3a000000-0000-0000-0000-00000000e007'),
   0, 'de bounty blijft zero-sum, ook met een schild erop');

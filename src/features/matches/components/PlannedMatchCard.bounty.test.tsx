@@ -110,6 +110,17 @@ describe("<PlannedMatchCard /> bounty", () => {
     ).toBeInTheDocument();
   });
 
+  it("zwijgt bij een pool van nul (#1168)", async () => {
+    // Met de bounty uit levert active_bounties niets meer op, maar mocht er
+    // ooit een 0-rij doorheen glippen, dan is "+0 Elo op het spel" een lege
+    // belofte. Zelfde afspraak als in BountyMark.
+    setTables({ active_bounties: [bountyRij("p1", "g1", 0, 3)] });
+    renderCard();
+    await openPlannedCards();
+    await screen.findByText(/toto/i);
+    expect(screen.queryByText(/bounty actief/i)).not.toBeInTheDocument();
+  });
+
   it("verdwijnt zodra de match gespeeld is", async () => {
     setTables({ active_bounties: [bountyRij("p1", "g1", 24, 3)] });
     renderCard({ ...GEPLAND, status: "completed" } as Match);

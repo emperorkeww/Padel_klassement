@@ -25,23 +25,35 @@
 -- en de dictator-drempel (1600) is absoluut — inflatie maakt de troon
 -- structureel goedkoper. Zie ook de motivatie in tables/21_match_stakes.sql.
 
--- Vaste pool van 8, ongeacht de zegereeks van de drager (#823). Afgestemd op
--- de K-factor van de Elo-kern (24, zie 09_ratings.sql): een normale partij
+-- DE BOUNTY STAAT UIT (#1168). De pool is 0, dus er verhuist geen Elo meer en
+-- alles hieronder rekent nog wel, maar levert nul op. Bewust hier uitgezet en
+-- niet ergens verderop: dit is het enige punt waar de waarde vandaan komt, dus
+-- zowel de uitkering (_bounty_deltas) als de aankondiging (active_bounties) als
+-- de client (rating/bounty.ts, die deze waarde spiegelt) volgen vanzelf.
+--
+-- Weer aanzetten = de waarde terugzetten en `select public.recompute_ratings()`
+-- draaien; de historie rekent dan opnieuw mét bounty, want er staat nergens
+-- muteerbare state naast de replay (zie de kop hierboven). Vergeet daarbij de
+-- afgeleide replays niet — recompute_ratings() raakt public.matches niet en
+-- vuurt hun triggers dus niet af; de volgorde staat in de migratie
+-- 20260808100000_1168_bounty_uit.sql.
+--
+-- Wat de waarde wás: 8, ongeacht de zegereeks van de drager (#823). Afgestemd
+-- op de K-factor van de Elo-kern (24, zie 09_ratings.sql): een normale partij
 -- verschuift in de praktijk zo'n 10 à 14 Elo, dus bij de oude pool van 16 woog
--- de kop van de leider zwaarder dan de uitslag zelf. Een derde van K laat de
+-- de kop van de leider zwaarder dan de uitslag zelf. Een derde van K liet de
 -- bounty voelbaar zijn zonder de match te overstemmen, en 8 is even — in een
--- dubbel splitst hij netjes 4/4, zonder de oneven-restregel hieronder.
+-- dubbel splitste hij netjes 4/4, zonder de oneven-restregel hieronder.
 --
 -- De parameter blijft bestaan voor call-compatibiliteit met active_bounties en
--- _bounty_deltas. Immutable en publiek uitvoerbaar — de client spiegelt deze
--- waarde (rating/bounty.ts).
+-- _bounty_deltas. Immutable en publiek uitvoerbaar.
 create or replace function public.bounty_value(p_streak int)
 returns int
 language sql
 immutable
 set search_path = ''
 as $$
-  select 8;
+  select 0;
 $$;
 
 -- Actieve zegereeks van een speler vlak vóór een bepaald punt in de historie.
