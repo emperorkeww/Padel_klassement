@@ -11,6 +11,7 @@ import type {
   AdminGroepLid,
   AdminMatch,
   AdminPoll,
+  SysteemStatus,
 } from "./types";
 
 // Clientkant van het adminpaneel (#1036, #1159). Twee ingangen, allebei een edge
@@ -374,5 +375,24 @@ export function auditRecent(limiet = 100): Promise<AdminAuditRegel[]> {
       (await roepInhoud<{ regels: AdminAuditRegel[] }>("audit_recent", { limiet }))
         .regels,
     30_000,
+  );
+}
+
+// ---- Systeemgezondheid (#1049) ---------------------------------------------
+
+/**
+ * Draait alles nog? Eén antwoord uit drie bronnen: de databank (cron-jobs,
+ * rijtellingen, laatste migratie, push), de projectbrede secrets — die alleen
+ * een edge function kan zien — en het functiemanifest uit de repo.
+ *
+ * Korte cache: dit is een dashboard dat je openslaat om te kíjken, dus een
+ * versie van tien seconden oud is prima, maar een minuut is te lang als je
+ * naast iemand staat die net een secret heeft gezet.
+ */
+export function systeemStatus(): Promise<SysteemStatus> {
+  return cached(
+    "admin:systeem",
+    () => roepAdmin<SysteemStatus>("system_status"),
+    10_000,
   );
 }

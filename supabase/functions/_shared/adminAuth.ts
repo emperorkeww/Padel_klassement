@@ -15,6 +15,10 @@ export const ADMIN_ACTIES = [
   "audit_log",
   "list_guests",
   "list_groups",
+  // Alleen lezen: de systeemgezondheid (#1049). Geen auditrij — leesacties
+  // laten nergens in dit paneel een spoor achter, en een dashboard dat je
+  // openslaat is er daar één van.
+  "system_status",
   // Muterend vanaf hier (#1036 deel 2).
   "recovery_link",
   "temp_password",

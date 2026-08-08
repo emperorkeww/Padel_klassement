@@ -17,6 +17,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { bepaalToegang, type AdminActie } from "../_shared/adminAuth.ts";
 import { veiligeDetails } from "../_shared/adminAudit.ts";
+import { alleSecrets, EDGE_FUNCTIES } from "../_shared/edgeFuncties.ts";
+import { beoordeelCron, type CronJobFeiten } from "../_shared/cronGezondheid.ts";
 import { genereerWachtwoord } from "../_shared/adminWachtwoord.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -135,6 +137,46 @@ Deno.serve(async (req) => {
       });
       if (error) return json({ error: error.message }, 500);
       return json({ regels: data ?? [] });
+    }
+
+    // ---- Systeemgezondheid (#1049) -----------------------------------------
+    //
+    // Drie bronnen in één antwoord. De databankkant komt uit de RPC; de
+    // secrets kan alléén een edge function beantwoorden, want die env is
+    // projectbreed en nergens anders zichtbaar. Er gaat uitsluitend "gezet
+    // ja/nee" over de lijn — nooit een waarde, ook niet afgekapt.
+    case "system_status": {
+      const { data, error } = await admin.rpc("admin_systeem_status");
+      if (error) return json({ error: error.message }, 500);
+
+      const gezet = (naam: string): boolean => {
+        const v = Deno.env.get(naam);
+        return v !== undefined && v !== "";
+      };
+
+      // Het oordeel valt hier en niet in de client: cronGezondheid.ts is één
+      // getoetste implementatie, en de klok van de server is betrouwbaarder dan
+      // die van de browser die het paneel toevallig openslaat.
+      const nu = new Date();
+      const databank = data as Record<string, unknown> | null;
+      const jobs = Array.isArray(databank?.cron)
+        ? (databank.cron as CronJobFeiten[]).map((j) => ({
+            ...j,
+            oordeel: beoordeelCron(j, nu),
+          }))
+        : null;
+
+      return json({
+        databank: { ...databank, cron: jobs },
+        secrets: Object.fromEntries(alleSecrets().map((s) => [s, gezet(s)])),
+        functies: EDGE_FUNCTIES.map((f) => ({
+          naam: f.naam,
+          rol: f.rol,
+          verifyJwt: f.verifyJwt,
+          cronGeheim: f.cronGeheim,
+          ontbrekend: f.vereist.filter((s) => !gezet(s)),
+        })),
+      });
     }
 
     // ---- Muterende acties (#1036 deel 2) ------------------------------------
