@@ -85,6 +85,33 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          bijgewerkt_at: string
+          bijgewerkt_door: string | null
+          omschrijving: string
+          publiek: boolean
+          sleutel: string
+          waarde: Json
+        }
+        Insert: {
+          bijgewerkt_at?: string
+          bijgewerkt_door?: string | null
+          omschrijving: string
+          publiek?: boolean
+          sleutel: string
+          waarde: Json
+        }
+        Update: {
+          bijgewerkt_at?: string
+          bijgewerkt_door?: string | null
+          omschrijving?: string
+          publiek?: boolean
+          sleutel?: string
+          waarde?: Json
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           date: string
@@ -194,6 +221,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      client_errors: {
+        Row: {
+          boodschap: string
+          bron: string
+          chunk: boolean
+          component_stack: string | null
+          created_at: string
+          id: number
+          pad: string | null
+          release: string | null
+          scope: string | null
+          sessie: string | null
+          stack: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          boodschap: string
+          bron: string
+          chunk?: boolean
+          component_stack?: string | null
+          created_at?: string
+          id?: never
+          pad?: string | null
+          release?: string | null
+          scope?: string | null
+          sessie?: string | null
+          stack?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          boodschap?: string
+          bron?: string
+          chunk?: boolean
+          component_stack?: string | null
+          created_at?: string
+          id?: never
+          pad?: string | null
+          release?: string | null
+          scope?: string | null
+          sessie?: string | null
+          stack?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
       }
       court_availability_snapshots: {
         Row: {
@@ -2614,6 +2686,18 @@ export type Database = {
         Args: { p_delta: number; p_match: string; p_player: string }
         Returns: number
       }
+      admin_app_settings: {
+        Args: never
+        Returns: {
+          bijgewerkt_at: string
+          bijgewerkt_door: string
+          bijgewerkt_door_username: string
+          omschrijving: string
+          publiek: boolean
+          sleutel: string
+          waarde: Json
+        }[]
+      }
       admin_audit_recent: {
         Args: { p_limit?: number }
         Returns: {
@@ -2640,6 +2724,24 @@ export type Database = {
           id: number
         }[]
       }
+      admin_client_errors: {
+        Args: { p_dagen?: number; p_limit?: number }
+        Returns: {
+          aantal: number
+          boodschap: string
+          bron: string
+          chunk: boolean
+          eerste: string
+          laatste: string
+          paden: string[]
+          releases: string[]
+          scope: string
+          sessies: number
+          voorbeeld_component_stack: string
+          voorbeeld_stack: string
+        }[]
+      }
+      admin_export_user: { Args: { p_uid: string }; Returns: Json }
       admin_gasten_overzicht: {
         Args: never
         Returns: {
@@ -2678,6 +2780,7 @@ export type Database = {
           name: string
         }[]
       }
+      admin_herbereken: { Args: { p_wat: string }; Returns: Json }
       admin_matches_overzicht: {
         Args: {
           p_group?: string
@@ -2731,6 +2834,7 @@ export type Database = {
           oude_eigenaar: string
         }[]
       }
+      admin_systeem_status: { Args: never; Returns: Json }
       admin_trek_sessies_in: { Args: { p_uid: string }; Returns: number }
       admin_user_detail: { Args: { p_uid: string }; Returns: Json }
       admin_users_overzicht: {
@@ -2752,6 +2856,15 @@ export type Database = {
           owner_id: string
           username: string
         }[]
+      }
+      admin_zet_app_setting: {
+        Args: {
+          p_aan: boolean
+          p_actor: string
+          p_dagbudget?: number
+          p_sleutel: string
+        }
+        Returns: Json
       }
       are_friends: { Args: { p_a: string; p_b: string }; Returns: boolean }
       bounty_streak: {
@@ -2911,6 +3024,10 @@ export type Database = {
         Args: { p_match: string; p_team: string }
         Returns: number
       }
+      prune_client_errors: {
+        Args: { p_dagen?: number; p_max_rijen?: number }
+        Returns: number
+      }
       prune_notifications: { Args: { p_dagen?: number }; Returns: number }
       ratings_as_of: {
         Args: { p_date: string }
@@ -2994,6 +3111,7 @@ export type Database = {
         Returns: undefined
       }
       shares_group: { Args: { p_a: string; p_b: string }; Returns: boolean }
+      verbruik_dagbudget: { Args: { p_sleutel: string }; Returns: Json }
     }
     Enums: {
       court_type: "binnen" | "buiten" | "panorama" | "muur"
