@@ -25,7 +25,10 @@ export function BountyBanner({
   const dragers = matchBounties(bounties.data ?? [], m, teams);
   if (dragers.length === 0) return null;
 
+  // Zelfde afspraak als BountyMark: een pool van 0 is geen bounty (#1168).
   const hoogste = Math.max(...dragers.map((d) => d.pool));
+  if (hoogste <= 0) return null;
+
   const namen = dragers
     .map((d) => `${displayName(profiles[d.playerId])} (${d.pool})`)
     .join(" · ");

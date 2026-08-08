@@ -5,14 +5,18 @@
 // De databank blijft de enige die uitkeert; dit bestand bestaat zodat het
 // klassement en de matchkaart vooraf kunnen tonen wat er op iemands hoofd
 // staat, met exact hetzelfde getal als straks verrekend wordt.
+//
+// DE BOUNTY STAAT UIT (#1168). De functies hieronder blijven kloppen, maar
+// active_bounties levert geen dragers meer op zolang de pool 0 is, dus ze
+// krijgen in de praktijk een lege lijst binnen.
 
 import type { Team } from "@/types";
 import { playersOf } from "@/features/rating/results";
 
 /** Vaste waarde van één bounty, ongeacht de zegereeks van de drager (#823).
- *  Een derde van de K-factor van de Elo-kern (24): voelbaar, maar kleiner dan
- *  de matchuitslag zelf. Even, dus in een dubbel splitst hij exact 4/4. */
-export const BOUNTY_POOL = 8;
+ *  Nul sinds #1168: de feature staat uit. Blijft public.bounty_value spiegelen,
+ *  dus zet je die terug op 8, dan hoort dit getal mee terug te gaan. */
+export const BOUNTY_POOL = 0;
 /** Rating vanaf wanneer je overal een bounty draagt (El Padelissimo, tiers.ts). */
 export const BOUNTY_DICTATOR_RATING = 1600;
 /** Het tekentje naast de naam van een drager. Bewust 💰 en niet 🎯: dat laatste
