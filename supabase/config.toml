@@ -402,8 +402,19 @@ deno_version = 2
 
 # Functies met een cron-/webhook-geheim of een eigen user-JWT-validatie doen
 # hun authenticatie in de handler. Leg dit hier vast zodat CI-deploys hun
-# productiegedrag niet stilzwijgend veranderen. remind-group gebruikt juist
-# de platform-JWT-gate en houdt daarom de standaardwaarde `true`.
+# productiegedrag niet stilzwijgend veranderen. remind-group, admin-users en
+# admin-content gebruiken juist de platform-JWT-gate en houden daarom de
+# standaardwaarde `true`.
+#
+# Deze lijst wordt bewaakt door supabase/functions/_shared/edgeFuncties.test.ts:
+# elke function die zich met CRON_SECRET beveiligt móét hier staan, en de
+# manifestlijst ernaast moet met de bron kloppen. appeal-deadline stond er
+# niet in (#1049) en ging dus live met verify_jwt = true, waarna de pg_cron-post
+# een 401 van de gateway kreeg en Rudy's VAR (#1025) geen enkele verlopen zaak
+# meer afsloot — zonder dat iets dat meldde.
+[functions.appeal-deadline]
+verify_jwt = false
+
 [functions.calendar-feed]
 verify_jwt = false
 

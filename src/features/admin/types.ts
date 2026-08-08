@@ -149,3 +149,59 @@ export type AdminGroepLid = {
   joined_at: string;
   is_eigenaar: boolean;
 };
+
+// ---- Systeemgezondheid (#1049) ---------------------------------------------
+
+/** Spiegelt CronStatus uit supabase/functions/_shared/cronGezondheid.ts. */
+export type SysteemCronStatus =
+  | "ok"
+  | "uit"
+  | "mislukt"
+  | "laat"
+  | "nooit"
+  | "onbekend";
+
+export type SysteemCronJob = {
+  jobname: string;
+  schedule: string;
+  actief: boolean;
+  laatste_start: string | null;
+  laatste_einde: string | null;
+  laatste_status: string | null;
+  /** Gemaskeerd door de RPC: cron-commando's bevatten het CRON_SECRET. */
+  laatste_bericht: string | null;
+  /** Geveld door de edge function, op de serverklok. */
+  oordeel: {
+    status: SysteemCronStatus;
+    stilMinuten: number | null;
+    drempel: number | null;
+  };
+};
+
+export type SysteemFunctie = {
+  naam: string;
+  rol: string;
+  verifyJwt: boolean;
+  cronGeheim: boolean;
+  /** Vereiste secrets die het project níét gezet heeft. */
+  ontbrekend: string[];
+};
+
+export type SysteemStatus = {
+  databank: {
+    /** Null als er geen pg_cron is — dat is de normale toestand lokaal. */
+    cron: SysteemCronJob[] | null;
+    tabellen: { tabel: string; rijen: number }[];
+    migratie: { versie: string; naam: string | null } | null;
+    push: {
+      abonnementen: number;
+      gebruikers: number;
+      oudste: string | null;
+      nieuwste: string | null;
+    };
+    gemeten_op: string;
+  };
+  /** Per sleutel enkel of hij gezet is; nooit de waarde. */
+  secrets: Record<string, boolean>;
+  functies: SysteemFunctie[];
+};
