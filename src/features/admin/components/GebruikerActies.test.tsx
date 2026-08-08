@@ -19,6 +19,11 @@ vi.mock("@/lib/supabase/client", async () => {
           }
           if (action === "temp_password") return { wachtwoord: "bal-boom-zon7" };
           if (action === "delete_user") return { ok: true, groepen_zonder_eigenaar: 1 };
+          if (action === "export_user") {
+            return {
+              export: { profiel: { username: "alice" }, matches: [], groepen: [] },
+            };
+          }
           return { ok: true };
         },
       },
@@ -144,6 +149,48 @@ describe("<GebruikerActies /> (#1036)", () => {
     expect(screen.getByText(/Vrijdagavond Padel/)).toBeInTheDocument();
     // En dat er gasten meegaan.
     expect(screen.getByText(/2 gastspeler\(s\) verdwijnen mee/i)).toBeInTheDocument();
+  });
+
+  // De missende helft van de waarschuwing (#1049): sinds #1164 is er wél iets
+  // aan te doen, maar alleen vóóraf. Ná het verwijderen is created_by null.
+  it("wijst bij verwijderen de weg naar eerst overdragen", async () => {
+    renderActies();
+    await userEvent.click(screen.getByRole("button", { name: /account verwijderen/i }));
+
+    expect(
+      await screen.findByText(/Draag ze eerst over/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Eigenaar aanwijzen/i)).toBeInTheDocument();
+  });
+
+  it("wijst bij verwijderen op de export, want daarna kan het niet meer", async () => {
+    renderActies();
+    await userEvent.click(screen.getByRole("button", { name: /account verwijderen/i }));
+
+    expect(
+      await screen.findByText(/Na het verwijderen kan dat niet meer/i),
+    ).toBeInTheDocument();
+  });
+
+  it("exporteert de gegevens van een ander account als JSON", async () => {
+    // jsdom kent geen echte downloads; we vangen de blob-URL en de klik.
+    const maak = vi.fn(() => "blob:nep");
+    const ruim = vi.fn();
+    vi.stubGlobal("URL", { ...URL, createObjectURL: maak, revokeObjectURL: ruim });
+    const klik = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
+    renderActies();
+    await userEvent.click(screen.getByRole("button", { name: /gegevens exporteren/i }));
+
+    await waitFor(() => expect(klik).toHaveBeenCalled());
+    expect(maak).toHaveBeenCalled();
+    // Opruimen hoort erbij, anders blijft de blob hangen tot de pagina herlaadt.
+    expect(ruim).toHaveBeenCalledWith("blob:nep");
+
+    klik.mockRestore();
+    vi.unstubAllGlobals();
   });
 
   it("verwijdert pas als de gebruikersnaam exact overgetikt is", async () => {

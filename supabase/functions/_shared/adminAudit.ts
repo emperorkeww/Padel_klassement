@@ -41,6 +41,12 @@ const TOEGESTAAN: Record<string, readonly string[]> = {
   // teller (`gebruikt`/`dag`) hoort er niet in — die verandert vanzelf en zou
   // het logboek vullen met ruis waar niemand naar zoekt.
   set_setting: ["sleutel", "van", "naar", "dagbudget"],
+
+  // Onderhoud en export (#1049). Bij de export bewust alleen de omvang en niet
+  // de inhoud: het logboek registreert dát er geëxporteerd is, en wordt zelf
+  // geen tweede kopie van iemands gegevens.
+  recompute: ["wat", "duur_ms"],
+  export_user: ["username", "matches", "groepen"],
 };
 
 /**

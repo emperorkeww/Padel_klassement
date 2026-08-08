@@ -68,6 +68,8 @@ Deno.serve(async (req) => {
     sleutel?: unknown;
     aan?: unknown;
     dagbudget?: unknown;
+    /** Welk onderdeel herberekend moet worden (#1049). */
+    wat?: unknown;
   };
   try {
     body = await req.json();
@@ -248,6 +250,39 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ---- Herberekenen (#1049) -----------------------------------------------
+    //
+    // Net als set_setting buiten voerMutatieUit: er is geen doelgebruiker.
+    //
+    // Eén onderdeel per aanroep, bewust niet alle vijf achter elkaar: vijf
+    // volledige herberekeningen in één HTTP-verzoek lopen tegen de tijdslimiet
+    // van de edge function aan. De client roept ze op volgorde aan en houdt de
+    // beheerder op de hoogte; elke stap krijgt zijn eigen auditrij.
+    case "recompute": {
+      const wat = body.wat;
+      if (typeof wat !== "string" || wat === "") {
+        return json({ error: "wat vereist" }, 400);
+      }
+      const { data, error } = await admin.rpc("admin_herbereken", {
+        p_wat: wat,
+      });
+      if (error) return json({ error: error.message }, 500);
+
+      const uitkomst = (data ?? {}) as Record<string, unknown>;
+      const { error: auditFout } = await admin.from("admin_audit_log").insert({
+        actor_id: toegang.uid,
+        action: "recompute",
+        details: veiligeDetails("recompute", uitkomst),
+      });
+      if (auditFout) {
+        return json(
+          { error: "Herberekend, maar het auditspoor mislukte" },
+          500,
+        );
+      }
+      return json(uitkomst);
+    }
+
     // ---- Muterende acties (#1036 deel 2) ------------------------------------
     default:
       return await voerMutatieUit(toegang.actie, toegang.uid, body);
@@ -265,7 +300,7 @@ Deno.serve(async (req) => {
 async function voerMutatieUit(
   actie: AdminActie,
   actorId: string,
-  body: { user_id?: unknown; email?: unknown; username?: unknown },
+  body: { user_id?: unknown; email?: unknown; username?: unknown; wat?: unknown },
 ): Promise<Response> {
   const targetId = body.user_id;
   if (typeof targetId !== "string" || targetId === "") {
@@ -375,6 +410,34 @@ async function voerMutatieUit(
       if (error) return json({ error: error.message }, 500);
       antwoord = { ok: true, sessies: data ?? 0 };
       auditPayload = { sessies: data ?? 0 };
+      break;
+    }
+
+    // Gegevensexport vóór een ander (#1049).
+    //
+    // exporteerMijnGegevens() in de app stelt hem client-side samen en leunt
+    // bewust op RLS — die bepaalt al precies wat jij mag zien. Precies daarom
+    // kan een beheerder hem niet vóór een ander draaien, en dat is nou net het
+    // geval waarin je hem nodig hebt: iemand die er niet meer in komt.
+    //
+    // Géén mutatie, wél een auditrij: iemands volledige gegevens ophalen is
+    // even gevoelig als een wachtwoord uitdelen. Wat er in het logboek belandt
+    // is de omvang, niet de inhoud — het spoor hoort geen tweede kopie te zijn.
+    case "export_user": {
+      const { data, error } = await admin.rpc("admin_export_user", {
+        p_uid: targetId,
+      });
+      if (error) return json({ error: error.message }, 500);
+      if (data === null) return json({ error: "Gebruiker niet gevonden" }, 404);
+
+      const uitvoer = data as Record<string, unknown>;
+      const profiel = uitvoer.profiel as { username?: string } | null;
+      antwoord = { export: uitvoer };
+      auditPayload = {
+        username: profiel?.username ?? null,
+        matches: Array.isArray(uitvoer.matches) ? uitvoer.matches.length : 0,
+        groepen: Array.isArray(uitvoer.groepen) ? uitvoer.groepen.length : 0,
+      };
       break;
     }
 

@@ -4,6 +4,7 @@ import { ErrorRetry } from "@/ui/ErrorRetry";
 import { Skeleton } from "@/ui/Skeleton";
 import { systeemStatus } from "../api";
 import { SchakelaarsBlok } from "./SchakelaarsBlok";
+import { HerberekenBlok } from "./HerberekenBlok";
 import type {
   SysteemCronJob,
   SysteemCronStatus,
@@ -241,6 +242,8 @@ export function SysteemTab() {
       </p>
 
       <SchakelaarsBlok />
+
+      <HerberekenBlok />
 
       <CronBlok jobs={databank.cron} />
 

@@ -443,3 +443,54 @@ export async function zetInstelling(
   await roepAdmin<{ ok: true }>("set_setting", { sleutel, aan, dagbudget });
   verversAdmin();
 }
+
+// ---- Onderhoud en export (#1049) -------------------------------------------
+
+/**
+ * De onderdelen van de klassementketen, in de volgorde waarin de triggers op
+ * `matches` ze zouden draaien. Ratings is een row-trigger en gaat voorop; de
+ * rest volgt de alfabetische volgorde van de triggernamen.
+ *
+ * Wie deze volgorde omgooit, krijgt een klassement dat subtiel afwijkt van wat
+ * een gewone matchwijziging zou opleveren.
+ */
+export const HERBEREKEN_STAPPEN = [
+  { id: "ratings", label: "Elo-ratings" },
+  { id: "pias", label: "Pias van de week" },
+  { id: "rank_state", label: "Stijgers en dalers" },
+  { id: "dictator", label: "Dictator-termijnen" },
+  { id: "zwarte_piet", label: "Zwarte Piet" },
+] as const;
+
+export type HerberekenStap = (typeof HERBEREKEN_STAPPEN)[number]["id"];
+
+/**
+ * Herberekent één onderdeel. Eén per aanroep en niet alle vijf achter elkaar:
+ * vijf volledige herberekeningen in één verzoek lopen tegen de tijdslimiet van
+ * de edge function aan.
+ *
+ * Anders dan de dummy-update op `matches` die tot nu toe de enige route was,
+ * raakt dit `matches` niet — en vuurt het dus geen push-webhooks af.
+ */
+export async function herbereken(
+  wat: HerberekenStap,
+): Promise<{ wat: string; duur_ms: number }> {
+  const uit = await roepAdmin<{ wat: string; duur_ms: number }>("recompute", {
+    wat,
+  });
+  verversAdmin();
+  invalidateMatchData();
+  return uit;
+}
+
+/** De volledige gegevensexport van een ánder account, als JSON. */
+export async function exporteerGebruiker(
+  userId: string,
+): Promise<Record<string, unknown>> {
+  const uit = await roepAdmin<{ export: Record<string, unknown> }>(
+    "export_user",
+    { user_id: userId },
+  );
+  verversAdmin();
+  return uit.export;
+}
