@@ -11,6 +11,7 @@ import type {
   AdminGroepLid,
   AdminMatch,
   AdminPoll,
+  AppInstelling,
   FoutGroep,
   SysteemStatus,
 } from "./types";
@@ -415,4 +416,30 @@ export function foutenLogboek(dagen = 7): Promise<FoutGroep[]> {
         .groepen,
     30_000,
   );
+}
+
+// ---- Schakelaars zonder deploy (#1049) -------------------------------------
+
+export function lijstInstellingen(): Promise<AppInstelling[]> {
+  return cached(
+    "admin:instellingen",
+    async () =>
+      (await roepAdmin<{ instellingen: AppInstelling[] }>("list_settings"))
+        .instellingen,
+    30_000,
+  );
+}
+
+/**
+ * Zet een schakelaar om. Werkt zonder deploy — dat is het hele punt.
+ *
+ * `dagbudget` alleen meesturen als je het wilt wijzigen; null laat het staan.
+ */
+export async function zetInstelling(
+  sleutel: string,
+  aan: boolean,
+  dagbudget?: number,
+): Promise<void> {
+  await roepAdmin<{ ok: true }>("set_setting", { sleutel, aan, dagbudget });
+  verversAdmin();
 }

@@ -155,6 +155,27 @@ export async function portretHandler(
     );
   }
 
+  // --- Kill switch en dagbudget (#1049). ---
+  //
+  // Pas hier, ná alle gratis afslagen hierboven: een cache-hit, een gast of een
+  // opt-out kost geen OpenAI-aanroep en hoort dus ook geen budget te kosten.
+  // Vanaf dit punt gaat er wél geld heen.
+  //
+  // Eén RPC doet aan/uit én de teller in dezelfde transactie; zie
+  // verbruik_dagbudget() voor waarom dat `for update` nodig heeft.
+  const { data: budget, error: budgetFout } = await db.rpc(
+    "verbruik_dagbudget",
+    { p_sleutel: "ai_portretten" },
+  );
+  if (budgetFout) {
+    // Fail-open, net als instellingen.ts: een storing in de tabel mag geen
+    // functie stilleggen die het gisteren nog deed.
+    console.error("[portret] budget lezen faalde", budgetFout.message);
+  } else if (budget && (budget as { toegestaan?: boolean }).toegestaan === false) {
+    const reden = (budget as { reden?: string }).reden ?? "uit";
+    return json({ skipped: reden });
+  }
+
   // --- Beelden ophalen. ---
   const referentieUrl =
     `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${stijl.referentiePad}`;

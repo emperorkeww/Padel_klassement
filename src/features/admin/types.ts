@@ -225,3 +225,21 @@ export type FoutGroep = {
   voorbeeld_stack: string | null;
   voorbeeld_component_stack: string | null;
 };
+
+// ---- Schakelaars zonder deploy (#1049) -------------------------------------
+
+export type AppInstelling = {
+  sleutel: string;
+  /** `{aan}` plus, bij ai_portretten, `{dagbudget, dag, gebruikt}`. */
+  waarde: {
+    aan?: boolean;
+    dagbudget?: number;
+    dag?: string | null;
+    gebruikt?: number;
+  };
+  publiek: boolean;
+  omschrijving: string;
+  bijgewerkt_at: string;
+  bijgewerkt_door: string | null;
+  bijgewerkt_door_username: string | null;
+};

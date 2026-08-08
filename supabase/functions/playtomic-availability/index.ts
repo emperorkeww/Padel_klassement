@@ -16,7 +16,20 @@
 // weigeren we álles i.p.v. de poort open te zetten. CRON_SECRET is hetzelfde
 // geheim als de andere edge-functies (match-reminders, snapshot-availability e.a.).
 
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { isAan } from "../_shared/instellingen.ts";
+
 const CRON_SECRET = Deno.env.get("CRON_SECRET");
+
+// Alleen om app_settings te lezen (#1049). Lui aangemaakt zodat de function
+// zonder de kill switch precies zo smal blijft als hij was.
+let db: ReturnType<typeof createClient> | null = null;
+function admin() {
+  return (db ??= createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  ));
+}
 
 const UPSTREAM = "https://playtomic.com/api/clubs/availability";
 
@@ -38,6 +51,18 @@ Deno.serve(async (req) => {
 
   if (req.method !== "GET") {
     return new Response("Method Not Allowed", { status: 405 });
+  }
+
+  // Kill switch (#1049): als Playtomic ons weer blokkeert, stopt dit het
+  // hameren zonder deploy. 503 en geen lege uitslag — de Worker cachet
+  // niet-ok-antwoorden niet, en de app degradeert precies zoals bij een echte
+  // Playtomic-storing. Een verzonnen "geen banen vrij" zou de gebruiker
+  // voorliegen over iets wat hij gaat boeken.
+  if (!(await isAan(admin(), "playtomic"))) {
+    return new Response(
+      JSON.stringify({ error: "uitgeschakeld" }),
+      { status: 503, headers: JSON_HEADERS },
+    );
   }
 
   const params = new URL(req.url).searchParams;

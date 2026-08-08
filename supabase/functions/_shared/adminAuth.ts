@@ -20,6 +20,7 @@ export const ADMIN_ACTIES = [
   // openslaat is er daar één van.
   "system_status",
   "client_errors",
+  "list_settings",
   // Muterend vanaf hier (#1036 deel 2).
   "recovery_link",
   "temp_password",
@@ -27,6 +28,8 @@ export const ADMIN_ACTIES = [
   "fix_email",
   "sign_out_all",
   "delete_user",
+  // Schakelaars zonder deploy (#1049).
+  "set_setting",
 ] as const;
 
 export type AdminActie = (typeof ADMIN_ACTIES)[number];
@@ -44,6 +47,7 @@ export const MUTERENDE_ACTIES: readonly AdminActie[] = [
   "fix_email",
   "sign_out_all",
   "delete_user",
+  "set_setting",
 ];
 
 export function isMuterend(actie: AdminActie): boolean {
