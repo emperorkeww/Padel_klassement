@@ -64,6 +64,10 @@ Deno.serve(async (req) => {
     username?: unknown;
     /** Venster van het foutenlogboek in dagen (#1049). */
     dagen?: unknown;
+    /** Schakelaars (#1049). */
+    sleutel?: unknown;
+    aan?: unknown;
+    dagbudget?: unknown;
   };
   try {
     body = await req.json();
@@ -189,6 +193,59 @@ Deno.serve(async (req) => {
       });
       if (error) return json({ error: error.message }, 500);
       return json({ groepen: data ?? [] });
+    }
+
+    // ---- Schakelaars zonder deploy (#1049) ----------------------------------
+    case "list_settings": {
+      const { data, error } = await admin.rpc("admin_app_settings");
+      if (error) return json({ error: error.message }, 500);
+      return json({ instellingen: data ?? [] });
+    }
+
+    // Muterend, maar niet via voerMutatieUit: die functie is gebouwd rond een
+    // doelgebruiker (`user_id` verplicht) en een schakelaar heeft er geen.
+    // Vandaar hier, mét dezelfde auditregel: mislukt het spoor, dan is de actie
+    // mislukt.
+    case "set_setting": {
+      const sleutel = body.sleutel;
+      const aan = body.aan;
+      if (typeof sleutel !== "string" || sleutel === "") {
+        return json({ error: "sleutel vereist" }, 400);
+      }
+      if (typeof aan !== "boolean") {
+        return json({ error: "aan moet true of false zijn" }, 400);
+      }
+      const dagbudget =
+        typeof body.dagbudget === "number" && Number.isFinite(body.dagbudget)
+          ? Math.round(body.dagbudget)
+          : null;
+
+      const { data, error } = await admin.rpc("admin_zet_app_setting", {
+        p_sleutel: sleutel,
+        p_aan: aan,
+        p_actor: toegang.uid,
+        p_dagbudget: dagbudget,
+      });
+      if (error) return json({ error: error.message }, 500);
+
+      const heen = data as { oud?: Record<string, unknown> } | null;
+      const { error: auditFout } = await admin.from("admin_audit_log").insert({
+        actor_id: toegang.uid,
+        action: "set_setting",
+        details: veiligeDetails("set_setting", {
+          sleutel,
+          van: heen?.oud?.aan === false ? "uit" : "aan",
+          naar: aan ? "aan" : "uit",
+          dagbudget,
+        }),
+      });
+      if (auditFout) {
+        return json(
+          { error: "Schakelaar omgezet, maar het auditspoor mislukte" },
+          500,
+        );
+      }
+      return json({ ok: true });
     }
 
     // ---- Muterende acties (#1036 deel 2) ------------------------------------

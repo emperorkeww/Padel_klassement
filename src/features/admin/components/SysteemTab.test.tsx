@@ -1,12 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { Mock } from "vitest";
+import { ToastProvider } from "@/ui/ToastProvider";
 import { SysteemTab } from "./SysteemTab";
 import type { SysteemStatus } from "../types";
 
-vi.mock("../api", () => ({ systeemStatus: vi.fn() }));
+// Sinds #1049 hangt SchakelaarsBlok in dit tabblad; die haalt zijn eigen data
+// op, dus die api-functies moeten hier mee gemockt worden.
+vi.mock("../api", () => ({
+  systeemStatus: vi.fn(),
+  lijstInstellingen: vi.fn(),
+  zetInstelling: vi.fn(),
+}));
 
-const { systeemStatus } = await import("../api");
+const { systeemStatus, lijstInstellingen } = await import("../api");
+
+/** SchakelaarsBlok gebruikt toasts, dus het tabblad heeft de provider nodig. */
+function toonTab() {
+  return render(
+    <ToastProvider>
+      <SysteemTab />
+    </ToastProvider>,
+  );
+}
 
 function status(over: Partial<SysteemStatus["databank"]> = {}): SysteemStatus {
   return {
@@ -52,11 +68,13 @@ function status(over: Partial<SysteemStatus["databank"]> = {}): SysteemStatus {
 describe("<SysteemTab />", () => {
   beforeEach(() => {
     (systeemStatus as Mock).mockReset();
+    (lijstInstellingen as Mock).mockReset();
+    (lijstInstellingen as Mock).mockResolvedValue([]);
   });
 
   it("toont per cron-job het schema en de laatste run", async () => {
     (systeemStatus as Mock).mockResolvedValue(status());
-    render(<SysteemTab />);
+    toonTab();
 
     expect(await screen.findByText("appeal-deadline")).toBeInTheDocument();
     expect(screen.getByText("10,25,40,55 * * * *")).toBeInTheDocument();
@@ -80,7 +98,7 @@ describe("<SysteemTab />", () => {
         ],
       }),
     );
-    render(<SysteemTab />);
+    toonTab();
 
     const badge = await screen.findByText("te lang stil");
     expect(badge).toHaveClass("badge--loss");
@@ -105,7 +123,7 @@ describe("<SysteemTab />", () => {
         ],
       }),
     );
-    render(<SysteemTab />);
+    toonTab();
 
     const badge = await screen.findByText("uitgezet");
     expect(badge).not.toHaveClass("badge--loss");
@@ -115,7 +133,7 @@ describe("<SysteemTab />", () => {
   // moet dat netjes tonen in plaats van te ontploffen.
   it("verdraagt een databank zonder pg_cron", async () => {
     (systeemStatus as Mock).mockResolvedValue(status({ cron: null }));
-    render(<SysteemTab />);
+    toonTab();
 
     expect(await screen.findByText(/Geen/)).toBeInTheDocument();
     expect(screen.getByText(/normaal buiten het gehoste project/)).toBeInTheDocument();
@@ -125,7 +143,7 @@ describe("<SysteemTab />", () => {
 
   it("waarschuwt als pg_cron draait maar er niets gepland staat", async () => {
     (systeemStatus as Mock).mockResolvedValue(status({ cron: [] }));
-    render(<SysteemTab />);
+    toonTab();
 
     expect(
       await screen.findByText(/geen enkele job gepland/),
@@ -151,7 +169,7 @@ describe("<SysteemTab />", () => {
       },
     ];
     (systeemStatus as Mock).mockResolvedValue(s);
-    render(<SysteemTab />);
+    toonTab();
 
     expect(await screen.findByText(/mist OPENAI_API_KEY/)).toBeInTheDocument();
     expect(
@@ -165,7 +183,7 @@ describe("<SysteemTab />", () => {
 
   it("toont de laatste migratie en de rijtellingen", async () => {
     (systeemStatus as Mock).mockResolvedValue(status());
-    render(<SysteemTab />);
+    toonTab();
 
     expect(
       await screen.findByText("20260808120000 1049_systeem_status"),

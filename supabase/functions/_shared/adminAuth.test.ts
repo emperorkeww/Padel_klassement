@@ -97,9 +97,22 @@ describe("MUTERENDE_ACTIES", () => {
         "resend_reset",
         "sign_out_all",
         "temp_password",
+        // #1049: een schakelaar omzetten verandert geen account, maar wel het
+        // gedrag van de hele app. Zonder spoor is "wie zette de push uit?"
+        // onbeantwoordbaar.
+        "set_setting",
       ].sort(),
     );
-    for (const lees of ["whoami", "list_users", "user_detail", "audit_log"] as const) {
+    for (const lees of [
+      "whoami",
+      "list_users",
+      "user_detail",
+      "audit_log",
+      // De leesacties van #1049.
+      "system_status",
+      "client_errors",
+      "list_settings",
+    ] as const) {
       expect(isMuterend(lees)).toBe(false);
     }
   });

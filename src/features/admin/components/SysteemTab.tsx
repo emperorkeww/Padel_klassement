@@ -3,6 +3,7 @@ import { useAsync } from "@/lib/hooks/useAsync";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { Skeleton } from "@/ui/Skeleton";
 import { systeemStatus } from "../api";
+import { SchakelaarsBlok } from "./SchakelaarsBlok";
 import type {
   SysteemCronJob,
   SysteemCronStatus,
@@ -238,6 +239,8 @@ export function SysteemTab() {
       <p className="admin__telling" role="status">
         Gemeten op {moment(databank.gemeten_op)}
       </p>
+
+      <SchakelaarsBlok />
 
       <CronBlok jobs={databank.cron} />
 
