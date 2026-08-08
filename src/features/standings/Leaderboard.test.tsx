@@ -114,6 +114,21 @@ function metContainerBreedte(px: number) {
 }
 
 describe("<Leaderboard />", () => {
+  it("opent de Race View via de URL en schakelt terug naar de bestaande tabel", async () => {
+    const { container } = renderPage("/?view=race");
+    await screen.findAllByText(/alice anders/i);
+    expect(screen.getByRole("tab", { name: /^race$/i })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(container.querySelector(".race-board")).not.toBeNull();
+    expect(container.querySelector(".leaderboard-table")).toBeNull();
+
+    fireEvent.click(screen.getByRole("tab", { name: /^tabel$/i }));
+    expect(container.querySelector(".race-board")).toBeNull();
+    expect(container.querySelector(".leaderboard-table")).not.toBeNull();
+  });
+
   it("toont de titel en een spelerrij (alle tijden als default)", async () => {
     renderPage();
     expect(

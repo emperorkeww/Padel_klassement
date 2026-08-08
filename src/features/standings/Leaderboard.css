@@ -531,6 +531,25 @@
   min-width: 0;
 }
 
+/* Tabel/Race is een tweede, compacte keuze binnen de Spelers-tab. Dezelfde
+   segment-primitive als elders houdt selected state en toetsenbordgedrag
+   volledig in de bestaande Vamos-taal. */
+.lb-view-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: min(100%, 17rem);
+  margin: calc(-1 * var(--sp-2)) 0 var(--sp-4);
+}
+.lb-view-switcher__label {
+  color: var(--ink-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.lb-view-switcher .tabs {
+  flex: 1;
+}
+
 /* Menuknop (hamburger) + uitklappaneel. */
 .lb-menu {
   position: relative;
@@ -666,6 +685,9 @@
   /* Filterknop houdt zijn label; er is nu ruimte op de tweede regel. */
   .lb-menu__btn {
     padding: var(--sp-2) var(--sp-3);
+  }
+  .lb-view-switcher {
+    width: 100%;
   }
 }
 
