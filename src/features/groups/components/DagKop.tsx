@@ -3,13 +3,7 @@ import { Link } from "react-router-dom";
 import { formatTime } from "@/lib/utils/format";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
 import { displayName } from "@/features/profiles/api";
-import {
-  automaatStatus,
-  dagVoortgang,
-  speeldagVoorDag,
-  type Automaat,
-} from "../dagStatus";
-import { pollSharePath } from "../pollsApi";
+import { automaatStatus, dagVoortgang, type Automaat } from "../dagStatus";
 import { longDay } from "../planPollHelpers";
 import type { PlayPoll, PollOption } from "../pollsApi";
 import type { Match, Profile } from "@/types";
@@ -45,6 +39,7 @@ export function DagKop({
   timezone,
   dayDone,
   share,
+  verwijstNaarSpeeldag = false,
   onShowStand,
 }: {
   groupId: string;
@@ -59,6 +54,10 @@ export function DagKop({
   dayDone: boolean;
   /** De deelposter; woont sinds #839 alleen hier. */
   share: ReactNode;
+  /** Staat er onder deze kop een speeldagkaart die het beheer overneemt
+   *  (#1209)? Dan wijst de lege dag daarheen in plaats van naar een generator
+   *  die er niet meer staat. */
+  verwijstNaarSpeeldag?: boolean;
   onShowStand: () => void;
 }) {
   const v = dagVoortgang(rounds);
@@ -79,11 +78,10 @@ export function DagKop({
 
   const pct = v.totaal > 0 ? Math.round((v.gespeeld / v.totaal) * 100) : 0;
 
-  // De speeldag van vandaag als pagina (#1133): daar staan de wedstrijden van
-  // deze dag óók, samen met het moment, de banen en de code — en daar beheer je
-  // hem. Zonder deze link was dat verkeer eenrichting: de speeldagpagina wees
-  // hierheen, maar niet andersom.
-  const speeldag = speeldagVoorDag(polls, pollOptions, today);
+  // De link naar de speeldagpagina stond hier sinds #1133, maar sinds #1209
+  // draagt de speeldagkaart eronder die stap — mét het uur erbij, en één per
+  // moment. `speeldagVoorDag` koos er stil één; op een dag met een ochtend- en
+  // een avondsessie (#1146) was dat de verkeerde helft van de waarheid.
 
   return (
     <section
@@ -98,7 +96,9 @@ export function DagKop({
         {v.totaal > 0 && share}
       </div>
 
-      <p className="dagkop__line">{voortgangZin(v, dayDone)}</p>
+      <p className="dagkop__line">
+        {voortgangZin(v, dayDone, verwijstNaarSpeeldag)}
+      </p>
 
       {v.totaal > 0 && (
         <div
@@ -120,18 +120,11 @@ export function DagKop({
         </p>
       )}
 
-      {(dayDone || speeldag) && (
+      {dayDone && (
         <div className="dagkop__actions">
-          {dayDone && (
-            <button className="btn btn--sm btn--primary" onClick={onShowStand}>
-              Bekijk de stand →
-            </button>
-          )}
-          {speeldag && (
-            <Link className="btn btn--sm" to={pollSharePath(speeldag.id)}>
-              Open de speeldag →
-            </Link>
-          )}
+          <button className="btn btn--sm btn--primary" onClick={onShowStand}>
+            Bekijk de stand →
+          </button>
         </div>
       )}
     </section>
@@ -142,9 +135,14 @@ export function DagKop({
 function voortgangZin(
   v: ReturnType<typeof dagVoortgang>,
   dayDone: boolean,
+  verwijstNaarSpeeldag: boolean,
 ): string {
   if (v.totaal === 0) {
-    return "Nog niets ingedeeld. Deel hieronder de teams in — of log een partij die je los speelde.";
+    // De vervolgstap wijst naar wat er écht onder staat: op een dag met een
+    // vastgelegd moment is dat de speeldagkaart, niet de generator (#1209).
+    return verwijstNaarSpeeldag
+      ? "Nog niets ingedeeld. Zet de rondes klaar op de speeldag hieronder."
+      : "Nog niets ingedeeld. Deel hieronder de teams in — of log een partij die je los speelde.";
   }
   if (dayDone) {
     return `🏁 Alle ${v.totaal} uitslagen staan erin — mooi gespeeld!`;

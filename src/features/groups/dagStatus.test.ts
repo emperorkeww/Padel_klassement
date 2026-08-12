@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { automaatStatus, dagVoortgang, rondeWinnaars } from "./dagStatus";
+import {
+  automaatStatus,
+  dagVoortgang,
+  rondeWinnaars,
+  speeldagStand,
+} from "./dagStatus";
 import type { PlayPoll, PollOption } from "./pollsApi";
 
 const TZ = "Europe/Brussels";
@@ -68,6 +73,46 @@ describe("dagVoortgang", () => {
       rondes: 0,
       openRonde: null,
     });
+  });
+});
+
+describe("speeldagStand", () => {
+  const stand = (rounds: { round: number; list: { status: string }[] }[]) =>
+    speeldagStand(dagVoortgang(rounds));
+
+  it("meldt een speeldag zonder indeling", () => {
+    expect(stand([])).toBe("nog niets ingedeeld");
+  });
+
+  it("noemt de ronde die loopt, niet de telling van de dagkop", () => {
+    expect(
+      stand([
+        { round: 1, list: [{ status: "completed" }] },
+        { round: 2, list: [{ status: "scheduled" }] },
+      ]),
+    ).toBe("ronde 2 van 2");
+  });
+
+  it("laat 'van N' weg bij een nummering die niet klopt", () => {
+    // Ronde 1 verwijderd: "ronde 4 van 1" zou onzin zijn.
+    expect(stand([{ round: 4, list: [{ status: "scheduled" }] }])).toBe(
+      "ronde 4",
+    );
+  });
+
+  it("sluit af zodra alles binnen is", () => {
+    expect(
+      stand([
+        { round: 1, list: [{ status: "completed" }, { status: "completed" }] },
+      ]),
+    ).toBe("alle uitslagen binnen");
+  });
+
+  it("valt terug op de kale stand zonder open ronde", () => {
+    // Alleen een losse partij: wel open, maar geen ronde om naar te wijzen.
+    expect(stand([{ round: 0, list: [{ status: "scheduled" }] }])).toBe(
+      "0 van 1 uitslagen binnen",
+    );
   });
 });
 
