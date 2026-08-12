@@ -257,6 +257,36 @@ describe("<Leaderboard />", () => {
     expect(screen.getAllByText(/glazenwasser/i).length).toBeGreaterThan(0);
   });
 
+  // #1215: Divisies stond als vierde tab naast Spelers, terwijl Tabel en Race
+  // — óók presentaties van dezelfde lijst — een niveau lager zaten.
+  it("zet Divisies bij de weergaven en niet bij de tabs", async () => {
+    renderPage();
+    await screen.findAllByText("Wannabe III");
+
+    const tabs = screen.getByRole("tablist", { name: "Klassement-weergave" });
+    expect(
+      within(tabs).queryByRole("tab", { name: /^divisies$/i }),
+    ).not.toBeInTheDocument();
+
+    const weergaven = screen.getByRole("tablist", {
+      name: /spelersklassement-weergave/i,
+    });
+    for (const naam of [/^tabel$/i, /^race$/i, /^divisies$/i]) {
+      expect(within(weergaven).getByRole("tab", { name: naam })).toBeInTheDocument();
+    }
+  });
+
+  it("opent de divisieweergave uit een gedeelde link", async () => {
+    // Deelbaar en refresh-bestendig, net als ?view=race (#913).
+    renderPage("/?view=divisies");
+    expect(
+      await screen.findByRole("heading", { name: /wannabe/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("tab", { name: /^divisies$/i }),
+    ).toHaveAttribute("aria-selected", "true");
+  });
+
   it("wisselt via de seizoenskiezer en toont de kampioensbanner van Q2", async () => {
     renderPage();
     // Wachten tot de kwartalen geladen zijn (afgeleid van de eerste match).
