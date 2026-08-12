@@ -15,14 +15,16 @@ import { prefersReducedMotion } from "@/lib/utils/motion";
 import { primeAvatarMorph, type Row } from "../leaderboardHelpers";
 import {
   buildRaceReplay,
-  calculateAxisRange,
+  calculateDivisionAxis,
   calculateRacePosition,
   detectRatingPacks,
   divisionCheckpoints,
   findCurrentUser,
   getNearestCompetitors,
   getNextDivision,
-  type RaceAxisRange,
+  packThresholds,
+  raceGoal,
+  type DivisionAxis,
   type RacePack,
   type RaceReplay,
 } from "../raceUtils";
@@ -33,9 +35,13 @@ type ReplayPhase = "idle" | "before" | "moving" | "done";
 
 export function RaceLeaderboard({
   rows,
+  axisRows,
   allowReplay,
 }: {
   rows: Row[];
+  /** Het VOLLEDIGE veld (ongefilterd): hier hangen as en pack-drempels aan,
+   *  zodat zoeken of filteren de baan niet onder je voeten verschuift. */
+  axisRows: Row[];
   allowReplay: boolean;
 }) {
   const toast = useToast();
@@ -47,15 +53,24 @@ export function RaceLeaderboard({
     () => (allowReplay ? buildRaceReplay(ratedRows) : null),
     [allowReplay, ratedRows],
   );
+  const me = useMemo(() => findCurrentUser(axisRows), [axisRows]);
   const axis = useMemo(() => {
-    const values = ratedRows.map((row) => row.rating);
-    if (replay) {
-      for (const player of replay.players.values()) values.push(player.previousRating);
-    }
-    return calculateAxisRange(values);
-  }, [ratedRows, replay]);
+    const values = axisRows
+      .map((row) => row.rating)
+      .filter((rating): rating is number => rating != null);
+    // Historische replay-posities voeden de as bewust niet: die klemmen op de
+    // rand, zodat de as niet verspringt zodra je de replay start.
+    return calculateDivisionAxis(values, me?.rating ?? null);
+  }, [axisRows, me]);
   const checkpoints = useMemo(() => divisionCheckpoints(axis), [axis]);
-  const packs = useMemo(() => detectRatingPacks(ratedRows), [ratedRows]);
+  const packs = useMemo(() => {
+    const drempels = packThresholds(
+      axisRows
+        .map((row) => row.rating)
+        .filter((rating): rating is number => rating != null),
+    );
+    return detectRatingPacks(ratedRows, drempels.neighborGap, drempels.maxSpread);
+  }, [axisRows, ratedRows]);
   const [phase, setPhase] = useState<ReplayPhase>("idle");
   const [openPlayer, setOpenPlayer] = useState<string | null>(null);
   const timers = useRef<number[]>([]);
@@ -98,9 +113,13 @@ export function RaceLeaderboard({
       : row.rating;
   };
 
+  // De divisiepoort waar de kijker naartoe rijdt, voor het accent op de eigen lane.
+  const doelVanaf =
+    me?.rating != null ? (getNextDivision(me.rating)?.volgende?.vanaf ?? null) : null;
+
   return (
     <div className={`race-board${phase === "moving" ? " is-moving" : ""}`}>
-      <RaceHeader rows={ratedRows} packs={packs} replay={replay} phase={phase} onReplay={playReplay} />
+      <RaceHeader rows={axisRows} packs={packs} replay={replay} phase={phase} onReplay={playReplay} />
 
       <div
         className="race-board__course"
@@ -116,6 +135,7 @@ export function RaceLeaderboard({
             replay,
             phase,
             checkpoints,
+            doelVanaf,
             openPlayer,
             onOpenPlayer: setOpenPlayer,
             playerPosition,
@@ -146,28 +166,22 @@ function RaceHeader({
   onReplay: () => void;
 }) {
   const me = findCurrentUser(rows);
-  const next = getNextDivision(me?.rating ?? null);
-  const nearest = me ? getNearestCompetitors(rows, me.key) : null;
+  const goal =
+    me?.rating != null ? raceGoal(me as Row & { rating: number }, rows) : null;
   const myPack = me ? packs.find((pack) => pack.rows.some((row) => row.key === me.key)) : null;
 
   return (
     <div className="race-board__head">
-      {me?.rating != null ? (
+      {me?.rating != null && goal ? (
         <aside className="race-summary" aria-label="Jouw racepositie">
-          <span className="race-summary__eyebrow">Jouw positie</span>
-          <span className="race-summary__position">#{me.rank}</span>
-          <span className="race-summary__rating">{me.rating} rating</span>
-          <TierBadge rating={me.rating} size="sm" capDictator />
-          <span className="race-summary__goal">
-            {nearest?.above
-              ? `${nearest.above.gap} rating achter ${nearest.above.row.name}`
-              : "Je leidt het klassement"}
+          <span className="race-summary__eyebrow">Jouw doel</span>
+          <strong className="race-summary__kop">{goal.kop}</strong>
+          {goal.sub && <span className="race-summary__sub">{goal.sub}</span>}
+          <span className="race-summary__feiten">
+            <span className="race-summary__position">#{me.rank}</span>
+            <span className="race-summary__rating">{me.rating} rating</span>
+            <TierBadge rating={me.rating} size="sm" capDictator />
           </span>
-          {next?.volgende && (
-            <span className="race-summary__goal">
-              {next.puntenNodig} rating tot {next.volgende.naam}
-            </span>
-          )}
           {myPack && <span className="badge badge--accent">Jouw gevecht · #{myPack.startRank}–#{myPack.endRank}</span>}
         </aside>
       ) : (
@@ -207,7 +221,7 @@ function RaceHeader({
   );
 }
 
-function RaceAxis({ axis }: { axis: RaceAxisRange }) {
+function RaceAxis({ axis }: { axis: DivisionAxis }) {
   return (
     <div className="race-axis" aria-label={`Rating-as van ${axis.min} tot ${axis.max}`}>
       <span className="race-axis__spacer" aria-hidden="true" />
@@ -230,7 +244,7 @@ function DivisionCheckpointLabels({
   axis,
   checkpoints,
 }: {
-  axis: RaceAxisRange;
+  axis: DivisionAxis;
   checkpoints: ReturnType<typeof divisionCheckpoints>;
 }) {
   return (
@@ -239,7 +253,7 @@ function DivisionCheckpointLabels({
       <div className="race-divisions__track">
         {checkpoints.map((checkpoint) => (
           <span
-            key={checkpoint.key}
+            key={checkpoint.naam}
             className={`race-checkpoint-label tier-badge--${checkpoint.key}`}
             style={{ "--race-x": `${calculateRacePosition(checkpoint.min, axis)}%` } as RaceStyle}
             title={`${checkpoint.naam} vanaf ${checkpoint.min} rating`}
@@ -260,10 +274,11 @@ function renderLanes({
 }: {
   rows: (Row & { rating: number })[];
   packs: RacePack[];
-  axis: RaceAxisRange;
+  axis: DivisionAxis;
   replay: RaceReplay | null;
   phase: ReplayPhase;
   checkpoints: ReturnType<typeof divisionCheckpoints>;
+  doelVanaf: number | null;
   openPlayer: string | null;
   onOpenPlayer: (key: string | null) => void;
   playerPosition: (row: Row & { rating: number }) => number;
@@ -306,16 +321,18 @@ function RaceLane({
   replay,
   phase,
   checkpoints,
+  doelVanaf,
   openPlayer,
   onOpenPlayer,
   playerPosition,
 }: {
   row: Row & { rating: number };
   pack: RacePack | null;
-  axis: RaceAxisRange;
+  axis: DivisionAxis;
   replay: RaceReplay | null;
   phase: ReplayPhase;
   checkpoints: ReturnType<typeof divisionCheckpoints>;
+  doelVanaf: number | null;
   openPlayer: string | null;
   onOpenPlayer: (key: string | null) => void;
   playerPosition: (row: Row & { rating: number }) => number;
@@ -327,6 +344,10 @@ function RaceLane({
       ? replayPlayer.previousRank
       : (row.rank ?? 0);
   const x = calculateRacePosition(shownRating, axis);
+  // Buiten de (aan het veld verankerde) as geknipt: klem op de rand, maar
+  // toon het echte getal met een richtingpijl.
+  const offAxis =
+    shownRating < axis.min ? "onder" : shownRating > axis.max ? "boven" : null;
   const tier = tierFor(row.rating);
   const latestDay = row.history.map((point) => point.played_at.slice(0, 10)).sort().at(-1);
   const dayDelta = latestDay
@@ -398,14 +419,20 @@ function RaceLane({
         <span className="race-lane__grid" aria-hidden="true" />
         {checkpoints.map((checkpoint) => (
           <span
-            key={checkpoint.key}
-            className={`race-lane__checkpoint tier-badge--${checkpoint.key}`}
+            key={checkpoint.naam}
+            className={`race-lane__checkpoint tier-badge--${checkpoint.key}${
+              row.isMe && doelVanaf === checkpoint.min ? " is-doel" : ""
+            }`}
             style={{ "--race-x": `${calculateRacePosition(checkpoint.min, axis)}%` } as RaceStyle}
             aria-hidden="true"
           />
         ))}
         <span className="race-lane__progress" aria-hidden="true" />
-        <span className={`race-lane__marker${x > 82 ? " is-near-end" : ""}`}>
+        <span
+          className={`race-lane__marker${x > 82 ? " is-near-end" : ""}${
+            offAxis ? " is-off-axis" : ""
+          }`}
+        >
           {row.link ? (
             <Link
               className="race-lane__marker-link"
@@ -419,7 +446,11 @@ function RaceLane({
           ) : (
             <Avatar profile={row.profile} name={row.name} size={36} />
           )}
-          <span className="race-lane__rating">{shownRating}</span>
+          <span className="race-lane__rating">
+            {offAxis === "onder" && <span aria-hidden="true">‹&#8202;</span>}
+            {shownRating}
+            {offAxis === "boven" && <span aria-hidden="true">&#8202;›</span>}
+          </span>
         </span>
         <button
           type="button"

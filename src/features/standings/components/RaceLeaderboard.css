@@ -25,9 +25,7 @@
 
 .race-summary {
   display: grid;
-  grid-template-columns: auto auto 1fr;
-  align-items: center;
-  gap: var(--sp-1) var(--sp-3);
+  gap: var(--sp-1);
   min-width: min(100%, 22rem);
   padding: var(--sp-3) var(--sp-4);
   border: 1px solid var(--accent-line);
@@ -36,15 +34,29 @@
   background: var(--accent-soft);
 }
 .race-summary__eyebrow {
-  grid-column: 1 / -1;
   color: color-mix(in srgb, var(--accent) 70%, var(--ink));
   font-size: var(--fs-xs);
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+/* Eén doel voert de boventoon (#1241); de rest ondersteunt. */
+.race-summary__kop {
+  font-size: var(--fs-lg);
+  line-height: 1.25;
+}
+.race-summary__sub {
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+.race-summary__feiten {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-1);
+}
 .race-summary__position {
-  font-size: var(--fs-xl);
+  font-size: var(--fs-base);
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -55,16 +67,7 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.race-summary .tier-badge {
-  justify-self: start;
-}
-.race-summary__goal {
-  grid-column: 1 / -1;
-  color: var(--ink-soft);
-  font-size: var(--fs-xs);
-}
 .race-summary .badge {
-  grid-column: 1 / -1;
   justify-self: start;
 }
 .race-summary .badge--accent {
@@ -287,6 +290,12 @@
   opacity: 0.28;
   pointer-events: none;
 }
+/* De poort waar de kijker naartoe rijdt (#1241): nadruk op de eigen lane. */
+.race-lane__checkpoint.is-doel {
+  width: 3px;
+  border-radius: 999px;
+  opacity: 0.8;
+}
 .race-lane__progress {
   position: absolute;
   left: 0;
@@ -331,6 +340,11 @@
 }
 .race-lane__marker.is-near-end {
   flex-direction: row-reverse;
+}
+/* Buiten de veld-as geknipt (#1241): het getal is echt, de positie geklemd. */
+.race-lane__marker.is-off-axis .race-lane__rating {
+  box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line-strong);
+  color: var(--ink-soft);
 }
 
 .race-lane__info {

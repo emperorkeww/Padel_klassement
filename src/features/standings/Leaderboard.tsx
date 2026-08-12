@@ -1162,6 +1162,9 @@ export function Leaderboard() {
         ) : isRaceView ? (
           <RaceLeaderboard
             rows={visibleRows}
+            // Het volledige veld ankert de as en de pack-drempels (#1241):
+            // zoeken of filteren mag de baan niet verschuiven.
+            axisRows={rankedRows}
             allowReplay={!usingScope && !nq}
           />
         ) : tab === "kaarten" ? (
