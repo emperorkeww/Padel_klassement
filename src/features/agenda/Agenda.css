@@ -38,6 +38,12 @@
   font-size: var(--fs-xl);
   font-weight: 800;
   letter-spacing: -0.02em;
+  /* Twee regels gereserveerd (#1195). Naast de knoppen blijft er zo weinig
+     breedte over dat "September 2026" omvalt en "Oktober 2026" niet — en dan
+     verschilt de kop 36px per maand en verspringt alles eronder bij het
+     bladeren. Zelfde ingreep als de telling hieronder, en dezelfde reden. */
+  line-height: 1.15;
+  min-height: 2.3em;
 }
 
 .agenda-kop__telling {
@@ -373,6 +379,10 @@
   font-size: 0.6875rem;
   font-weight: 600;
   color: var(--ink-soft);
+  /* De legenda toont alleen wat er in deze maand te zien is, dus hij kan leeg
+     zijn — en dan zou het dagpaneel 17px omhoog schuiven bij het bladeren
+     (#1195). De regel blijft daarom gereserveerd. */
+  min-height: 1.5em;
 }
 
 .agenda-legenda__item {

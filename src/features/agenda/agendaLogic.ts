@@ -467,19 +467,27 @@ export function daysInMonth({ jaar, maand }: Maand): number {
   return new Date(Date.UTC(jaar, maand, 0)).getUTCDate();
 }
 
+/** Rijen die het raster altijd toont. */
+const RASTER_RIJEN = 6;
+
 /**
  * Het maandraster: hele weken van maandag t/m zondag, met de rand-dagen van de
- * vorige en volgende maand erbij. Vijf of zes rijen, afhankelijk van de maand.
+ * vorige en volgende maand erbij.
+ *
+ * Altijd zes rijen (#1195). Een maand heeft er van nature vier, vijf of zes
+ * nodig, en dat liet het raster tussen 286 en 334px wisselen — waardoor bij het
+ * bladeren alles eronder tot 84px op en neer sprong. Doorlopen tot zes rijen
+ * kost een week doorloopdagen die er toch al grijs bij stonden, en levert een
+ * kalender op die niet meer van hoogte verandert. Zo doen iOS en Google het ook.
  */
 export function monthGrid(m: Maand): RasterDag[][] {
   const first = `${m.jaar}-${pad(m.maand)}-01`;
   const last = `${m.jaar}-${pad(m.maand)}-${pad(daysInMonth(m))}`;
   const start = addDays(first, -weekdayIndex(first));
-  const end = addDays(last, 6 - weekdayIndex(last));
 
   const weeks: RasterDag[][] = [];
   let cursor = start;
-  while (cursor <= end) {
+  for (let rij = 0; rij < RASTER_RIJEN; rij++) {
     const week: RasterDag[] = [];
     for (let i = 0; i < 7; i++) {
       week.push({ date: cursor, inMonth: cursor >= first && cursor <= last });

@@ -537,22 +537,24 @@ export function Agenda() {
                 />
               )}
 
-              {(zichtbareStatussen.length > 0 || wedstrijdenInBeeld) && (
-                <ul className="agenda-legenda">
-                  {zichtbareStatussen.map((status) => (
-                    <li key={status} className="agenda-legenda__item">
-                      <StatusGlyph status={status} size={8} />
-                      {statusChip(status)}
-                    </li>
-                  ))}
-                  {wedstrijdenInBeeld && (
-                    <li className="agenda-legenda__item">
-                      <StatusGlyph status="played" size={8} />
-                      Gespeeld
-                    </li>
-                  )}
-                </ul>
-              )}
+              {/* De legenda legt alleen uit wat er te zien is, dus in een lege
+                  maand blijft hij leeg. Hij verdwijnt dan niet: zijn regel is
+                  in de CSS gereserveerd, anders schuift het dagpaneel 17px
+                  omhoog zodra je naar zo'n maand bladert (#1195). */}
+              <ul className="agenda-legenda">
+                {zichtbareStatussen.map((status) => (
+                  <li key={status} className="agenda-legenda__item">
+                    <StatusGlyph status={status} size={8} />
+                    {statusChip(status)}
+                  </li>
+                ))}
+                {wedstrijdenInBeeld && (
+                  <li className="agenda-legenda__item">
+                    <StatusGlyph status="played" size={8} />
+                    Gespeeld
+                  </li>
+                )}
+              </ul>
 
               {/* Wat er in het raster niet meer past (#1112). De instap-kaart die
                   hier stond legde uit dat je een dag kon aantikken; dit paneel
