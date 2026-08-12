@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Avatar } from "@/ui/Avatar";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
@@ -77,6 +77,10 @@ export type HeroStatus = {
    *  schrijft (editieLabel) — alleen gelezen als de bijbehorende vlag staat. */
   labels: { kampioen: CrestTekst; inform: CrestTekst; onfire: CrestTekst };
 };
+
+/** Hoeveel titel-chips er naast de statusbadge zichtbaar blijven; de rest
+ *  klapt uit via de "+N"-teller (#1242). */
+const MAX_CHIPS = 3;
 
 /** De crests die deze speler draagt, in weergavevolgorde. Elke titel staat hier
  *  precies één keer: zo kunnen de statusbadge en de chips nooit twee
@@ -181,6 +185,9 @@ export function DashboardHero({
 }) {
   const { thema, overlay } = status;
   const crests = crestsVan(status, myId);
+  // Uitgeklapte chip-rij (#1242): begint afgekapt op MAX_CHIPS en klapt op de
+  // teller open; niet meer dicht — wie zijn titels wil zien, wil ze zien.
+  const [alleChips, setAlleChips] = useState(false);
   // De statusbadge is de crest van het thema dat de kaart draagt; loopt er een
   // tijdelijke overlay, dan is dát de badge — die vertelt het nieuws van deze
   // week, terwijl het materiaal eronder de permanente titel al toont. Met een
@@ -189,6 +196,8 @@ export function DashboardHero({
   const badgeVariant = overlay ?? thema;
   const badge = crests.find((c) => c.variant === badgeVariant) ?? null;
   const chips = crests.filter((c) => c !== badge);
+  const zichtbareChips = alleChips ? chips : chips.slice(0, MAX_CHIPS);
+  const chipRest = chips.length - zichtbareChips.length;
   // Draagt de speler geen permanent thema, dan is de kaart die van zijn divisie
   // (#771). Dezelfde tier als de badge in de kop, dus kaart en badge kunnen niet
   // uit elkaar lopen.
@@ -213,7 +222,9 @@ export function DashboardHero({
           </span>
         </Link>
         <div className="hero__text">
-          <p className="hero__eyebrow">Racket in de aanslag?</p>
+          {/* De eyebrow ("Racket in de aanslag?") is er sinds #1242 uit: de
+              begroeting en Rudy's briefing zijn de boodschap — een derde
+              tekstregel erboven maakte de kop drukker zonder iets te zeggen. */}
           <h1 className="hero__name">
             {naam ? `Hoi, ${naam}` : "Hoi!"}
             <TierBadge
@@ -272,7 +283,7 @@ export function DashboardHero({
                 editie hoeft zijn naam voluit te dragen. */}
             {chips.length > 0 && (
               <div className="hero__crests">
-                {chips.map((c) => (
+                {zichtbareChips.map((c) => (
                   <HeroCrest
                     key={c.variant}
                     variant={c.variant}
@@ -282,6 +293,21 @@ export function DashboardHero({
                     uitleg={c.uitleg}
                   />
                 ))}
+                {/* Overloop (#1242): wie vier of meer titels naast zijn badge
+                    draagt, trekt de kaart anders uit elkaar. De rest zit achter
+                    een teller die de rij ter plekke uitklapt — zelfde idee als
+                    de "+N" van de badgestrip. */}
+                {chipRest > 0 && (
+                  <button
+                    type="button"
+                    className="hero__crests-more"
+                    onClick={() => setAlleChips(true)}
+                    aria-expanded={false}
+                    aria-label={`Nog ${chipRest} ${chipRest === 1 ? "titel" : "titels"} tonen`}
+                  >
+                    +{chipRest}
+                  </button>
+                )}
               </div>
             )}
             {earnedBadges.length > 0 && (
