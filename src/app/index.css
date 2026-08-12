@@ -437,34 +437,40 @@
 
    1. De ondertoon is neutraal (a* ≈ 0…-2, een zweem koelgrijs) in plaats van
       blauwgroen. De merkkleur zit in de accenten, niet in het meubilair.
-   2. De hele ladder zakt: navigatie puur zwart, pagina op L* 3,9, kaart op
-      8,7. De L*-stappen tussen de vlakken blijven ≥ de minima van #1074 —
-      dit palet haalt ze allemaal met marge, er is niets versoepeld.
+   2. De hele ladder zakt: navigatie én pagina puur zwart (OLED — pixels
+      echt uit), kaart op L* 8,7. Zijbalk en pagina zijn daarmee bewust
+      hetzelfde vlak; hun scheiding komt van de rand en het baanfoto-verloop,
+      niet van een lichtheidsstap. De overige L*-stappen blijven ≥ de minima
+      van #1074 en worden juist gróter — alleen de stap pagina-boven-zijbalk
+      is in contrast-check.mjs expliciet op 0 gezet (zie de toelichting daar).
 
-   De accenten zijn een stap gedempt: op bijna-zwart komt fel veel harder
-   binnen dan op petrol. De zachte badge-vlakken (--*-soft) zijn mee omlaag
-   geschoven naar ~L* 14-16, nét boven de nieuwe kaart op 8,7 — een badge die
-   donkerder is dan zijn eigen kaart leest als een gat (les uit #1074). */
+   De accenten zijn een stap gedempt: op zwart komt fel veel harder binnen
+   dan op petrol. De inkt en randen zijn juist een stap ópgetild (hoog
+   contrast): wit haalt ~19:1 op de pagina. De zachte badge-vlakken (--*-soft)
+   liggen op ~L* 14-16, nét boven de kaart op 8,7 — een badge die donkerder
+   is dan zijn eigen kaart leest als een gat (les uit #1074). */
 :root[data-theme="dark"] {
-  /* Canvas → kaart → verhoogd: elke stap ≈ 4-6 L*, zie de kop hierboven. */
-  --bg: #0c0e11; /* bijna-zwart, neutraal — de app-achtergrond */
+  /* Canvas → kaart → verhoogd: zwart als bodem, daarna stappen ≥ 4 L*. */
+  --bg: #000000; /* puur zwart — OLED laat deze pixels uit */
   --surface: #16191e; /* kaarten */
   --surface-2: #1e2228; /* subtiel vlak / tracks */
   --surface-elevated: #22262d; /* hero, sheets, popovers */
   --surface-hover: #262b33; /* hover op kaarten, nav-items, knoppen */
   --surface-active: #123527; /* gekozen nav-item — smaragd getint */
   --background-navigation: #000000;
-  --navigation-ink: #eceef1;
-  --navigation-muted: #9aa3ad;
+  --navigation-ink: #f2f4f7;
+  --navigation-muted: #a0a9b3;
   --navigation-surface: rgba(156, 207, 74, 0.12);
-  /* Gebroken wit i.p.v. bijna-wit: minder schittering op donker. */
-  --ink: #eceef1;
-  --ink-soft: #a9b0ba;
-  --ink-soft-strong: #c2c9d2;
+  /* Hoog contrast: de inkt mag op puur zwart een stap witter dan vóór de
+     OLED-omslag — schittering was het argument tegen, maar dat woog op
+     petrol; op zwart wint leesbaarheid. */
+  --ink: #f2f4f7;
+  --ink-soft: #b0b7c1;
+  --ink-soft-strong: #c8cfd8;
   /* Randen dragen op donker de hiërarchie mee, dus ze mogen gezien worden:
-     op zwart doet een schaduw weinig, de rand moet het vlak dragen. */
-  --line: #2e343d;
-  --line-strong: #424a56;
+     op zwart doet een schaduw niets, de rand moet het vlak dragen. */
+  --line: #343b46;
+  --line-strong: #4a5361;
   --divider: #252a31;
 
   /* Smaragd, een stap dieper dan vóór #1243 (#1fb47e): op bijna-zwart is
@@ -539,8 +545,8 @@
      dónkerder dan de content. Zo staat de app-inhoud vooraan en zakt het
      meubilair naar achteren. */
   --sidebar-bg: #000000;
-  --sidebar-ink: #a9b0ba;
-  --sidebar-ink-strong: #eceef1;
+  --sidebar-ink: #b0b7c1;
+  --sidebar-ink-strong: #f2f4f7;
 
   /* Statuskleuren gedempt: duidelijk, niet fluorescerend. */
   --success: #43bd7f;
