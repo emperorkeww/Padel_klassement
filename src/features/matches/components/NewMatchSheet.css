@@ -23,50 +23,72 @@
 .pick-search {
   margin-bottom: var(--sp-3);
 }
+/* Eén kolom, ook op een breed scherm (#1183). Dit stond op
+   `repeat(auto-fill, minmax(150px, 1fr))`, en dat gaf op een telefoon twee
+   kolommen van ~150px waarin elke langere naam in een ellipsis eindigde — net
+   de naam waar je op moet tikken. Een tweede kolom terugzetten boven een
+   breekpunt helpt niet: .sheet is afgetopt op 520px, dus ook op een groot
+   scherm blijft er per kolom ~230px over en is "Gilles Van der Borght" weer
+   afgekapt. De lijst is liever langer dan onleesbaar; het sheet scrolt toch. */
 .pick-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: 1fr;
   gap: var(--sp-2);
 }
-/* Sinds #1083 dragen de spelerspillen het glasmateriaal (.glas
-   .glas--interactief .glas--pil): randlicht, binnengloed en een
-   indrukbeweging. Ze vullen het grootste deel van een glazen sheet, en als
-   dekkende witte pillen maakten ze van dat sheet één plaat met gewone UI erop.
+/* In rust is de pil vlak; het glasmateriaal komt er pas op zodra de speler in
+   een team zit (#1183).
 
-   Zelfde afweging als bij de "Jouw positie"-chip (Leaderboard.css): de vulling
-   blijft dekkend en gaat via --glas-laag, en de blur staat uit. Twee redenen.
-   Er staan er twintig-plus tegelijk in een scrollende lijst, en twintig
-   backdrop-filters op een telefoon is geen optie. En onder een dekkende
-   vulling zou je van die blur toch niets zien. Het glas zit hier dus in de
-   rand, het licht en de indrukbeweging — niet in de doorkijk.
+   Sinds #1083 droeg élke pil het materiaal (.glas .glas--interactief
+   .glas--pil). Dat was op zichzelf een goede reden — twintig dekkende witte
+   pillen maakten van een glazen sheet één plaat — maar het gevolg was dat het
+   drukste vlak van de app overal randlicht en schaduw had, en dat je selectie
+   het zwakste signaal op het scherm was: een lichte tint tussen twintig
+   lichtgevende pillen.
 
-   De afronding komt van .glas--pil; de rand blijft --line-strong (Matches.css
-   laadt na glas.css), want die draagt hier de affordance én de teamkleur. */
+   De blur stond hier toch al uit (twintig backdrop-filters op een telefoon is
+   geen optie, en onder een dekkende vulling zie je er niets van), dus wat het
+   materiaal hier draagt is randlicht, binnengloed en de indrukbeweging. Precies
+   het soort nadruk dat je aan één ding tegelijk wilt geven. De .glas-classes
+   staan daarom in de JSX en niet vast in de markup, en de bijbehorende
+   materiaalvariabelen op .pick-chip--a/--b hieronder.
+
+   De afronding kwam van .glas--pil en staat nu hier: de vorm mag niet
+   verspringen op het moment dat je aantikt. De rand blijft --line-strong
+   (dit bestand laadt na glas.css), want die draagt de affordance én, gekozen,
+   de teamkleur. */
 .pick-chip {
-  --glas-laag: linear-gradient(var(--surface) 0 0);
-  /* Twintig zwevende pillen naast elkaar is geen diepte maar ruis. */
-  --glas-schaduw: var(--shadow-sm);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-
   display: flex;
   align-items: center;
   gap: var(--sp-2);
   min-width: 0;
-  padding: var(--sp-2);
+  /* Eén hoogte voor alle pillen, ongeacht de naam, en meteen een volwaardig
+     tikdoel (44px is het minimum, 48 geeft de avatar lucht). */
+  min-height: 48px;
+  padding: var(--sp-1) var(--sp-3) var(--sp-1) var(--sp-2);
   border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  /* `background-color` en niet de `background`-shorthand: die zou op de gekozen
+     pil de lagen van .glas wegvegen — inclusief --glas-laag, en dan blijft de
+     teamkleur onzichtbaar. Nu ligt de teamvulling als laag over een dekkende
+     witte bodem, wat meteen is waar de contrastmeting van uitgaat. */
+  background-color: var(--surface);
   color: var(--ink);
   font-family: inherit;
   font-size: var(--fs-md);
   font-weight: 600;
+  text-align: left;
   cursor: pointer;
-  /* `background` stond hier ook in; de vulling wisselt nu via --glas-laag, en
-     een custom property gaat niet door een transition heen. De kleurwissel is
-     daarmee een sprong — bij deze tikdoelen is dat prima, en het is dezelfde
-     afspraak als op .me-chip. */
+  /* De vulling wisselt bij het aantikken via --glas-laag, en een custom
+     property gaat niet door een transition heen. De kleurwissel is daarmee een
+     sprong — bij deze tikdoelen is dat prima, en het is dezelfde afspraak als
+     op .me-chip. */
   transition: border-color 0.15s, opacity 0.15s;
 }
 .pick-chip__name {
+  /* Neemt de vrije ruimte in de rij; de badge houdt rechts zijn plek. Met één
+     kolom is er ruimte zat, maar een uitzonderlijk lange naam kapt liever af
+     dan dat hij de badge wegduwt. */
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -74,8 +96,8 @@
 .pick-chip__team {
   margin-left: auto;
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -83,9 +105,19 @@
   font-size: var(--fs-xs);
   font-weight: 800;
 }
-/* De teamvulling wisselt via dezelfde laag als de rustkleur; een `background`
-   hier zou het hele materiaal eronder wegvegen. Dekkend, dus het contrast van
-   de naam op de chip verandert niet ten opzichte van vóór #1083. */
+/* De gekozen pil: hier komt het materiaal op, en hier zit de teamkleur.
+
+   De vulling gaat via --glas-laag en niet via `background`, want dat laatste
+   zou het materiaal eronder wegvegen. Ze is dekkend, dus de naam staat op een
+   effen vlak en niet op iets wat door de sheet heen schemert — dat is ook wat
+   de contrastmeting toetst (--ink op --accent-soft / --lime-soft in
+   contrast-check.mjs). De blur blijft uit, om de reden bij .pick-chip. */
+.pick-chip.glas {
+  /* Eén pil die oplicht mag zweven; twintig zou weer ruis zijn. */
+  --glas-schaduw: var(--shadow-sm);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
 .pick-chip--a {
   border-color: var(--accent);
   --glas-laag: linear-gradient(var(--accent-soft) 0 0);
@@ -97,8 +129,14 @@
   border-color: var(--lime-deep);
   --glas-laag: linear-gradient(var(--lime-soft) 0 0);
 }
+/* Niet --accent-ink zoals bij team A: dat is wit op het lichte thema, en wit
+   op --lime-deep haalt 2,37:1 — de "B" was daar nauwelijks te lezen. Terwijl
+   die letter juist de bevestiging is die niet van kleur afhangt. --lime-ink is
+   de donkere inkt die bij lime hoort en bewust in beide thema's dezelfde
+   blijft (zie de comment bij het token in index.css). */
 .pick-chip--b .pick-chip__team {
   background: var(--lime-deep);
+  color: var(--lime-ink);
 }
 /* Opacity naast glas is normaal de valkuil uit docs/liquid-glass.md — een
    element met opacity < 1 is een backdrop root. Hier mag het: op deze chips

@@ -67,16 +67,25 @@ describe("spelerspillen in het match-sheet (#1083)", () => {
   const css = lees("src/features/matches/components/NewMatchSheet.css");
   const blok = css.match(/\n\.pick-chip \{([\s\S]*?)\n\}/)![1];
 
-  it("draagt het interactieve materiaal in pilvorm", () => {
-    expect(tsx).toMatch(/pick-chip glas glas--interactief glas--pil/);
+  it("draagt het materiaal alleen als de speler gekozen is (#1183)", () => {
+    // Elke pil het materiaal geven maakte het betekenisloos: twintig
+    // lichtgevende vlakken in één scrollende lijst, waarin je selectie juist
+    // het zwakste signaal was. De classes staan daarom aan de team-tak van de
+    // ternary vast en niet los in de markup.
+    expect(tsx).toMatch(/pick-chip--\$\{team\} glas glas--interactief/);
+    expect(tsx).not.toMatch(/pick-chip glas/);
   });
 
   it("houdt de vulling dekkend en de blur uit", () => {
     // Er staan er twintig-plus tegelijk in een scrollende lijst; twintig
     // backdrop-filters op een telefoon is geen optie, en onder een dekkende
     // vulling zou je er toch niets van zien. Zelfde afweging als .me-chip.
-    expect(blok).toMatch(/--glas-laag:\s*linear-gradient\(var\(--surface\) 0 0\)/);
-    expect(blok).toMatch(/backdrop-filter:\s*none/);
+    // Sinds #1183 staat dit op de gekozen pil, want alleen die draagt .glas.
+    const gekozen = css.match(/\n\.pick-chip\.glas \{([\s\S]*?)\n\}/)![1];
+    expect(gekozen).toMatch(/backdrop-filter:\s*none/);
+    // Op de declaratie en niet op het woord: de comment in .pick-chip legt uit
+    // waaróm de vulling via die laag gaat.
+    expect(blok).not.toMatch(/^\s*--glas-laag:/m);
   });
 
   it("wisselt de teamkleur via de laag en niet via background", () => {
@@ -90,8 +99,14 @@ describe("spelerspillen in het match-sheet (#1083)", () => {
     }
   });
 
-  it("laat de pilvorm de afronding doen", () => {
-    expect(blok).not.toMatch(/border-radius/);
+  it("houdt de vorm gelijk tussen rust en gekozen", () => {
+    // De afronding kwam van .glas--pil, die alleen op de gekozen pil zou
+    // staan; dan zou de pil van vorm veranderen op het moment dat je aantikt.
+    // Hij hoort dus op .pick-chip zelf.
+    expect(blok).toMatch(/border-radius:\s*999px/);
+    // .glas--pil hoort hier niet meer; elders in dit sheet (de keuzebanen)
+    // blijft hij wel staan, vandaar de pick-chip-context in de regex.
+    expect(tsx).not.toMatch(/pick-chip[^`]*glas--pil/);
   });
 });
 
