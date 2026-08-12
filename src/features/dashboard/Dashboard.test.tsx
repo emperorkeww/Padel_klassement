@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -171,15 +171,38 @@ describe("<Dashboard />", () => {
     }
   });
 
-  it("toont de lopende speeldag-poll prominent op het overzicht", async () => {
-    renderPage();
+  it("laat je op het overzicht zelf op de lopende speeldag stemmen (#1196)", async () => {
+    const { container } = renderPage();
+    // Alice stemde al op het enige moment (fixtures) → rustige kop, maar de
+    // knoppen blijven staan om je keuze te kunnen herzien.
     expect(
-      await screen.findByText(/speeldag-poll loopt · vrijdagavond padel/i),
+      await screen.findByText(/je stem staat genoteerd · vrijdagavond padel/i),
     ).toBeInTheDocument();
-    // Alice stemde al (fixtures) → neutrale call-to-action.
     expect(
-      screen.getByRole("link", { name: /bekijk de poll/i }),
+      screen.getByRole("button", { name: /ik kan — zaterdag 5 januari 20:00/i }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("link", { name: /bekijk de speeldag/i }),
     ).toBeInTheDocument();
+
+    // En de zone blijft staan terwijl je stemt. Een stem herlaadt de polls (en
+    // realtime doet het nog eens); useAsync zet dan `loading` terwijl de vorige
+    // data gewoon blijft staan. Op de kale vlag wisselde de hele zone daardoor
+    // naar het skelet en terug, precies onder de vinger waarmee je net tikte.
+    const skeletten: number[] = [];
+    const obs = new MutationObserver(() => {
+      if (container.querySelector(".dash-vandaag__skeleton")) skeletten.push(1);
+    });
+    obs.observe(container, { childList: true, subtree: true });
+    fireEvent.click(screen.getByRole("button", { name: /^misschien —/i }));
+    // Het hele herlaadrondje uitlopen: de stem, de reload en zijn antwoord.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    obs.disconnect();
+
+    expect(skeletten).toHaveLength(0);
+    expect(container.querySelector(".stemkaart")).not.toBeNull();
   });
 
   // #276 vouwde de gamification-extra's op; #911 trok statsrij en rating erbij,
@@ -190,8 +213,12 @@ describe("<Dashboard />", () => {
     const titel = await screen.findByText(/jouw cijfers/i);
     const details = titel.closest("details");
     expect(details).not.toBeNull();
+    // Wachten, niet meteen kijken: de kop staat er zodra de inklapper rendert,
+    // maar missies, statsrij en rating hangen elk aan hun eigen bron. Zonder
+    // deze waitFor is de test een race die alleen wint zolang die bronnen
+    // toevallig vóór de kop binnen zijn.
     for (const sel of [".week-missions", ".stats", ".rating-card"]) {
-      expect(details!.querySelector(sel)).not.toBeNull();
+      await waitFor(() => expect(details!.querySelector(sel)).not.toBeNull());
     }
     // En er is er maar één; geen inklapper-in-een-inklapper.
     expect(container.querySelectorAll("details.dash-cijfers")).toHaveLength(1);

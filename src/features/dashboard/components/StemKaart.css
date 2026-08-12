@@ -1,0 +1,49 @@
+/* Stemkaart op het overzicht (#1196). Erft de smaragden accentrand van de
+   poll-banner die hier stond: dezelfde soort mededeling, nu met de knoppen
+   erbij. Bewust zonder watermerk — de banner had een leeg vlak om te vullen,
+   deze kaart draagt drie rijen met raakdoelen. */
+
+.stemkaart {
+  border-left: 3px solid var(--accent);
+  background: linear-gradient(
+    105deg,
+    var(--surface) 0%,
+    var(--surface) 64%,
+    color-mix(in srgb, var(--accent-soft) 30%, var(--surface)) 100%
+  );
+}
+
+.stemkaart__rijen {
+  display: grid;
+  gap: var(--sp-1);
+}
+/* Scheidingslijn tussen momenten: drie rijen knoppen onder elkaar lopen anders
+   in elkaar over, juist op een smal scherm. */
+.stemkaart__rijen > * + * {
+  border-top: 1px solid var(--line);
+}
+
+.stemkaart__voet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-1) var(--sp-2);
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-sm);
+}
+
+/* Dringend, maar leesbaar: het amber draagt de nadruk als vlak, de tekst
+   blijft --ink. Amber áls tekstkleur haalt op deze achtergrond geen AA. */
+.stemkaart__sluit {
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--warn-line);
+  border-radius: 999px;
+  background: var(--warn-soft);
+  color: var(--ink);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
+.stemkaart__voet .btn {
+  margin-left: auto;
+}
