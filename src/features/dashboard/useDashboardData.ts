@@ -20,7 +20,9 @@ import { getMyGroups, type GroupSummary } from "@/features/groups/api";
 import { getClubAvailability } from "@/features/availability/api";
 import { useClub, type Club } from "@/features/availability/club";
 import { dateInZone } from "@/lib/utils/time";
+import { VENSTER_UREN } from "@/features/matches/appeal";
 import { deriveEvening, loadOpenPolls } from "./dashboardHelpers";
+import { laadZaken } from "./varZaken";
 import type { Match, PlayerRating, PlayerStanding, Profile, RatingPoint, Team } from "@/types";
 
 // De datalaag van het overzicht (#736). Stond tot nu toe boven in Dashboard.tsx,
@@ -93,6 +95,22 @@ export function useDashboardData() {
   const groupKey = (groups.data ?? []).map((g) => g.id).join(",");
   const openPolls = useAsync(() => loadOpenPolls(groups.data ?? []), [groupKey]);
 
+  // Rudy's VAR (#1025): een zaak kan alleen bestaan op een match die je zélf
+  // speelde en die minder dan 24 uur oud is — dat is het venster dat
+  // point_appeals_guard afdwingt. Is er zo'n match niet, dan hoeft het overzicht
+  // die query helemaal niet af te vuren en blijft de meetlat uit #736 staan.
+  // De query woont hier (niet in VarStemKaart, #1242) zodat de Vandaag-zone
+  // weet of er een zaak op je stem wacht.
+  const varVenster = (myMatches.data ?? []).some(
+    (g) =>
+      g.status === "completed" &&
+      g.played_at != null &&
+      Date.now() - new Date(g.played_at).getTime() < VENSTER_UREN * 3600_000,
+  );
+  const varZaken = useAsync(() => laadZaken(myId), [myId], {
+    enabled: varVenster,
+  });
+
   // Alleen echt gespeelde matches: de RPC-filter dekt dit al, maar client-side
   // filteren houdt afgeleide weergaven robuust (o.a. in tests).
   const completed = (results.data ?? []).filter((m) => m.status === "completed");
@@ -161,6 +179,7 @@ export function useDashboardData() {
     kampioen,
     availability,
     openPolls,
+    varZaken,
     // Afgeleid uit de uitslagen.
     completed,
     evening,

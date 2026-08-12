@@ -14,7 +14,17 @@ vi.mock("@/lib/supabase/client", async () => {
 });
 
 import { VarStemKaart } from "@/features/dashboard/components/VarStemKaart";
+import { laadZaken } from "@/features/dashboard/varZaken";
+import { useAsync } from "@/lib/hooks/useAsync";
 import { MATCH_DONE, PROFILES, TEAMS } from "@/test/fixtures";
+
+/** Testharnas met de echte datalaag: de kaart is sinds #1242 presentationeel
+ *  en krijgt zijn zaken van useDashboardData; hier volstaat dezelfde
+ *  useAsync(laadZaken) zodat filtering én weergave samen getest blijven. */
+function Harnas({ myId }: { myId: string }) {
+  const zaken = useAsync(() => laadZaken(myId), [myId]);
+  return <VarStemKaart myId={myId} zaken={zaken} />;
+}
 
 const EEN_UUR_GELEDEN = new Date(Date.now() - 3600_000).toISOString();
 
@@ -41,7 +51,7 @@ function toon(myId = "p1") {
   return render(
     <MemoryRouter>
       <ToastProvider>
-        <VarStemKaart myId={myId} />
+        <Harnas myId={myId} />
       </ToastProvider>
     </MemoryRouter>,
   );
