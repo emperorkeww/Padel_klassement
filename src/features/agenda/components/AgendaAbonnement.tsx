@@ -112,8 +112,11 @@ export function AgendaAbonnement() {
           </p>
 
           <div className="agenda-abo__apps">
-            {/* Google claimt webcal:// niet, maar vangt deze https-link wél af;
-                zonder deze knop gebeurt er op Android niets (#1117). Nieuw
+            {/* De Google Agenda-app claimt webcal:// niet, maar deze link gaat
+                naar Google's eigen "agenda via URL toevoegen" en dáár komt de
+                abonneervraag; zonder deze knop gebeurt er op Android niets
+                (#1117). De cid-parameter draagt de webcal-vorm, anders leest
+                Google hem als agenda-id en blijft de vraag uit (#1197). Nieuw
                 tabblad, want dit is een website — geen app-overdracht. */}
             <a
               className="btn btn--primary agenda-abo__actie"

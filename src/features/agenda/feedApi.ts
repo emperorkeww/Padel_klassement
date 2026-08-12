@@ -49,8 +49,9 @@ export function feedUrl(token: string, base = import.meta.env.VITE_SUPABASE_URL)
  * met de abonneervraag, in plaats van het bestand te downloaden — precies het
  * verschil tussen "volgt vanzelf" en "één momentopname".
  *
- * Alleen op iOS: Android kent `webcal:` niet, daar doet een tik hier niets
- * (#1117). Voor dat pad is `googleCalendarUrl()` er.
+ * Als tik alleen op iOS: Android kent `webcal:` niet, daar doet deze link
+ * niets (#1117). Voor dat pad is `googleCalendarUrl()` er — die geeft dezelfde
+ * webcal-vorm door aan Google in plaats van aan het toestel.
  */
 export function webcalUrl(token: string, base = import.meta.env.VITE_SUPABASE_URL): string {
   return feedUrl(token, base).replace(/^https?:/, "webcal:");
@@ -60,15 +61,22 @@ export function webcalUrl(token: string, base = import.meta.env.VITE_SUPABASE_UR
  * Google's eigen "agenda via URL toevoegen"-route (#1117).
  *
  * Dit is wat Android redt: de Google Agenda-app claimt `webcal:` niet, maar
- * vangt deze https-link wél af — en anders opent de web-UI met dezelfde vraag.
+ * vangt deze link wél af — en anders opent de web-UI met dezelfde vraag.
  *
- * `cid` krijgt bewust de https-vorm mee. Google haalt de feed serverside op en
- * slikt beide schema's, maar dit is de vorm uit hun eigen documentatie en hij
- * overleeft het url-encoden zonder verrassingen.
+ * `cid` krijgt de **webcal**-vorm mee (#1197). Bij #1117 stond hier de
+ * https-vorm, met de redenering dat Google de feed toch serverside ophaalt.
+ * Dat is precies waar het misging: `cid` betekent voor Google in de eerste
+ * plaats een agenda-*id*, en pas een feed-URL als het schema dat zegt. Met
+ * https komt de abonneervraag niet, en dan gebeurt er dus niets — het stille
+ * falen dat #1117 juist wilde wegnemen.
+ *
+ * De feed zelf blijft https; `webcal:` is hier alleen het signaal aan Google.
+ * Url-encoden mag: Google decodeert de query-parameter gewoon, en zonder
+ * encoding zou het pad de query-scheiding niet overleven.
  */
 export function googleCalendarUrl(
   token: string,
   base = import.meta.env.VITE_SUPABASE_URL,
 ): string {
-  return `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(feedUrl(token, base))}`;
+  return `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcalUrl(token, base))}`;
 }
