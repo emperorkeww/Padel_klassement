@@ -60,5 +60,20 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* De stip voor een openstaand vriendschapsverzoek (#1232). Zelfde plek als de
+   teller — ze verschijnen nooit samen — maar zonder cijfer: dit is een toestand
+   ("er wacht iets"), geen telling. Maat en rand volgen .nav-stip in de balken,
+   zodat het één signaaltaal blijft. */
+.bel-knop__stip {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--accent-strong);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
 /* Op de zijbalkregel (desktop) is de bel geen losse knop maar een gewone
    navigatieregel; daar draagt .sidebar__teller de telling. */

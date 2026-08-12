@@ -11,10 +11,19 @@ export const MAX_TELLER = 9;
  * De teller staat hier voluit en niet als los cijfer in de DOM: "3" naast een
  * bel is voor wie luistert net zoveel als niets. Null = nog onbekend, en dan
  * belooft het label ook niets.
+ *
+ * Openstaande vriendschapsverzoeken (#1232) worden apart genoemd en niet bij de
+ * ongelezen meldingen opgeteld: het zijn twee verschillende dingen — het ene
+ * telt wat je nog niet zág, het andere wat nog op een antwoord wacht. De stip
+ * op de knop is kleur; deze naam draagt de betekenis (#924).
  */
-export function belLabel(ongelezen: number | null): string {
-  if (ongelezen == null) return "Meldingen";
-  return `Meldingen, ${aantalTekst(ongelezen, "ongelezen melding", "ongelezen meldingen")}`;
+export function belLabel(ongelezen: number | null, verzoeken = 0): string {
+  const wacht =
+    verzoeken > 0
+      ? ` — ${aantalTekst(verzoeken, "vriendschapsverzoek", "vriendschapsverzoeken")} ${verzoeken === 1 ? "wacht" : "wachten"} op je`
+      : "";
+  if (ongelezen == null) return `Meldingen${wacht}`;
+  return `Meldingen, ${aantalTekst(ongelezen, "ongelezen melding", "ongelezen meldingen")}${wacht}`;
 }
 
 /** Wat er in de badge komt te staan. Alleen voor het oog — aria-hidden. */

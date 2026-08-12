@@ -630,3 +630,83 @@ describe("attentiestippen op de balk (#1214)", () => {
     }
   });
 });
+
+// #1232: het overzicht droeg de "N vriendschapsverzoeken"-pil. De melding die
+// send-push erbij schrijft is gelezen-gebaseerd, dus die kan verdwijnen terwijl
+// het verzoek openstaat; de shell telt daarom de toestand zelf.
+describe("openstaand vriendschapsverzoek in de shell (#1232)", () => {
+  const verzoek = {
+    id: "f-pending",
+    requester_id: "p5",
+    addressee_id: "p1",
+    status: "pending",
+    created_at: "2026-08-01T10:00:00.000Z",
+    updated_at: "2026-08-01T10:00:00.000Z",
+  };
+
+  function metVerzoek(fn: () => Promise<void>) {
+    const origineel = TABLES.friendships;
+    TABLES.friendships = [...origineel, verzoek];
+    invalidateAll();
+    return fn().finally(() => {
+      TABLES.friendships = origineel;
+      invalidateAll();
+    });
+  }
+
+  it("noemt het verzoek in de naam van beide meldingen-ingangen", async () => {
+    await metVerzoek(async () => {
+      renderShell();
+      await screen.findByText("pagina-inhoud");
+      await vi.waitFor(() =>
+        expect(
+          screen.getAllByRole("button", {
+            name: /meldingen, geen ongelezen meldingen — 1 vriendschapsverzoek wacht op je/i,
+          }),
+        ).toHaveLength(2),
+      );
+    });
+  });
+
+  it("draagt zonder teller een stip, op de bel én in de zijbalk", async () => {
+    await metVerzoek(async () => {
+      const { container } = renderShell();
+      await screen.findByText("pagina-inhoud");
+      await vi.waitFor(() =>
+        expect(container.querySelector(".bel-knop__stip")).not.toBeNull(),
+      );
+      expect(
+        container.querySelector(".sidebar__link--knop .nav-stip"),
+      ).not.toBeNull();
+    });
+  });
+
+  it("laat de teller voorgaan als er óók ongelezen meldingen zijn", async () => {
+    // Twee markeringen op één knop van 32px is ruis; de naam blijft beide
+    // dingen noemen.
+    vi.mocked(getOngelezenAantal).mockResolvedValue(2);
+    await metVerzoek(async () => {
+      const { container } = renderShell();
+      await screen.findByText("pagina-inhoud");
+      await vi.waitFor(() =>
+        expect(container.querySelector(".bel-knop__teller")).not.toBeNull(),
+      );
+      expect(container.querySelector(".bel-knop__stip")).toBeNull();
+      expect(
+        screen.getAllByRole("button", {
+          name: /2 ongelezen meldingen — 1 vriendschapsverzoek wacht op je/i,
+        }),
+      ).toHaveLength(2);
+    });
+  });
+
+  it("zwijgt zolang er niets openstaat", async () => {
+    const { container } = renderShell();
+    await screen.findByText("pagina-inhoud");
+    expect(container.querySelector(".bel-knop__stip")).toBeNull();
+    expect(
+      screen.getAllByRole("button", { name: /^meldingen/i })[0],
+    ).toHaveAttribute("aria-label", expect.stringContaining("Meldingen"));
+    expect(screen.queryByText(/vriendschapsverzoek/i)).toBeNull();
+  });
+});

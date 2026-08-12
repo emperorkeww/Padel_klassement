@@ -22,6 +22,7 @@ import { IconBel } from "@/features/meldingen/components/IconBel";
 import { MeldingenPaneel } from "@/features/meldingen/components/MeldingenPaneel";
 import { belLabel, tellerTekst } from "@/features/meldingen/bel";
 import { useMeldingen } from "@/features/meldingen/useMeldingen";
+import { useVerzoeken } from "@/features/meldingen/useVerzoeken";
 import { useIsAdmin } from "@/features/admin/useIsAdmin";
 import { useAttentie } from "./useAttentie";
 import { OfflineBanner } from "@/ui/OfflineBanner";
@@ -113,7 +114,8 @@ const sidebarGroups = (myId: string): { title: string; items: NavItem[] }[] => [
 // competitie/sociaal (Klassement · Feed). Matches had hier tot #1123 een vaste
 // plek als schrijf-scherm (#274); die taak zit nu ín Spelen, en de vrijgekomen
 // plek gaat naar de Agenda — die hing als losse knop in de topbalk. Vrienden
-// blijft in de zijbalk en is één tik weg via de avatar en de "verzoeken"-chip.
+// blijft in de zijbalk; op mobiel loopt de weg erheen sinds #1232 via het
+// meldingenpaneel, dat een openstaand verzoek bovenaan zet zolang het wacht.
 // Overzicht moet op de middelste plek blijven staan: de uitstekende bal hangt
 // aan `item.end`.
 const TABBAR: NavItem[] = [AGENDA, SPELEN, OVERZICHT, KLASSEMENT, FEED];
@@ -192,6 +194,10 @@ export function DashboardLayout() {
   // teller tonen en hetzelfde paneel openen. Eén paneelinstantie onderaan.
   const meldingen = useMeldingen(myId);
   const [meldingenOpen, setMeldingenOpen] = useState(false);
+  // Openstaande vriendschapsverzoeken (#1232). Hangt om dezelfde reden hier als
+  // de meldingen: de bel op mobiel, de zijbalkregel op desktop en het paneel
+  // moeten hetzelfde getal zien.
+  const verzoeken = useVerzoeken(myId);
 
   return (
     <div className="shell">
@@ -221,6 +227,7 @@ export function DashboardLayout() {
               ingang in de zijbalk. */}
           <BelKnop
             ongelezen={meldingen.ongelezen}
+            verzoeken={verzoeken}
             onOpen={() => setMeldingenOpen(true)}
           />
           <HelpKnop />
@@ -259,7 +266,7 @@ export function DashboardLayout() {
                   type="button"
                   className="sidebar__link sidebar__link--knop"
                   onClick={() => setMeldingenOpen(true)}
-                  aria-label={belLabel(meldingen.ongelezen)}
+                  aria-label={belLabel(meldingen.ongelezen, verzoeken)}
                 >
                   <span className="sidebar__icon">
                     <IconBel />
@@ -269,6 +276,11 @@ export function DashboardLayout() {
                     <span className="sidebar__teller" aria-hidden="true">
                       {tellerTekst(meldingen.ongelezen)}
                     </span>
+                  )}
+                  {/* Zonder teller draagt de stip het signaal (#1232) — zelfde
+                      vorm als de attentiestippen op Agenda en Spelen. */}
+                  {verzoeken > 0 && !meldingen.ongelezen && (
+                    <span className="nav-stip" aria-hidden="true" />
                   )}
                 </button>
               )}
@@ -350,6 +362,7 @@ export function DashboardLayout() {
         meldingen={meldingen.meldingen}
         laadt={meldingen.laadt}
         limiet={meldingen.limiet}
+        verzoeken={verzoeken}
         onVeranderd={meldingen.herlaad}
       />
 
