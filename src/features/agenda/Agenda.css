@@ -450,6 +450,30 @@
   color: var(--ink-soft);
 }
 
+/* Telling en de banen-link staan onder elkaar rechts in de kop (#1213): naast
+   elkaar duwen ze op telefoonbreedte de datum weg, en dat is de kop van dit
+   paneel. */
+.dagpaneel__kop-rechts {
+  display: grid;
+  justify-items: end;
+  gap: var(--sp-1);
+  flex: none;
+}
+
+/* Een wegwijzer, geen actie: gedempt als de telling erboven, met een vaste
+   onderstreping zodat hij toch als link leest. Bewust niet in --accent zoals
+   .profile-link: dat paar haalt op klein zetsel geen 4,5:1 op wit. */
+.dagpaneel__banen {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.dagpaneel__banen:hover {
+  color: var(--ink);
+}
+
 .dagpaneel__lijst {
   display: grid;
   gap: var(--sp-2);

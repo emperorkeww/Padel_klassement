@@ -241,6 +241,29 @@ describe("<SpeeldagPagina />", () => {
     ).toBeInTheDocument();
   });
 
+  // #1213: Banen is volledig adresseerbaar (?datum=, ?club=), maar niets in de
+  // plan-flow gebruikte dat — terwijl de dag hier al vastligt.
+  it("wijst naar de vrije banen op de dag van deze speeldag", async () => {
+    tables.play_polls = [bookedPoll];
+    renderPagina("poll-booked");
+
+    const link = await screen.findByRole("link", { name: /vrije banen/i });
+    expect(link).toHaveAttribute(
+      "href",
+      `/banen?datum=2030-01-10&club=${encodeURIComponent(baseClub.club_id)}`,
+    );
+  });
+
+  it("laat die link weg zolang er geen moment vastligt", async () => {
+    tables.play_polls = [openPoll];
+    renderPagina("poll-open");
+
+    await screen.findByRole("heading", { name: /speeldag-poll/i });
+    expect(
+      screen.queryByRole("link", { name: /vrije banen/i }),
+    ).not.toBeInTheDocument();
+  });
+
   // De kern van #1133: de wedstrijden van die dag horen op de pagina waar je
   // ze klaarzet. Ze stonden alleen op de Spelen-tab, en die toont uitsluitend
   // vandaag — een speeldag volgende week was dus nergens te zien.

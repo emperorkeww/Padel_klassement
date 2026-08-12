@@ -74,11 +74,24 @@ export function DagPaneel({
             metHoofdletter(longDay(datum))
           )}
         </h2>
-        {items.length > 0 && (
-          <p className="dagpaneel__telling">
-            {items.length} {items.length === 1 ? "activiteit" : "activiteiten"}
-          </p>
-        )}
+        <div className="dagpaneel__kop-rechts">
+          {items.length > 0 && (
+            <p className="dagpaneel__telling">
+              {items.length} {items.length === 1 ? "activiteit" : "activiteiten"}
+            </p>
+          )}
+          {/* "Is er die dag eigenlijk een baan vrij?" was tot #1213 een vraag
+              die je elders opnieuw moest intikken: Banen leest ?datum= al uit
+              de URL, maar niets in de plan-flow wees erheen. Alleen vooruit —
+              vrije banen op een dag die geweest is zeggen niets. Zonder
+              ?club=: dit paneel gaat over meerdere groepen, dus de eigen
+              clubkeuze is hier de juiste. */}
+          {datum >= vandaag && (
+            <Link className="dagpaneel__banen" to={`/banen?datum=${datum}`}>
+              Vrije banen op deze dag →
+            </Link>
+          )}
+        </div>
       </header>
 
       {/* Wat er gespeeld is (#1182). Staat boven de lege staat én boven de
