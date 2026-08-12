@@ -100,31 +100,22 @@ export async function loadOpenPolls(
   }));
 }
 
-export type PollPick =
-  | {
-      kind: "open";
-      group: GroupSummary;
-      /** De poll waar deze banner over gaat (#886). Zonder id landde "Stem nu"
-       *  op de tab en mocht je zelf uitzoeken welke speeldag bedoeld werd. */
-      pollId: string;
-      optionCount: number;
-      voterCount: number;
-      iVoted: boolean;
-    }
-  | {
-      kind: "fixed";
-      group: GroupSummary;
-      pollId: string;
-      booked: boolean;
-      date: string;
-      startTime: string;
-      /** Toegangscode van de velden (#675), maar alléén op de speeldag zelf —
-       *  daarbuiten is het ruis op een overzichtsscherm. Null zonder code,
-       *  vóór de dag, of als de baan nog niet geboekt is. */
-      accessCode: string | null;
-      /** Geboekte banen (#802); zelfde dag-van-de-speeldag-regel als de code. */
-      courts: string | null;
-    };
+export type PollPick = {
+  kind: "fixed";
+  group: GroupSummary;
+  /** De poll waar deze banner over gaat (#886). Zonder id landde de knop op de
+   *  tab en mocht je zelf uitzoeken welke speeldag bedoeld werd. */
+  pollId: string;
+  booked: boolean;
+  date: string;
+  startTime: string;
+  /** Toegangscode van de velden (#675), maar alléén op de speeldag zelf —
+   *  daarbuiten is het ruis op een overzichtsscherm. Null zonder code,
+   *  vóór de dag, of als de baan nog niet geboekt is. */
+  accessCode: string | null;
+  /** Geboekte banen (#802); zelfde dag-van-de-speeldag-regel als de code. */
+  courts: string | null;
+};
 
 /** "2026-07-10" → "vr 10 jul"; middag-truc tegen DST-kanteling. */
 export function pollDay(date: string): string {
@@ -135,10 +126,6 @@ export function pollDay(date: string): string {
   }).format(new Date(`${date}T12:00:00`));
 }
 
-/**
- * Wat het overzicht over speeldagen moet melden: een lopende (open) poll om
- * op te stemmen, of anders een vastgelegd/geboekt moment als reminder.
- */
 /** Eén groep met zijn polls, opties en stemmen — wat loadOpenPolls teruggeeft. */
 export type OpenPollBundle = {
   group: GroupSummary;
@@ -147,29 +134,21 @@ export type OpenPollBundle = {
   votes: PollVote[];
 };
 
+/**
+ * De vastgelegde of geboekte speeldag die het overzicht als reminder toont.
+ *
+ * Tot #1196 koos deze functie eerst een lopende open poll ("Stem nu"). Dat doet
+ * de stemkaart nu, en beter: op tijd in plaats van op groepsvolgorde. Wat
+ * overblijft is de reminder — inclusief toegangscode en banen op de speeldag
+ * zelf. Bijvangst van de splitsing: een open poll in je eerste groep verbergt
+ * de geboekte speeldag van je tweede groep niet langer.
+ */
 export function pickPollBanner(
   rows: OpenPollBundle[],
   myId: string,
   nowMs: number,
 ): PollPick | null {
   for (const { group, polls, options, votes } of rows) {
-    const open = polls.find(
-      (p) => p.status === "open" && !pollExpired(p, options, nowMs),
-    );
-    if (open) {
-      const optionIds = new Set(
-        options.filter((o) => o.poll_id === open.id).map((o) => o.id),
-      );
-      const pollVotes = votes.filter((v) => optionIds.has(v.option_id));
-      return {
-        kind: "open",
-        group,
-        pollId: open.id,
-        optionCount: optionIds.size,
-        voterCount: new Set(pollVotes.map((v) => v.player_id)).size,
-        iVoted: pollVotes.some((v) => v.player_id === myId),
-      };
-    }
     const fixed = polls.find(
       (p) =>
         (p.status === "locked" || p.status === "booked") && p.locked_option_id,

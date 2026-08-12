@@ -4,9 +4,14 @@ import { pollSharePath } from "@/features/groups/pollsApi";
 import { pickPollBanner, pollDay, type OpenPollBundle } from "../dashboardHelpers";
 import { PollCourtWatermark } from "./DashboardWatermarks";
 
-// Speeldag op het overzicht: een lopende poll om op te stemmen, of de
-// vastgelegde/geboekte datum als reminder bij het inloggen. Uit Dashboard.tsx
-// gelicht (#736); welke poll wint staat in pickPollBanner.
+// De vastgelegde of geboekte speeldag als reminder bij het inloggen, met de
+// banen en de toegangscode op de dag zelf. Uit Dashboard.tsx gelicht (#736);
+// welke poll wint staat in pickPollBanner.
+//
+// Stemmen op een lopende poll stond hier tot #1196 ook, als "Stem nu"-link.
+// Dat is nu StemKaart: die laat je ter plekke antwoorden in plaats van je door
+// te sturen. De twee kunnen naast elkaar staan — de ene vraagt iets, de andere
+// herinnert ergens aan.
 
 export function PollBanner({
   bundles,
@@ -19,35 +24,6 @@ export function PollBanner({
 }) {
   const pick = pickPollBanner(bundles, myId, now);
   if (!pick) return null;
-
-  if (pick.kind === "open") {
-    return (
-      <section className="card poll-banner">
-        <PollCourtWatermark />
-        <div className="card__head">
-          <h2 className="card__title card__title--tight">
-            📆 Speeldag-poll loopt · {pick.group.name}
-          </h2>
-        </div>
-        <p className="poll-banner__text">
-          {pick.optionCount === 1
-            ? "Eén moment staat open"
-            : `${pick.optionCount} momenten staan open`}
-          {" · "}
-          {pick.voterCount === 0
-            ? "nog niemand stemde"
-            : `${pick.voterCount} ${pick.voterCount === 1 ? "lid" : "leden"} stemden al`}
-          {pick.iVoted ? "." : " — jij nog niet."}
-        </p>
-        <Link
-          className={`btn btn--sm${pick.iVoted ? "" : " btn--primary"}`}
-          to={pollSharePath(pick.pollId)}
-        >
-          {pick.iVoted ? "Bekijk de poll →" : "Stem nu →"}
-        </Link>
-      </section>
-    );
-  }
 
   return (
     <section className="card poll-banner poll-banner--fixed">

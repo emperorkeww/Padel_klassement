@@ -61,24 +61,18 @@ function renderBanner(polls: PlayPoll[], options: PollOption[], votes: PollVote[
 }
 
 describe("<PollBanner />", () => {
-  it("linkt 'Stem nu' naar de poll waar de banner over gaat", () => {
+  // Stemmen op een lopende poll is sinds #1196 de stemkaart; deze banner gaat
+  // alleen nog over een speeldag die al vastligt.
+  it("zwijgt over een lopende poll", () => {
     const { container } = renderBanner(
       [poll({ id: "poll-open" })],
       [option({ poll_id: "poll-open" })],
     );
-
-    expect(screen.getByRole("link", { name: /stem nu/i })).toHaveAttribute(
-      "href",
-      "/speeldag/poll-open",
-    );
-    expect(container.querySelector(".poll-banner__watermark")).toHaveAttribute(
-      "aria-hidden",
-      "true",
-    );
+    expect(container).toBeEmptyDOMElement();
   });
 
-  it("doet hetzelfde voor een vastgelegde speeldag", () => {
-    renderBanner(
+  it("linkt naar de speeldag waar de banner over gaat", () => {
+    const { container } = renderBanner(
       [poll({ id: "poll-vast", status: "booked", locked_option_id: "opt-1" })],
       [option({ poll_id: "poll-vast" })],
       [
@@ -95,6 +89,10 @@ describe("<PollBanner />", () => {
     expect(screen.getByRole("link", { name: /bekijk/i })).toHaveAttribute(
       "href",
       "/speeldag/poll-vast",
+    );
+    expect(container.querySelector(".poll-banner__watermark")).toHaveAttribute(
+      "aria-hidden",
+      "true",
     );
   });
 

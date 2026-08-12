@@ -153,6 +153,24 @@ export function kiesStemMomenten(
   };
 }
 
+/**
+ * Wanneer er over het eerste moment beslist wordt, in gewone taal.
+ *
+ * Bewust relatief en niet als klok: het moment hoort bij een club met een eigen
+ * tijdzone, en "sluit over 5 uur" heeft die vraag niet. Null zolang het niet
+ * dringend is — dan hoeft de kaart er niets over te zeggen.
+ */
+export function sluitTekst(
+  sluitMs: number | null,
+  nowMs: number,
+): string | null {
+  if (sluitMs == null) return null;
+  const uren = (sluitMs - nowMs) / 3600_000;
+  if (uren <= 0) return "Er wordt zo beslist.";
+  if (uren < 1) return "Sluit binnen het uur.";
+  return `Sluit over ${Math.round(uren)} uur.`;
+}
+
 /** Op tijd, en bij gelijke tijd op optie-id: twee groepen die toevallig
  *  hetzelfde uur kiezen mogen niet per render van plek wisselen. */
 function opTijd(a: StemMoment, b: StemMoment): number {

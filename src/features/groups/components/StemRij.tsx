@@ -24,6 +24,7 @@ import "./StemRij.css";
 
 export function StemRij({
   titel,
+  bijschrift,
   omschrijving,
   aantal,
   banen,
@@ -32,6 +33,10 @@ export function StemRij({
 }: {
   /** Wat er links staat: "Jouw stem" of "do 13 aug · 20:00". */
   titel: string;
+  /** Tweede regel onder de titel, bijvoorbeeld de groepsnaam wanneer één lijst
+   *  momenten uit meerdere groepen draagt (#1196). Onder en niet achter de
+   *  titel: op een telefoon knijpt een derde tekst de knoppen weg. */
+  bijschrift?: string;
   /** Hetzelfde moment voluit, voor de knopnamen. Een sheet kan meerdere
    *  stemrijen dragen, en dan is drie keer "Ik kan" geen naam maar een raadsel. */
   omschrijving: string;
@@ -44,7 +49,14 @@ export function StemRij({
 }) {
   return (
     <div className="stemrij">
-      <span className="stemrij__wanneer">{titel}</span>
+      {bijschrift ? (
+        <span className="stemrij__label">
+          <span className="stemrij__wanneer">{titel}</span>
+          <span className="stemrij__bijschrift">{bijschrift}</span>
+        </span>
+      ) : (
+        <span className="stemrij__wanneer">{titel}</span>
+      )}
       {aantal != null && (
         <span className="stemrij__aantal">
           {aantal} {aantal === 1 ? "kan" : "kunnen"}
