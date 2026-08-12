@@ -79,15 +79,29 @@ export function MeldingenPaneel({
         />
       )}
 
-      {/* Alleen als er méér is dan hier past — anders belooft de knop een
-          langere lijst die niet bestaat. */}
-      {meldingen.length >= limiet && (
-        <p className="meldingen__voet">
+      {/* De voet met de wegwijzers. "Alles bekijken" alleen als er méér is dan
+          hier past — anders belooft de knop een langere lijst die niet bestaat.
+
+          De voorkeuren staan er altijd bij (#1217): het moment waarop je denkt
+          "hier wil ik minder van" is precies het moment waarop je naar je
+          meldingen kijkt, en tot nu toe moest je dat onthouden tot je bij je
+          instellingen kwam. Bewust een link en géén schakelaars hier: de
+          voorkeuren zijn een verzameling en horen bij de instellingen te blijven
+          wonen. */}
+      <p className="meldingen__voet">
+        {meldingen.length >= limiet && (
           <Link className="btn btn--sm" to="/meldingen" onClick={onClose}>
             Alles bekijken →
           </Link>
-        </p>
-      )}
+        )}
+        <Link
+          className="btn btn--sm"
+          to="/profiel?tab=privacy"
+          onClick={onClose}
+        >
+          <span aria-hidden="true">⚙️</span> Meldingsvoorkeuren
+        </Link>
+      </p>
     </Sheet>
   );
 }
