@@ -26,11 +26,21 @@ const row = (key: string, rating: number, options: Partial<Row> = {}): Row => ({
   ...options,
 });
 
-function renderRace(rows: Row[], allowTimeline = true, axisRows: Row[] = rows) {
+function renderRace(
+  rows: Row[],
+  allowTimeline = true,
+  axisRows: Row[] = rows,
+  onJumpToMe?: () => void,
+) {
   return render(
     <MemoryRouter>
       <ToastProvider>
-        <RaceLeaderboard rows={rows} axisRows={axisRows} allowTimeline={allowTimeline} />
+        <RaceLeaderboard
+          rows={rows}
+          axisRows={axisRows}
+          allowTimeline={allowTimeline}
+          onJumpToMe={onJumpToMe}
+        />
       </ToastProvider>
     </MemoryRouter>,
   );
@@ -160,6 +170,36 @@ describe("<RaceLeaderboard />", () => {
   it("biedt geen tijdlijn zonder aantoonbare wijziging", () => {
     renderRace([row("p1", 1000), row("p2", 990)]);
     expect(screen.queryByRole("button", { name: /speel af/i })).toBeNull();
+  });
+
+  it("ankert de eigen lane zodat de jouw-positie-chip ernaartoe kan scrollen", () => {
+    const meRef = { current: null as HTMLDivElement | null };
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <RaceLeaderboard
+            rows={[row("p1", 1050), row("p2", 1030, { isMe: true })]}
+            axisRows={[row("p1", 1050), row("p2", 1030, { isMe: true })]}
+            allowTimeline={false}
+            meRef={meRef}
+          />
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+    expect(meRef.current).not.toBeNull();
+    expect(meRef.current).toHaveClass("is-me");
+  });
+
+  it("maakt van de kijker-punt in de strook een spring-naar-mij-knop", () => {
+    const onJumpToMe = vi.fn();
+    renderRace(
+      [row("p1", 1050), row("p2", 1030, { isMe: true })],
+      false,
+      undefined,
+      onJumpToMe,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Spring naar jouw baan" }));
+    expect(onJumpToMe).toHaveBeenCalled();
   });
 
   it("heeft een aparte mobiele lane-layout zonder horizontale paginascroll", () => {
