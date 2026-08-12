@@ -146,6 +146,19 @@ const autoPoll = (overrides: Partial<PlayPoll> = {}): PlayPoll =>
     ...overrides,
   }) as PlayPoll;
 
+/** Een tweede sessie op dezelfde dag (#1146): de ochtendgroep. */
+const OCHTEND_OPTION = {
+  ...AUTO_OPTION,
+  id: "opt-ochtend",
+  poll_id: "poll-ochtend",
+  start_time: "10:00",
+} as unknown as PollOption;
+
+const OCHTEND_POLL = autoPoll({
+  id: "poll-ochtend",
+  locked_option_id: OCHTEND_OPTION.id,
+});
+
 /** Een dag met rondes: twee rondes, één afgerond en één nog open. */
 const DAG_ONDERWEG = {
   matches: [DONE_TODAY, PLANNED_TODAY],
@@ -511,26 +524,111 @@ describe("<VandaagTab />", () => {
     expect(screen.getByText(/rudy zette ze klaar om/i)).toBeInTheDocument();
   });
 
-  // Het verkeer was eenrichting (#1133): de speeldagpagina wees naar de groep,
-  // maar vanuit de dag van vandaag kwam je er niet.
-  it("wijst vanuit de dagkop naar de speeldagpagina van vandaag", () => {
+  // ── Eén eigenaar per speeldag (#1209) ────────────────────────────────
+  // De tab en /speeldag/:id monteerden allebei de generator, de rondes en de
+  // losse partij. Ligt er een moment vast, dan beheert de pagina hem en vat de
+  // tab hem alleen nog samen.
+
+  it("vat een vastgelegde speeldag samen en wijst naar de speeldagpagina", () => {
     renderTab({
       ...DAG_ONDERWEG,
       polls: [autoPoll()],
       pollOptions: [AUTO_OPTION],
     });
 
+    const kaart = screen
+      .getByRole("heading", { name: /speeldag om 20:00/i })
+      .closest(".card") as HTMLElement;
+    expect(kaart).not.toBeNull();
+    // Vier spelers uit de indeling, en de stand van de avond erachter.
     expect(
-      screen.getByRole("link", { name: /open de speeldag/i }),
+      within(kaart).getByText(/^4 spelers · ronde 2 van 2$/i),
+    ).toBeInTheDocument();
+    expect(
+      within(kaart).getByRole("link", { name: /beheer deze speeldag/i }),
     ).toHaveAttribute("href", "/speeldag/poll-vandaag");
   });
 
-  it("laat die link weg als er vandaag geen vastgelegde speeldag is", () => {
+  it("beheert die speeldag niet meer op de tab zelf", () => {
+    renderTab({
+      ...DAG_ONDERWEG,
+      polls: [autoPoll()],
+      pollOptions: [AUTO_OPTION],
+    });
+
+    // Geen tweede plek om in te delen, uitslagen in te vullen of een losse
+    // partij bij te zetten: dat staat allemaal op /speeldag/:id.
+    expect(
+      screen.queryByRole("heading", { name: /^wedstrijden$/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /volgende ronde/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /speelformaat/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: /losse partij/i }),
+    ).not.toBeInTheDocument();
+    // De dag als geheel blijft wél in de kop staan.
+    expect(
+      screen.getByText(/1 van 2 uitslagen binnen/i, { selector: ".dagkop__line" }),
+    ).toBeInTheDocument();
+  });
+
+  it("stuurt op een lege speeldag naar de pagina in plaats van naar de generator", () => {
+    renderTab({ polls: [autoPoll()], pollOptions: [AUTO_OPTION] });
+
+    expect(
+      screen.getByText(/zet de rondes klaar op de speeldag hieronder/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/speeldag om 20:00/i).closest(".card"),
+    ).not.toBeNull();
+    expect(
+      screen.getByText(/nog niets ingedeeld$/i, { selector: ".card__subtitle" }),
+    ).toBeInTheDocument();
+  });
+
+  // #1146: twee sessies op één datum zijn twee avonden met een eigen indeling,
+  // dus ook twee bestemmingen. De oude dagkop-link koos er stil één.
+  it("geeft elke speeldag van de dag een eigen kaart", () => {
+    renderTab({
+      ...DAG_ONDERWEG,
+      polls: [autoPoll(), OCHTEND_POLL],
+      pollOptions: [AUTO_OPTION, OCHTEND_OPTION],
+    });
+
+    const links = screen.getAllByRole("link", {
+      name: /beheer deze speeldag/i,
+    });
+    expect(links.map((l) => l.getAttribute("href"))).toEqual([
+      "/speeldag/poll-ochtend",
+      "/speeldag/poll-vandaag",
+    ]);
+
+    // De wedstrijden van 14:00 (clubtijd) liggen dichter bij de ochtendsessie,
+    // dus die telt de spelers en de avondkaart staat nog leeg.
+    const avond = screen
+      .getByRole("heading", { name: /speeldag om 20:00/i })
+      .closest(".card") as HTMLElement;
+    expect(
+      within(avond).getByText(/^nog niets ingedeeld$/i),
+    ).toBeInTheDocument();
+  });
+
+  it("laat de tab ongemoeid op een dag zonder vastgelegd moment", () => {
     renderTab({ ...DAG_ONDERWEG, polls: [], pollOptions: [] });
 
     expect(
-      screen.queryByRole("link", { name: /open de speeldag/i }),
+      screen.queryByRole("link", { name: /beheer deze speeldag/i }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /^wedstrijden$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: /losse partij/i }),
+    ).toBeInTheDocument();
   });
 
   it("vertelt op een lege dag dat de automaat nog moet komen", () => {

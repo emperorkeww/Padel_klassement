@@ -79,6 +79,27 @@ export function rondeWinnaars(
 }
 
 /**
+ * Hoe ver één speeldag staat, als korte bijzin (#1209).
+ *
+ * De dagkop heeft hier een eigen variant van: een volzin over de dag als
+ * geheel, mét de telling en een vervolgstap erin. Deze kant staat erboven op de
+ * speeldagkaart en houdt het bewust bij één bijzin achter het spelersaantal —
+ * "4 spelers · ronde 2 van 3" — anders staat dezelfde telling twee blokken
+ * onder elkaar.
+ */
+export function speeldagStand(v: DagVoortgang): string {
+  if (v.totaal === 0) return "nog niets ingedeeld";
+  if (v.gespeeld === v.totaal) return "alle uitslagen binnen";
+  // "Ronde 2 van 3" alleen als dat klopt; bij losse nummering (bv. een ronde
+  // verwijderd) zou "ronde 4 van 3" onzin zijn — zelfde afspraak als de dagkop.
+  if (v.openRonde == null) {
+    return `${v.gespeeld} van ${v.totaal} uitslagen binnen`;
+  }
+  const van = v.openRonde <= v.rondes ? ` van ${v.rondes}` : "";
+  return `ronde ${v.openRonde}${van}`;
+}
+
+/**
  * Waar de indeling van vandaag vandaan komt — of waarom er nog geen is.
  *
  * - `klaargezet`   de cron zette de rondes neer (poll draagt `rounds_generated_at`)
