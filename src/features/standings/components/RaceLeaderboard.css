@@ -108,6 +108,19 @@
   color: var(--ink-soft-strong);
   font-size: var(--fs-xs);
 }
+/* Staat de tijdlijn uit (zoeken, gekozen periode), dan zegt deze regel waarom
+   — eerder verdween de hele bediening zonder een woord uitleg (#1254). */
+.race-tijdlijn__uit {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-soft-strong);
+  font-size: var(--fs-xs);
+}
+.race-tijdlijn__bereik {
+  color: var(--ink-soft-strong);
+}
 .race-tijdlijn__verhaal {
   margin: 0;
   padding: var(--sp-1) var(--sp-4);

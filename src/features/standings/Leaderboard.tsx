@@ -365,7 +365,8 @@ export function Leaderboard() {
   }, [players.reload, teams.reload, teamsMap.reload, recent.reload, ratings.reload, histories.reload, seasonPlayers.reload, seasonTeams.reload, seasonMatches.reload, allCompleted.reload, piasWeeks.reload]);
   useRealtime("matches", refresh);
 
-  const pmap = profilesMap.data ?? {};
+  // Stabiele referentie: pmap voedt de useMemo van de rijen.
+  const pmap = useMemo(() => profilesMap.data ?? {}, [profilesMap.data]);
   // Stabiele referentie: tmap voedt de useMemo van de rangverschuivingen.
   const tmap = useMemo(() => teamsMap.data ?? {}, [teamsMap.data]);
   // Stabiele referenties: rmap/hmap voeden de useMemo van de rangverschuivingen.
@@ -451,37 +452,57 @@ export function Leaderboard() {
   // Client-side scope: de tijdmachine (asof) en de GROEP-seizoensstand. De
   // globale seizoensstand komt uit de RPC (seasonPlayers/seasonTeams) en loopt
   // niet via deze matchlijst.
-  const scopedSource = asof
-    ? allCompleted.data
-      ? matchesUpTo(allCompleted.data, asof)
-      : null
-    : season && !globalSeason
-      ? seasonMatches.data
-        ? matchesInSeason(seasonMatches.data, season)
+  // Vanaf hier tot en met `visibleRows` staat alles in een useMemo (#1254).
+  // Niet uit netheid: elke render van dit scherm bouwde de hele keten opnieuw
+  // op — filteren, standen berekenen, mappen, sorteren, hernummeren — en dat
+  // gebeurt vaker dan je denkt. `useVerbergBijScrollen` (#942) zet state bij
+  // het scrollen, dus dit liep bij elke veeg over de pagina.
+  const scoped = useMemo(() => {
+    const bron = asof
+      ? allCompleted.data
+        ? matchesUpTo(allCompleted.data, asof)
         : null
-      : null;
-  const scoped = scopedSource
-    ? scopedSource.filter((m) => !groupId || m.group_id === groupId)
-    : null;
-  const playerStandings = globalSeason
-    ? (seasonPlayers.data ?? [])
-    : usingScope
-      ? scoped
-        ? computePlayerStandings(scoped, tmap, pmap)
-        : []
-      : (players.data ?? []);
-  const teamStandings = globalSeason
-    ? (seasonTeams.data ?? [])
-    : usingScope
-      ? scoped
-        ? computeTeamStandings(scoped, tmap)
-        : []
-      : (teams.data ?? []);
+      : season && !globalSeason
+        ? seasonMatches.data
+          ? matchesInSeason(seasonMatches.data, season)
+          : null
+        : null;
+    return bron ? bron.filter((m) => !groupId || m.group_id === groupId) : null;
+  }, [asof, allCompleted.data, season, globalSeason, seasonMatches.data, groupId]);
+  const playerStandings = useMemo(
+    () =>
+      globalSeason
+        ? (seasonPlayers.data ?? [])
+        : usingScope
+          ? scoped
+            ? computePlayerStandings(scoped, tmap, pmap)
+            : []
+          : (players.data ?? []),
+    [globalSeason, seasonPlayers.data, usingScope, scoped, tmap, pmap, players.data],
+  );
+  const teamStandings = useMemo(
+    () =>
+      globalSeason
+        ? (seasonTeams.data ?? [])
+        : usingScope
+          ? scoped
+            ? computeTeamStandings(scoped, tmap)
+            : []
+          : (teams.data ?? []),
+    [globalSeason, seasonTeams.data, usingScope, scoped, tmap, teams.data],
+  );
 
-  // Vorm: binnen een scope alleen de matches van die scope tonen.
-  const formSource = usingScope ? (scoped ?? []) : (recent.data ?? []);
-  const formFor = (playerId: string): Outcome[] =>
-    recentForm(formSource, tmap, playerId, 5);
+  // Vorm: binnen een scope alleen de matches van die scope tonen. Ook de lege
+  // uitwijking staat in een memo: een verse `[]` per render zou de hele keten
+  // eronder alsnog opnieuw laten rekenen.
+  const formSource = useMemo(
+    () => (usingScope ? (scoped ?? []) : (recent.data ?? [])),
+    [usingScope, scoped, recent.data],
+  );
+  const formFor = useCallback(
+    (playerId: string): Outcome[] => recentForm(formSource, tmap, playerId, 5),
+    [formSource, tmap],
+  );
 
   // Verschuiving t.o.v. vóór de laatste speeldag (▲2 / ▼1 / nieuw) — alleen
   // in "Alle tijden": een seizoensarchief beweegt niet meer.
@@ -510,7 +531,7 @@ export function Leaderboard() {
     return latest;
   }, [recent.data, tmap, myId]);
 
-  const playerRows = playerStandings.map((p) => ({
+  const playerRows = useMemo(() => playerStandings.map((p) => ({
     key: p.player_id,
     isMe: p.player_id === myId,
     name: displayName(p),
@@ -537,9 +558,9 @@ export function Leaderboard() {
     // groep waarop het klassement gescopet staat. Niet op een stand-op-datum:
     // een huidige bounty naast een oude rating klopt niet.
     bounty: asof ? null : (bountyPools[p.player_id] ?? null),
-  }));
+  })), [playerStandings, myId, pmap, asof, asofRatings.data, rmap, hmap, formFor, usingScope, shifts, bountyPools]);
 
-  const teamRows = teamStandings.map((t) => ({
+  const teamRows = useMemo(() => teamStandings.map((t) => ({
     key: t.team_id,
     isMe: false,
     name: teamLabel(tmap[t.team_id], pmap),
@@ -556,28 +577,40 @@ export function Leaderboard() {
     history: [] as RatingPoint[],
     form: [] as Outcome[],
     shift: undefined as Shift | undefined,
-  }));
+  })), [teamStandings, tmap, pmap]);
 
   // Minimaal-aantal-matches: verberg spelers/teams onder de drempel (de
   // overgebleven lijst wordt opnieuw genummerd 1..k).
-  const atLeastMin = <T extends { played: number }>(list: T[]): T[] =>
-    minMatches > 0 ? list.filter((r) => r.played >= minMatches) : list;
-  const shownPlayerRows = atLeastMin(playerRows);
+  const atLeastMin = useCallback(
+    <T extends { played: number }>(list: T[]): T[] =>
+      minMatches > 0 ? list.filter((r) => r.played >= minMatches) : list,
+    [minMatches],
+  );
+  const shownPlayerRows = useMemo(
+    () => atLeastMin(playerRows),
+    [atLeastMin, playerRows],
+  );
   // Divisies gebruiken dezelfde spelerslijst als het speler-klassement.
-  const rows = tab === "team" ? atLeastMin(teamRows) : shownPlayerRows;
+  const rows = useMemo(
+    () => (tab === "team" ? atLeastMin(teamRows) : shownPlayerRows),
+    [tab, atLeastMin, teamRows, shownPlayerRows],
+  );
   // Rating is de leidende volgorde voor spelers (#52) — speelfrequentie telt
   // niet; de klassieke punten-tie-break geldt bij gelijke/ontbrekende rating.
-  const displayRows =
-    tab === "team"
-      ? rows
-      : [...rows].sort(
-          (a, b) =>
-            (b.rating ?? -Infinity) - (a.rating ?? -Infinity) ||
-            byRank(
-              { points: a.points, goal_diff: a.goalDiff, won: a.won },
-              { points: b.points, goal_diff: b.goalDiff, won: b.won },
-            ),
-        );
+  const displayRows = useMemo(
+    () =>
+      tab === "team"
+        ? rows
+        : [...rows].sort(
+            (a, b) =>
+              (b.rating ?? -Infinity) - (a.rating ?? -Infinity) ||
+              byRank(
+                { points: a.points, goal_diff: a.goalDiff, won: a.won },
+                { points: b.points, goal_diff: b.goalDiff, won: b.won },
+              ),
+          ),
+    [tab, rows],
+  );
   // Globale seizoensstand → RPC; groep-seizoen/tijdmachine → client-side matches;
   // anders de live views.
   const scopeAsync = season ? seasonMatches : allCompleted;
@@ -736,12 +769,17 @@ export function Leaderboard() {
   const { throne: throneRow, rest: volkRows } = canThrone
     ? splitDictatorThrone(displayRows, dictator.data?.profileId ?? null)
     : { throne: null, rest: displayRows };
-  const rankedRows: Row[] = displayRows.map((r, i) => ({ ...r, rank: i + 1 }));
+  const rankedRows: Row[] = useMemo(
+    () => displayRows.map((r, i) => ({ ...r, rank: i + 1 })),
+    [displayRows],
+  );
   // De dictator verdwijnt uit de ranglijst; zijn plek 1 verdwijnt mee zodat het
   // volk zichtbaar bij #2 begint (de rangnummers zelf blijven staan).
-  const ladderRows = throneRow
-    ? rankedRows.filter((r) => r.key !== throneRow.key)
-    : rankedRows;
+  const throneKey = throneRow?.key ?? null;
+  const ladderRows = useMemo(
+    () => (throneKey ? rankedRows.filter((r) => r.key !== throneKey) : rankedRows),
+    [throneKey, rankedRows],
+  );
   // Volkslied (#535): zolang Kylian Mbappé op de troon zit — waarnemend bij
   // verstek (throneRow == null, #530) of een echt clublid dat zo heet — speelt
   // op de zichtbare spelers-tab z'n dictator-anthem, tot je het klassement
@@ -860,11 +898,12 @@ export function Leaderboard() {
   // Kaart-preview (#497): geopend vanaf een rij-tik of raster-kaart.
   const [preview, setPreview] = useState<Row | null>(null);
 
-  const matchesName = (r: Row) =>
-    r.name.toLowerCase().includes(nq) ||
-    (r.profile?.username?.toLowerCase().includes(nq) ?? false);
-  const visibleRows =
-    nq && searchable ? ladderRows.filter(matchesName) : ladderRows;
+  const visibleRows = useMemo(() => {
+    const matchesName = (r: Row) =>
+      r.name.toLowerCase().includes(nq) ||
+      (r.profile?.username?.toLowerCase().includes(nq) ?? false);
+    return nq && searchable ? ladderRows.filter(matchesName) : ladderRows;
+  }, [nq, searchable, ladderRows]);
   // Vindbare spelers die niet in de ranglijst staan (bv. nog geen matches).
   const rankedKeys = new Set(rows.map((r) => r.key));
   const extraProfiles =
@@ -1168,7 +1207,15 @@ export function Leaderboard() {
             // Het volledige veld ankert de as en de pack-drempels (#1241):
             // zoeken of filteren mag de baan niet verschuiven.
             axisRows={rankedRows}
-            allowTimeline={!usingScope && !nq}
+            // Waaróm de tijdlijn er niet is (#1254): eerder verdween de
+            // hele bediening zonder een woord uitleg.
+            timelineUit={
+              nq
+                ? "De tijdlijn staat uit terwijl je zoekt — wis het zoekveld om het verloop af te spelen."
+                : usingScope
+                  ? "De tijdlijn staat uit bij een gekozen periode — zet het klassement op Alle tijden om het verloop af te spelen."
+                  : null
+            }
             meRef={meRaceRef}
             onJumpToMe={scrollToMe}
           />
