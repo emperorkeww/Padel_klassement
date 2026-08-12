@@ -697,6 +697,17 @@
   box-sizing: border-box;
 }
 
+/* Het `hidden`-attribuut moet winnen van een `display` op een klasse (#1195).
+   De UA-regel `[hidden] { display: none }` heeft namelijk dezelfde soortelijke
+   gewicht als élke klasse-regel, en de latere van de twee wint — dus zodra een
+   verborgen element ook `.iets { display: flex }` draagt, staat het gewoon in
+   beeld. Zo bleef de maandnavigatie van de agenda zichtbaar in de
+   lijstweergave: attribuut aanwezig, 181px breed, knoppen die daar niets te
+   bedienen hebben. */
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   /* Vangnet tegen horizontaal scrollen van de hele pagina, ook op schermen

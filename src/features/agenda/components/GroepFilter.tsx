@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import { useScrollSchaduw } from "@/lib/hooks/useScrollSchaduw";
 import type { GroupSummary } from "@/features/groups/api";
 
 /* ------------------------------------------------------------------ */
@@ -24,7 +26,30 @@ export function GroepFilter({
   /** De nieuwe keuze; leeg betekent weer alles. */
   onWissel: (ids: string[]) => void;
 }) {
+  // Eén groep is geen keuze. De rij zit in een eigen component omdat de hook
+  // hieronder zich bij zijn eerste effect aan het element hecht: stond de
+  // vroege return in hetzelfde component, dan draaide dat effect op de render
+  // waarin er nog niets stond (de groepen komen async binnen), en werd de
+  // scroll-listener nooit meer gekoppeld. De fade stond dan wel goed bij het
+  // eerste meten, maar wisselde nooit meer van kant.
   if (groepen.length < 2) return null;
+  return <FilterRij groepen={groepen} gekozen={gekozen} onWissel={onWissel} />;
+}
+
+function FilterRij({
+  groepen,
+  gekozen,
+  onWissel,
+}: {
+  groepen: GroupSummary[];
+  gekozen: string[];
+  onWissel: (ids: string[]) => void;
+}) {
+  // De rij schuift horizontaal en heeft geen scrollbar; zonder teken aan de
+  // rand zie je niet dat er nog een groep buiten beeld staat (#1195). Zelfde
+  // hook en hetzelfde data-attribuut als de feed-filters en de tabbalk (#912).
+  const rijRef = useRef<HTMLDivElement>(null);
+  const schaduw = useScrollSchaduw(rijRef);
 
   const alles = gekozen.length === 0;
 
@@ -38,7 +63,9 @@ export function GroepFilter({
 
   return (
     <div
+      ref={rijRef}
       className="agenda-filter"
+      data-schaduw={schaduw}
       role="group"
       aria-label="Filter op groep"
     >
