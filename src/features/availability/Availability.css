@@ -56,6 +56,45 @@
   margin: 0 0 1rem;
 }
 
+/* Dagkop met de weg terug naar plannen ernaast (#1213). Op smalle schermen
+   wikkelt de link onder de datum in plaats van hem samen te drukken. */
+.avail-dagkop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.avail-dagkop .avail-day {
+  margin-bottom: var(--sp-2);
+}
+
+/* Wegwijzer, geen primaire actie: gedempt met een vaste onderstreping. Bewust
+   niet in --accent (dat paar haalt op klein zetsel geen 4,5:1 op wit). */
+.avail-plan {
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.avail-plan:hover {
+  color: var(--ink);
+}
+
+/* Dezelfde stap per dag in het weekraster, klein genoeg om naast het daglabel
+   in de plakkende kolom te passen. */
+.week-rowhead__plan {
+  color: var(--ink-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.week-rowhead__plan:hover {
+  color: var(--ink);
+}
+
 /* Samenvattingsregel boven het raster ("Eerstvolgend vrij" bij de dag,
    "Beste moment" bij de week); sober, zoals .avail-day. */
 .avail-next {

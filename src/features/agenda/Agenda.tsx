@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
@@ -109,6 +109,17 @@ export function Agenda() {
   // is een instelling die je één keer doet, geen plek in de agenda om naar te
   // linken of op terug te komen.
   const [aboOpen, setAboOpen] = useState(false);
+
+  // Instap vanaf Banen (#1213): "?dag=…&plan=1" opent het plan-sheet meteen op
+  // die dag. Eén keer lezen en dan de vlag wissen, zoals "?log=1" op het
+  // matchoverzicht — anders opent hij opnieuw bij elke refresh en bij het
+  // sluiten van het sheet. Een dag die geweest is valt niet te plannen; die
+  // laat gewoon de agenda zien.
+  useEffect(() => {
+    if (!stand.plan) return;
+    if (stand.dag >= vandaag) setPlanDag(stand.dag);
+    zet({ plan: false });
+  }, [stand.plan, stand.dag, vandaag, zet]);
 
   const groepen = useAsync(getMyGroups, []);
   const profielen = useAsync(getProfilesMap, []);

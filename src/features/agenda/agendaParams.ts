@@ -26,6 +26,15 @@ export type AgendaStand = {
   dag: string;
   open: string | null;
   weergave: Weergave;
+  /**
+   * Instapvlag: open het plan-sheet meteen voor de gekozen dag (#1213).
+   *
+   * Bewust een instap en geen toestand, zoals `?log=1` op het matchoverzicht:
+   * de agenda leest hem één keer bij binnenkomst en wist hem daarna. Het
+   * sheet zelf blijft lokale state — het geeft het stokje door aan de wizard,
+   * en dat is geen keten die je halverwege wil kunnen delen.
+   */
+  plan: boolean;
 };
 
 /** Sleutelnamen zoals ze in de URL staan; gedeeld met de tests. */
@@ -34,6 +43,7 @@ export const SLEUTELS = {
   dag: "dag",
   open: "open",
   weergave: "weergave",
+  plan: "plan",
 } as const;
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -101,6 +111,7 @@ export function standNaarParams(
     // Het sheet gaat altijd over de gekozen dag, dus de dag zelf staat er al.
     [SLEUTELS.open]: stand.open ? "1" : null,
     [SLEUTELS.weergave]: stand.weergave === "lijst" ? "lijst" : null,
+    [SLEUTELS.plan]: stand.plan ? "1" : null,
   };
 }
 
@@ -116,6 +127,7 @@ export function paramsNaarStand(
     maand: leesMaand(params.get(SLEUTELS.maand)) ?? maandVan(dag),
     open: params.get(SLEUTELS.open) ? dag : null,
     weergave: params.get(SLEUTELS.weergave) === "lijst" ? "lijst" : "maand",
+    plan: params.get(SLEUTELS.plan) != null,
   };
 }
 
