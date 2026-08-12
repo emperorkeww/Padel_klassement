@@ -111,15 +111,34 @@ describe("matchesVoorSpeeldag", () => {
   });
 
   it("rekent in clubtijd, niet in UTC", () => {
-    // 22:30 UTC op de 15e is 00:30 clubtijd op de 16e — die hoort er dus bij,
-    // en 23:00 UTC op de 16e valt al in de nacht van de 17e.
+    // 23:00 UTC op de 16e is 01:00 clubtijd op de 17e: die valt buiten de dag,
+    // ook al zegt de UTC-datum de 16e.
     const list = [
-      match({ id: "nacht-erin", played_at: "2026-07-15T22:30:00Z" }),
+      match({ id: "avond", played_at: "2026-07-16T18:30:00Z" }),
       match({ id: "nacht-eruit", played_at: "2026-07-16T23:00:00Z" }),
     ];
+    expect(matchesVoorSpeeldag(list, avond).map((m) => m.id)).toEqual(["avond"]);
+  });
+
+  it("laat een partij van ver vóór het slot buiten de speeldag (#1221)", () => {
+    // 12:00 UTC is 14:00 clubtijd, zes uur voor een speeldag van 20:00. Dat is
+    // een losse partij op dezelfde dag, geen wedstrijd van die avond. Vlak
+    // ervoor beginnen mag wel: je kunt eerder op de baan staan dan geboekt.
+    const list = [
+      match({ id: "middag", played_at: "2026-07-16T12:00:00Z" }),
+      match({ id: "net-ervoor", played_at: "2026-07-16T17:30:00Z" }), // 19:30
+    ];
     expect(matchesVoorSpeeldag(list, avond).map((m) => m.id)).toEqual([
-      "nacht-erin",
+      "net-ervoor",
     ]);
+  });
+
+  it("rekent de nacht ná de avond ervoor niet mee (#1221)", () => {
+    // 22:30 UTC op de 15e is 00:30 clubtijd op de 16e. `dayInZone` zet die op
+    // de 16e, maar het is de staart van de avond dáárvoor — niet iets van de
+    // speeldag die pas negentien uur later begint.
+    const list = [match({ id: "nacht", played_at: "2026-07-15T22:30:00Z" })];
+    expect(matchesVoorSpeeldag(list, avond)).toEqual([]);
   });
 
   it("telt een losse partij op dezelfde dag gewoon mee", () => {
@@ -175,10 +194,18 @@ describe("twee speeldagen op één dag (#1146)", () => {
     expect(matchesVoorSpeeldag(uitloop, avond, [ochtend])).toEqual([]);
   });
 
-  it("verandert niets zonder buren", () => {
-    expect(matchesVoorSpeeldag(list, avond).map((m) => m.id)).toEqual(
+  it("houdt zonder buren alles van die sessie vast", () => {
+    // Zonder tweede sessie is er niets om tegen af te wegen, dus claimt de
+    // ochtend alles van die dag vanaf zijn eigen begin — de avondwedstrijden
+    // incluis. De ochtendwedstrijden liggen andersom uren vóór de avondsessie
+    // en horen daar sinds #1221 niet meer bij, ook niet zonder buur.
+    expect(matchesVoorSpeeldag(list, ochtend).map((m) => m.id)).toEqual(
       list.map((m) => m.id),
     );
+    expect(matchesVoorSpeeldag(list, avond).map((m) => m.id)).toEqual([
+      "avond-1",
+      "avond-2",
+    ]);
   });
 
   it("vindt de momenten van een dag op tijd gesorteerd", () => {

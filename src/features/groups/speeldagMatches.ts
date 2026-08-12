@@ -68,14 +68,65 @@ function startVan(moment: SpeeldagMoment): number {
 }
 
 /**
+ * Hoeveel eerder dan het slot een wedstrijd nog bij die speeldag hoort (#1221).
+ *
+ * Je kunt vroeger op de baan staan dan de boeking zegt, en een eerste ronde die
+ * om kwart voor acht al gelogd wordt hoort gewoon bij de avond van acht uur.
+ * Wat er ver vóór ligt is iets anders: een partij van 's middags is geen
+ * wedstrijd van de speeldag van 's avonds, ook al valt hij op dezelfde dag.
+ */
+export const VOORSPRONG_MS = 60 * 60_000;
+
+/**
+ * Ligt `tMs` dichter bij `mijn` moment dan bij de andere momenten van die dag?
+ *
+ * Bij precies gelijke afstand is dit voor allebei waar. Op de speeldagpagina is
+ * dat de bedoeling (liever twee keer zichtbaar dan nergens); wie ze telt, moet
+ * zelf kiezen.
+ */
+export function dichtstbijMoment(
+  tMs: number,
+  mijn: number,
+  andere: number[],
+): boolean {
+  const afstand = Math.abs(tMs - mijn);
+  return andere.every((ander) => afstand <= Math.abs(tMs - ander));
+}
+
+/**
+ * Hoort een wedstrijd die om `tMs` gespeeld is bij het moment dat om `mijn`
+ * begint?
+ *
+ * Dit is de enige plek waar die regel staat — de agenda stelt dezelfde vraag
+ * over andere datavormen (#1221) en mag hem niet nabouwen.
+ *
+ * Een bovengrens zit er niet in: die doet de kalenderdag al. Wat ná het slot
+ * gelogd wordt hoort er wél bij, want loggen gebeurt tijdens en na de sessie —
+ * `completeMatch` zet `played_at` op het moment van invoeren.
+ */
+export function hoortBijMoment(
+  tMs: number,
+  mijn: number,
+  andere: number[],
+): boolean {
+  if (tMs < mijn - VOORSPRONG_MS) return false;
+  return dichtstbijMoment(tMs, mijn, andere);
+}
+
+/**
  * De wedstrijden die bij dit moment horen. `played_at` is de bron zodra hij er
  * is (#827 geeft gegenereerde rondes de echte starttijd mee); zonder tijdstip
  * valt het terug op het moment van aanmaken, net als overal elders.
  *
  * `andere` zijn de overige momenten van diezelfde dag. Staat daar niets in —
- * het normale geval — dan is dit gewoon "alles van die kalenderdag". Anders
- * wint het dichtstbijzijnde moment: een match om 10:30 hoort bij de sessie van
- * 10:00 en niet bij die van 20:00.
+ * het normale geval — dan is dit alles van die kalenderdag vanaf het moment
+ * zelf. Anders wint het dichtstbijzijnde moment: een match om 10:30 hoort bij
+ * de sessie van 10:00 en niet bij die van 20:00.
+ *
+ * De ondergrens geldt alleen voor een match met een échte speeltijd. Zonder
+ * `played_at` is `created_at` het moment van klaarzetten en niet van spelen —
+ * wie 's middags de rondes van vanavond invoert, hoort daar niet om buitengezet
+ * te worden.
  */
 export function matchesVoorSpeeldag(
   matches: Match[],
@@ -83,20 +134,16 @@ export function matchesVoorSpeeldag(
   andere: SpeeldagMoment[] = [],
 ): Match[] {
   const { dag, tz } = moment;
-  const opDeDag = matches.filter(
-    (m) => dayInZone(m.played_at ?? m.created_at, tz) === dag,
-  );
-  const concurrenten = andere.filter((m) => m.option.id !== moment.option.id);
-  if (concurrenten.length === 0) return opDeDag;
-
   const mijn = startVan(moment);
-  const rest = concurrenten.map(startVan);
-  return opDeDag.filter((m) => {
-    const t = new Date(m.played_at ?? m.created_at).getTime();
-    const afstand = Math.abs(t - mijn);
-    // Precies middenin tussen twee momenten (praktisch onmogelijk, maar het
-    // kán): dan verschijnt hij op allebei. Liever twee keer zichtbaar dan
-    // nergens.
-    return rest.every((ander) => afstand <= Math.abs(t - ander));
+  const rest = andere
+    .filter((m) => m.option.id !== moment.option.id)
+    .map(startVan);
+  return matches.filter((m) => {
+    const wanneer = m.played_at ?? m.created_at;
+    if (dayInZone(wanneer, tz) !== dag) return false;
+    const t = new Date(wanneer).getTime();
+    return m.played_at
+      ? hoortBijMoment(t, mijn, rest)
+      : dichtstbijMoment(t, mijn, rest);
   });
 }

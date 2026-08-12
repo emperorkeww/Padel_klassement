@@ -168,6 +168,22 @@ const DAG_ONDERWEG = {
   ],
 };
 
+/** Dezelfde dag, maar met rondes die écht op de avondsessie gespeeld zijn
+ *  (#1221). De uitslag hierboven staat op 14:00 clubtijd, en dat is sinds die
+ *  issue geen wedstrijd van een speeldag om 20:00 meer — gegenereerde rondes
+ *  dragen de starttijd van hun slot (#827), dus zo ziet zo'n avond er echt uit. */
+const DONE_VANAVOND: Match = {
+  ...DONE_TODAY,
+  played_at: `${today}T18:10:00.000Z`,
+};
+const AVOND_ONDERWEG = {
+  matches: [DONE_VANAVOND, PLANNED_TODAY],
+  rounds: [
+    { round: 2, list: [PLANNED_TODAY] },
+    { round: 1, list: [DONE_VANAVOND] },
+  ],
+};
+
 describe("<VandaagTab />", () => {
   beforeEach(() => {
     tables.play_polls = [];
@@ -531,7 +547,7 @@ describe("<VandaagTab />", () => {
 
   it("vat een vastgelegde speeldag samen en wijst naar de speeldagpagina", () => {
     renderTab({
-      ...DAG_ONDERWEG,
+      ...AVOND_ONDERWEG,
       polls: [autoPoll()],
       pollOptions: [AUTO_OPTION],
     });
