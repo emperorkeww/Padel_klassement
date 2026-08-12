@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { getMyGroups } from "@/features/groups/api";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRefetchOnFocus } from "@/lib/hooks/useRefetchOnFocus";
 import { PageTabs, TabPanel } from "@/ui/PageTabs";
@@ -112,6 +113,19 @@ const WEERGAVE_TABS: { id: "dag" | "week"; label: string }[] = [
   { id: "week", label: "Week" },
 ];
 
+/**
+ * De weg terug van banen naar plannen (#1213).
+ *
+ * Banen was eenrichtingsverkeer: je zag dat donderdag vrij is en mocht die dag
+ * elders opnieuw invoeren. De link gaat naar de agenda en niet naar een eigen
+ * wizard hier: het plannen heeft sinds #1121 één eigenaar, met groepskeuze,
+ * onthouden groep en dezelfde aanmaakflow. `?plan=1` zegt daar alleen "open dat
+ * meteen voor deze dag".
+ */
+function planPad(datum: string): string {
+  return `/agenda?dag=${datum}&plan=1`;
+}
+
 export function Availability() {
   usePageTitle("Banen");
   const club = useClub();
@@ -174,6 +188,12 @@ export function Availability() {
     }
     setParams(next, { replace: true });
   }
+  // Alleen wie in een groep zit kan een speeldag plannen; anders belooft de
+  // knop iets wat niet kan (#1213). Eén gecachete lijst, geen Playtomic-
+  // verkeer erbij — de egress-omweg van #385 blijft ongemoeid.
+  const groepen = useAsync(getMyGroups, []);
+  const kanPlannen = (groepen.data ?? []).length > 0;
+
   const bookHref = useBookingUrl(club, date);
   const setDate = (d: string) => update({ datum: d === today ? null : d });
   const setDuration = (d: number | null) =>
@@ -302,12 +322,18 @@ export function Availability() {
 
       <TabPanel id={view} idPrefix="banen">
         {view === "dag" ? (
-          <DaySection date={date} today={today} duration={duration} />
+          <DaySection
+            date={date}
+            today={today}
+            duration={duration}
+            kanPlannen={kanPlannen}
+          />
         ) : (
           <WeekSection
             start={date}
             today={today}
             duration={duration}
+            kanPlannen={kanPlannen}
             onPickDay={pickDay}
             onShift={(days) => {
               const next = addDays(date, days);
@@ -324,10 +350,13 @@ function DaySection({
   date,
   today,
   duration,
+  kanPlannen,
 }: {
   date: string;
   today: string;
   duration: number | null;
+  /** Zit de kijker in minstens één groep? Zo niet, dan valt de plan-ingang weg. */
+  kanPlannen: boolean;
 }) {
   // Clubwissel = andere data: het club-id in de deps zorgt voor een refetch.
   const club = useClub();
@@ -351,7 +380,16 @@ function DaySection({
 
   return (
     <>
-      <p className="avail-day">{formatDay(date)}</p>
+      <div className="avail-dagkop">
+        <p className="avail-day">{formatDay(date)}</p>
+        {/* De terugweg naar plannen (#1213): je staat naar een vrije dag te
+            kijken, dus hier hoort de stap "zet er een speeldag op". */}
+        {kanPlannen && (
+          <Link className="avail-plan" to={planPad(date)}>
+            Plan een speeldag →
+          </Link>
+        )}
+      </div>
 
       {availability.loading ? (
         <TimetableSkeleton />
@@ -456,12 +494,14 @@ function WeekSection({
   start,
   today,
   duration,
+  kanPlannen,
   onPickDay,
   onShift,
 }: {
   start: string;
   today: string;
   duration: number | null;
+  kanPlannen: boolean;
   onPickDay: (date: string) => void;
   onShift: (days: number) => void;
 }) {
@@ -535,7 +575,12 @@ function WeekSection({
               />
             </div>
           </div>
-          <WeekGrid week={week.data} duration={duration} onPickDay={onPickDay} />
+          <WeekGrid
+            week={week.data}
+            duration={duration}
+            onPickDay={onPickDay}
+            planPad={kanPlannen ? planPad : undefined}
+          />
         </>
       ) : null}
 
