@@ -1,10 +1,4 @@
-import {
-  addDays,
-  clubEpoch,
-  dayInZone,
-  fromMinutes,
-  toMinutes,
-} from "@/lib/utils/time";
+import { addDays, dayInZone, fromMinutes, toMinutes } from "@/lib/utils/time";
 import { longDay } from "@/features/groups/planPollHelpers";
 import type {
   PlayPoll,
@@ -12,7 +6,7 @@ import type {
   PollVoteStatus,
   PollWindow,
 } from "@/features/groups/pollsApi";
-import { PLAYERS_PER_COURT } from "@/features/groups/pollLogic";
+import { PLAYERS_PER_COURT, momentEindeMs } from "@/features/groups/pollLogic";
 import type { GroupSummary } from "@/features/groups/api";
 
 /* ------------------------------------------------------------------ */
@@ -77,12 +71,12 @@ export type AgendaMarker = {
  *
  * Waar de tijdzone wél telt is "is dit al geweest?": dat is een vergelijking
  * met nu, en die moet per poll in de zone van díe club (#783). Vandaar
- * `clubEpoch` met `poll.club_timezone` hieronder.
+ * `momentEindeMs` met `poll.club_timezone` hieronder — dezelfde helper die de
+ * stemkaart op het overzicht gebruikt (#1196).
  */
 function isPast(option: PollOption, timeZone: string, nowMs: number): boolean {
   return (
-    clubEpoch(option.date, option.start_time, timeZone) +
-      option.duration * 60_000 <
+    momentEindeMs(option.date, option.start_time, option.duration, timeZone) <
     nowMs
   );
 }
@@ -95,9 +89,7 @@ function isPast(option: PollOption, timeZone: string, nowMs: number): boolean {
  * geloven.
  */
 export function momentVoorbij(m: AgendaMarker, nowMs: number): boolean {
-  return (
-    clubEpoch(m.date, m.startTime, m.clubTimezone) + m.duration * 60_000 < nowMs
-  );
+  return momentEindeMs(m.date, m.startTime, m.duration, m.clubTimezone) < nowMs;
 }
 
 /**
