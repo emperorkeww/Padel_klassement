@@ -108,11 +108,12 @@ export function ProfileSkeleton() {
   );
 }
 
-/** Vier statblokken naast elkaar (zoals .stats). */
-export function StatsSkeleton() {
+/** Statblokken naast elkaar (zoals .stats). Vier op het profiel; het
+ *  overzicht telt er sinds #1242 drie en geeft dat mee. */
+export function StatsSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="sk-stats" aria-hidden="true">
-      {Array.from({ length: 4 }).map((_, i) => (
+      {Array.from({ length: count }).map((_, i) => (
         <span key={i} className="sk sk--stat" />
       ))}
     </div>

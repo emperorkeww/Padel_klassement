@@ -1,112 +1,28 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
 import { tap } from "@/lib/utils/haptics";
-import { displayName, getProfilesByIds } from "@/features/profiles/api";
-import { getMatch, getTeamsByIds, readSetScores } from "@/features/matches/api";
-import {
-  REDENEN,
-  appealFoutMelding,
-  draaitWinnaarOm,
-  kantVan,
-  naCorrectie,
-  stemgerechtigden,
-  type PointAppeal,
-} from "@/features/matches/appeal";
-import {
-  castAppealVote,
-  getAppealVotes,
-  getOpenAppeals,
-} from "@/features/matches/appealApi";
-import type { Match, Profile, Team } from "@/types";
+import { appealFoutMelding, draaitWinnaarOm } from "@/features/matches/appeal";
+import { castAppealVote } from "@/features/matches/appealApi";
+import type { AsyncState } from "@/lib/hooks/useAsync";
+import type { Stemzaak } from "../varZaken";
 import "./VarStemKaart.css";
 
 // Rudy's VAR (#1025) op het overzicht: de zaken die op jóuw stem wachten.
-// Alleen dat — een lopende zaak waarin je al gestemd hebt of waarover je niets
-// te zeggen hebt, hoort niet op je dashboard maar op de matchpagina.
-//
-// De kaart laadt zijn eigen context (match, teams, namen). Dat kost alleen iets
-// zodra er werkelijk een zaak openstaat; zonder zaak blijft het bij de ene
-// lijstquery, die RLS al beperkt tot je eigen matches en groepen.
-
-interface Stemzaak {
-  appeal: PointAppeal;
-  match: Match;
-  claimant: string;
-  reden: string;
-  /** De stand vóór en ná, als de claim doorgaat. */
-  na: { scoreA: number; scoreB: number; winnerTeamId: string | null } | null;
-}
-
-async function laadZaken(myId: string): Promise<Stemzaak[]> {
-  const appeals = await getOpenAppeals();
-  if (appeals.length === 0) return [];
-
-  const matches = (
-    await Promise.all(appeals.map((a) => getMatch(a.match_id)))
-  ).filter((m): m is Match => !!m);
-  const teams: Record<string, Team> = await getTeamsByIds([
-    ...new Set(matches.flatMap((m) => [m.team_a_id, m.team_b_id])),
-  ]);
-  const profiles: Record<string, Profile> = await getProfilesByIds([
-    ...new Set(appeals.map((a) => a.claimant_id)),
-  ]);
-
-  const zaken: Stemzaak[] = [];
-  for (const appeal of appeals) {
-    const match = matches.find((m) => m.id === appeal.match_id);
-    if (!match) continue;
-
-    const kiezers = stemgerechtigden({
-      match,
-      teams,
-      claimantId: appeal.claimant_id,
-      isGast: () => false,
-    });
-    if (!kiezers.includes(myId)) continue;
-
-    const votes = await getAppealVotes(appeal.id);
-    if (votes.some((v) => v.voter_id === myId)) continue;
-
-    const kant = kantVan(match, teams, appeal.claimant_id);
-    zaken.push({
-      appeal,
-      match,
-      claimant: profiles[appeal.claimant_id]
-        ? displayName(profiles[appeal.claimant_id])
-        : "Een medespeler",
-      reden:
-        REDENEN.find((r) => r.id === appeal.reden)?.label ?? appeal.reden,
-      na: kant
-        ? naCorrectie({
-            match,
-            kant,
-            setNumber: appeal.set_number,
-            sets: readSetScores(match),
-          })
-        : null,
-    });
-  }
-  return zaken;
-}
+// Sinds #1242 puur presentationeel — de data komt uit useDashboardData
+// (varZaken.ts), zodat de Vandaag-zone weet of er een zaak is voordat deze
+// kaart rendert.
 
 export function VarStemKaart({
   myId,
-  enabled = true,
+  zaken,
 }: {
   myId: string;
-  /**
-   * Uit zolang er geen match van jou binnen het VAR-venster valt. Een beroep
-   * kan dan niet bestaan (point_appeals_guard laat het niet toe), dus hoeft het
-   * overzicht die query niet af te vuren — zie de meetlat in
-   * Dashboard.queries.test.tsx (#736).
-   */
-  enabled?: boolean;
+  /** De zaken die op mijn stem wachten, uit useDashboardData. */
+  zaken: AsyncState<Stemzaak[]>;
 }) {
   const toast = useToast();
   const [busy, setBusy] = useState<string | null>(null);
-  const zaken = useAsync(() => laadZaken(myId), [myId], { enabled });
 
   const lijst = zaken.data ?? [];
   if (lijst.length === 0) return null;

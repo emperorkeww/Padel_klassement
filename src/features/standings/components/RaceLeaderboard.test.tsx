@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -26,11 +26,21 @@ const row = (key: string, rating: number, options: Partial<Row> = {}): Row => ({
   ...options,
 });
 
-function renderRace(rows: Row[], allowReplay = true) {
+function renderRace(
+  rows: Row[],
+  allowTimeline = true,
+  axisRows: Row[] = rows,
+  onJumpToMe?: () => void,
+) {
   return render(
     <MemoryRouter>
       <ToastProvider>
-        <RaceLeaderboard rows={rows} allowReplay={allowReplay} />
+        <RaceLeaderboard
+          rows={rows}
+          axisRows={axisRows}
+          allowTimeline={allowTimeline}
+          onJumpToMe={onJumpToMe}
+        />
       </ToastProvider>
     </MemoryRouter>,
   );
@@ -54,7 +64,7 @@ describe("<RaceLeaderboard />", () => {
     expect(container.querySelector(".race-lane.is-me")).toHaveTextContent("jij");
   });
 
-  it("toont stijgen en dalen ook als tekst en maakt details klikbaar", () => {
+  it("toont stijgen en dalen ook als tekst en opent details in een sheet", () => {
     renderRace([
       row("p1", 1050, { shift: 2 }),
       row("p2", 1030, { shift: -1 }),
@@ -63,10 +73,37 @@ describe("<RaceLeaderboard />", () => {
 
     expect(screen.getByText("▲2")).toHaveClass("is-up");
     expect(screen.getByText("▼1")).toHaveClass("is-down");
-    const details = screen.getByRole("button", { name: "Details van Speler p1" });
-    fireEvent.click(details);
-    expect(details).toHaveAttribute("aria-expanded", "true");
-    expect(document.getElementById(details.getAttribute("aria-describedby")!)).toHaveTextContent("1050 rating");
+    fireEvent.click(screen.getByRole("button", { name: "Details van Speler p1" }));
+    const sheet = screen.getByRole("dialog", { name: "Speler p1" });
+    expect(sheet).toHaveTextContent("1050 rating");
+    expect(sheet).toHaveTextContent("Vorm: W · W · L");
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("tekent het hele veld als punten op de overzichtsstrook", () => {
+    const veld = [
+      row("p1", 1120),
+      row("p2", 1045),
+      row("p3", 1020, { isMe: true }),
+      row("p4", 1017),
+    ];
+    // De strook en de as volgen het volledige veld, ook als er gefilterd is.
+    const { container } = renderRace(veld.slice(0, 2), false, veld);
+    expect(container.querySelectorAll(".race-overview__punt")).toHaveLength(4);
+    expect(container.querySelector(".race-overview__punt.is-me")).not.toBeNull();
+    expect(container.querySelectorAll(".race-lane")).toHaveLength(2);
+  });
+
+  it("vertelt schermlezers volgorde, afstanden en poorten", () => {
+    const { container } = renderRace([
+      row("p1", 1120, { name: "Leider" }),
+      row("p2", 1045),
+    ]);
+    const summary = container.querySelector(".race-board > .sr-only");
+    expect(summary).toHaveTextContent("1. Leider (1120 rating)");
+    expect(summary).toHaveTextContent("2. Speler p2 (1045 rating, 75 achter)");
+    expect(summary).toHaveTextContent("Glazenwasser vanaf 1100 rating");
   });
 
   it("groepeert alleen een echt pack en benadrukt het pack van de gebruiker", () => {
@@ -91,41 +128,78 @@ describe("<RaceLeaderboard />", () => {
     expect(container.querySelector(".race-pack")).toBeNull();
   });
 
-  it("start replay alleen op verzoek vanuit de echte vorige rating", () => {
-    renderRace([
-      row("p1", 1020, {
-        rank: 1,
-        shift: 1,
-        name: "Stijger",
-        history: [{ match_id: "m1", rating_before: 990, rating_after: 1020, delta: 30, played_at: "2026-08-01T20:00:00Z" }],
-      }),
-      row("p2", 1000, { rank: 2, shift: -1 }),
-    ]);
+  const tijdlijnRows = () => [
+    row("p1", 1020, {
+      rank: 1,
+      shift: 1,
+      name: "Stijger",
+      history: [{ match_id: "m1", rating_before: 990, rating_after: 1020, delta: 30, played_at: "2026-08-01T20:00:00Z" }],
+    }),
+    row("p2", 1000, { rank: 2, shift: -1 }),
+  ];
+
+  it("stapt door de speeldagen met echte vorige ratings en rangen", () => {
+    renderRace(tijdlijnRows());
 
     expect(screen.getByLabelText("Stijger: 1020 rating")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /bekijk verschuivingen/i }));
-    expect(screen.getByText(/stand vóór 1 augustus/i)).toBeInTheDocument();
+    expect(screen.getByText("Na de laatste speeldag")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Vorige speeldag" }));
     expect(screen.getByLabelText("Stijger: 990 rating")).toBeInTheDocument();
+    expect(screen.getByText(/startstand · stand 1 van 2/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Volgende speeldag" }));
+    expect(screen.getByLabelText("Stijger: 1020 rating")).toBeInTheDocument();
+    expect(screen.getByText(/Stijger klimt van #2 naar #1/)).toBeInTheDocument();
   });
 
-  it("slaat de beweging over bij prefers-reduced-motion", () => {
-    const original = window.matchMedia;
-    window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as typeof window.matchMedia;
+  it("speelt automatisch af en stopt op de live stand", () => {
+    vi.useFakeTimers();
     try {
-      renderRace([
-        row("p1", 1020, {
-          rank: 1,
-          shift: 1,
-          history: [{ match_id: "m1", rating_before: 990, rating_after: 1020, delta: 30, played_at: "2026-08-01T20:00:00Z" }],
-        }),
-        row("p2", 1000, { rank: 2, shift: -1 }),
-      ]);
-      fireEvent.click(screen.getByRole("button", { name: /bekijk verschuivingen/i }));
-      expect(screen.getByRole("button", { name: /opnieuw bekijken/i })).toBeInTheDocument();
-      expect(screen.getByLabelText("Speler p1: 1020 rating")).toBeInTheDocument();
+      renderRace(tijdlijnRows());
+      fireEvent.click(screen.getByRole("button", { name: /speel af/i }));
+      expect(screen.getByLabelText("Stijger: 990 rating")).toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(900);
+      });
+      expect(screen.getByLabelText("Stijger: 1020 rating")).toBeInTheDocument();
+      expect(screen.getByText("Na de laatste speeldag")).toBeInTheDocument();
     } finally {
-      window.matchMedia = original;
+      vi.useRealTimers();
     }
+  });
+
+  it("biedt geen tijdlijn zonder aantoonbare wijziging", () => {
+    renderRace([row("p1", 1000), row("p2", 990)]);
+    expect(screen.queryByRole("button", { name: /speel af/i })).toBeNull();
+  });
+
+  it("ankert de eigen lane zodat de jouw-positie-chip ernaartoe kan scrollen", () => {
+    const meRef = { current: null as HTMLDivElement | null };
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <RaceLeaderboard
+            rows={[row("p1", 1050), row("p2", 1030, { isMe: true })]}
+            axisRows={[row("p1", 1050), row("p2", 1030, { isMe: true })]}
+            allowTimeline={false}
+            meRef={meRef}
+          />
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+    expect(meRef.current).not.toBeNull();
+    expect(meRef.current).toHaveClass("is-me");
+  });
+
+  it("maakt van de kijker-punt in de strook een spring-naar-mij-knop", () => {
+    const onJumpToMe = vi.fn();
+    renderRace(
+      [row("p1", 1050), row("p2", 1030, { isMe: true })],
+      false,
+      undefined,
+      onJumpToMe,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Spring naar jouw baan" }));
+    expect(onJumpToMe).toHaveBeenCalled();
   });
 
   it("heeft een aparte mobiele lane-layout zonder horizontale paginascroll", () => {

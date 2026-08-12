@@ -29,7 +29,7 @@
   isolation: isolate;
   background: var(--background-navigation);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 12px 0 36px rgba(3, 21, 19, 0.09);
+  box-shadow: 12px 0 36px rgba(0, 0, 0, 0.09);
 }
 
 /* De baanfoto uit de auth-flow wordt op desktop de onderste helft van het
@@ -42,8 +42,8 @@
   inset: auto 0 0;
   height: 49%;
   background:
-    linear-gradient(180deg, var(--background-navigation) 0%, rgba(3, 21, 19, 0.58) 34%, rgba(3, 21, 19, 0.2) 68%),
-    linear-gradient(0deg, rgba(3, 21, 19, 0.78), transparent 52%),
+    linear-gradient(180deg, var(--background-navigation) 0%, rgba(0, 0, 0, 0.58) 34%, rgba(0, 0, 0, 0.2) 68%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.78), transparent 52%),
     url("../features/auth/assets/auth-court.webp") 50% 72% / cover no-repeat;
 }
 .sidebar::after {
@@ -51,7 +51,7 @@
   position: absolute;
   z-index: -1;
   inset: 0;
-  background: linear-gradient(90deg, rgba(3, 21, 19, 0.06), rgba(3, 21, 19, 0.28));
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.28));
   pointer-events: none;
 }
 
@@ -224,7 +224,7 @@
   padding: var(--sp-2) var(--sp-3);
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 999px;
-  background: rgba(3, 21, 19, 0.42);
+  background: rgba(0, 0, 0, 0.42);
   color: var(--navigation-ink);
   font-family: inherit;
   font-size: var(--fs-md);

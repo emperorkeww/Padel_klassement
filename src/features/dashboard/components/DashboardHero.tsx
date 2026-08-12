@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Avatar } from "@/ui/Avatar";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
@@ -77,6 +77,10 @@ export type HeroStatus = {
    *  schrijft (editieLabel) — alleen gelezen als de bijbehorende vlag staat. */
   labels: { kampioen: CrestTekst; inform: CrestTekst; onfire: CrestTekst };
 };
+
+/** Hoeveel titel-chips er naast de statusbadge zichtbaar blijven; de rest
+ *  klapt uit via de "+N"-teller (#1242). */
+const MAX_CHIPS = 3;
 
 /** De crests die deze speler draagt, in weergavevolgorde. Elke titel staat hier
  *  precies één keer: zo kunnen de statusbadge en de chips nooit twee
@@ -159,21 +163,18 @@ export function DashboardHero({
   naam,
   rating,
   ratingGames,
-  rank,
   heeftStand,
   loading,
   status,
   earnedBadges,
   form,
   briefing,
-  generateCta,
 }: {
   myId: string;
   profile: Profile | undefined;
   naam: string;
   rating: number | null;
   ratingGames: number;
-  rank: number | null;
   /** Staat de speler al in het klassement? Zo niet: lege-staat-tekst. */
   heeftStand: boolean;
   loading: boolean;
@@ -181,10 +182,12 @@ export function DashboardHero({
   earnedBadges: Badge[];
   form: ("W" | "D" | "L")[];
   briefing: string | null;
-  generateCta: { to: string; label: string };
 }) {
   const { thema, overlay } = status;
   const crests = crestsVan(status, myId);
+  // Uitgeklapte chip-rij (#1242): begint afgekapt op MAX_CHIPS en klapt op de
+  // teller open; niet meer dicht — wie zijn titels wil zien, wil ze zien.
+  const [alleChips, setAlleChips] = useState(false);
   // De statusbadge is de crest van het thema dat de kaart draagt; loopt er een
   // tijdelijke overlay, dan is dát de badge — die vertelt het nieuws van deze
   // week, terwijl het materiaal eronder de permanente titel al toont. Met een
@@ -193,6 +196,8 @@ export function DashboardHero({
   const badgeVariant = overlay ?? thema;
   const badge = crests.find((c) => c.variant === badgeVariant) ?? null;
   const chips = crests.filter((c) => c !== badge);
+  const zichtbareChips = alleChips ? chips : chips.slice(0, MAX_CHIPS);
+  const chipRest = chips.length - zichtbareChips.length;
   // Draagt de speler geen permanent thema, dan is de kaart die van zijn divisie
   // (#771). Dezelfde tier als de badge in de kop, dus kaart en badge kunnen niet
   // uit elkaar lopen.
@@ -217,7 +222,9 @@ export function DashboardHero({
           </span>
         </Link>
         <div className="hero__text">
-          <p className="hero__eyebrow">Racket in de aanslag?</p>
+          {/* De eyebrow ("Racket in de aanslag?") is er sinds #1242 uit: de
+              begroeting en Rudy's briefing zijn de boodschap — een derde
+              tekstregel erboven maakte de kop drukker zonder iets te zeggen. */}
           <h1 className="hero__name">
             {naam ? `Hoi, ${naam}` : "Hoi!"}
             <TierBadge
@@ -225,14 +232,17 @@ export function DashboardHero({
               dimmed={ratingGames > 0 && ratingGames < THIN_GAMES}
             />
           </h1>
+          {/* De subregel is sinds #1242 alleen nog de lege staat: rang en
+              rating wonen in het cijferblok ("Jouw cijfers"), waar ze mét
+              context staan — hier stonden ze er nog eens naast. De skeleton
+              blijft zolang de stand laadt, zodat de lege-staat-tekst niet
+              flitst voor iemand die allang speelt. */}
           {loading ? (
-            // Geen "speel je eerste match"-flits terwijl de stand nog laadt.
             <span className="sk sk--line hero__sub-sk" aria-hidden="true" />
           ) : (
-            <p className="hero__sub">
-              {heeftStand
-                ? `Je bezet momenteel plek #${rank || "?"} in het klassement met een rating van ${rating || "1000"}.`
-                : profile
+            !heeftStand && (
+              <p className="hero__sub">
+                {profile
                   ? coachEmptyState({
                       type: "dashboard",
                       seed: `${myId}-empty-dashboard`,
@@ -242,7 +252,8 @@ export function DashboardHero({
                       },
                     })
                   : "Kom in beweging en speel je eerste match om het klassement te bestormen!"}
-            </p>
+              </p>
+            )
           )}
         </div>
         {/* Titels en badges staan sinds #939 op de volle kaartbreedte in plaats
@@ -272,7 +283,7 @@ export function DashboardHero({
                 editie hoeft zijn naam voluit te dragen. */}
             {chips.length > 0 && (
               <div className="hero__crests">
-                {chips.map((c) => (
+                {zichtbareChips.map((c) => (
                   <HeroCrest
                     key={c.variant}
                     variant={c.variant}
@@ -282,6 +293,21 @@ export function DashboardHero({
                     uitleg={c.uitleg}
                   />
                 ))}
+                {/* Overloop (#1242): wie vier of meer titels naast zijn badge
+                    draagt, trekt de kaart anders uit elkaar. De rest zit achter
+                    een teller die de rij ter plekke uitklapt — zelfde idee als
+                    de "+N" van de badgestrip. */}
+                {chipRest > 0 && (
+                  <button
+                    type="button"
+                    className="hero__crests-more"
+                    onClick={() => setAlleChips(true)}
+                    aria-expanded={false}
+                    aria-label={`Nog ${chipRest} ${chipRest === 1 ? "titel" : "titels"} tonen`}
+                  >
+                    +{chipRest}
+                  </button>
+                )}
               </div>
             )}
             {earnedBadges.length > 0 && (
@@ -304,21 +330,21 @@ export function DashboardHero({
       )}
       <div className="hero__divide" aria-hidden="true" />
       <div className="hero__foot">
+        {/* Vorm is informatie, geen navigatie (#1242): de profiel-ingang is de
+            avatar met zijn label, en twee stille links naar dezelfde plek is er
+            één te veel. */}
         {form.length > 0 && (
-          <Link className="hero__form" to={`/spelers/${myId}`}>
+          <div className="hero__form">
             <span className="hero__form-label">Vorm</span>
             <FormChips form={form} />
-          </Link>
+          </div>
         )}
+        {/* Eén primaire actie (#1242). "Vrije banen" heeft zijn eigen kaart op
+            de pagina en "Wedstrijden genereren" (#73) zijn eigen ingang op de
+            Spelen-tab — drie knoppen maakten van de belangrijkste er geen. */}
         <div className="hero__actions">
           <Link className="btn btn--primary" to="/spelen?log=1">
             + Match loggen
-          </Link>
-          <Link className="btn" to={generateCta.to}>
-            {generateCta.label}
-          </Link>
-          <Link className="btn" to="/banen">
-            Vrije banen
           </Link>
         </div>
       </div>

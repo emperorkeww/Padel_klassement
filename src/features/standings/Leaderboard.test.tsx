@@ -447,6 +447,15 @@ describe("<Leaderboard />", () => {
     ).toBe(true);
   });
 
+  it("laat Rudy ook op de race over je positie spreken (#1241)", async () => {
+    const { container } = renderPage("/?view=race");
+    await screen.findAllByText(/alice anders/i);
+    expect(container.querySelector(".race-board")).not.toBeNull();
+    const tekst = container.querySelector(".klassement-coach .coach-sneer__text");
+    expect(tekst).not.toBeNull();
+    expect(NIEUW as readonly string[]).toContain(tekst?.textContent);
+  });
+
   it("zwijgt over je positie in een seizoensarchief (#411)", async () => {
     const { container } = renderPage("/?seizoen=2026-q2");
     await screen.findAllByText(/carol claes/i);

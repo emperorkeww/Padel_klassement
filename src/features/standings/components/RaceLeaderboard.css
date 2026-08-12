@@ -25,9 +25,7 @@
 
 .race-summary {
   display: grid;
-  grid-template-columns: auto auto 1fr;
-  align-items: center;
-  gap: var(--sp-1) var(--sp-3);
+  gap: var(--sp-1);
   min-width: min(100%, 22rem);
   padding: var(--sp-3) var(--sp-4);
   border: 1px solid var(--accent-line);
@@ -36,15 +34,29 @@
   background: var(--accent-soft);
 }
 .race-summary__eyebrow {
-  grid-column: 1 / -1;
   color: color-mix(in srgb, var(--accent) 70%, var(--ink));
   font-size: var(--fs-xs);
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+/* Eén doel voert de boventoon (#1241); de rest ondersteunt. */
+.race-summary__kop {
+  font-size: var(--fs-lg);
+  line-height: 1.25;
+}
+.race-summary__sub {
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+.race-summary__feiten {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-1);
+}
 .race-summary__position {
-  font-size: var(--fs-xl);
+  font-size: var(--fs-base);
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -55,32 +67,42 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.race-summary .tier-badge {
-  justify-self: start;
-}
-.race-summary__goal {
-  grid-column: 1 / -1;
-  color: var(--ink-soft);
-  font-size: var(--fs-xs);
-}
 .race-summary .badge {
-  grid-column: 1 / -1;
   justify-self: start;
 }
 .race-summary .badge--accent {
   color: color-mix(in srgb, var(--accent) 70%, var(--ink));
 }
 
-.race-replay {
+/* Tijdlijn-bediening (#1241): stap, scrub of speel het verloop af. */
+.race-tijdlijn {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   justify-content: center;
   gap: var(--sp-1);
 }
-.race-replay__status {
+.race-tijdlijn__knoppen {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.race-tijdlijn__scrubber {
+  width: clamp(6rem, 14vw, 10rem);
+  accent-color: var(--accent);
+}
+.race-tijdlijn__status {
   color: var(--ink-soft);
   font-size: var(--fs-xs);
+}
+.race-tijdlijn__verhaal {
+  margin: 0;
+  padding: var(--sp-1) var(--sp-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
 }
 
 .race-board__course {
@@ -89,6 +111,66 @@
   border-radius: var(--radius-sm);
   background: var(--surface);
   overflow: clip;
+}
+
+/* Overzichtsstrook (#1241): het hele veld als punten op de gedeelde as. */
+.race-overview {
+  display: grid;
+  grid-template-columns: minmax(11.5rem, 28%) minmax(0, 1fr);
+  padding: var(--sp-2) var(--sp-4) 0;
+  background: var(--surface-2);
+}
+.race-overview__track {
+  position: relative;
+  min-width: 0;
+  height: 1.15rem;
+  margin-inline: 1.65rem;
+}
+.race-overview__poort {
+  position: absolute;
+  left: var(--race-x);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--tier);
+  opacity: 0.45;
+}
+.race-overview__punt {
+  position: absolute;
+  left: var(--race-x);
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--tier, var(--ink-soft));
+  box-shadow: 0 0 0 1px var(--surface);
+  opacity: 0.8;
+}
+.race-overview__punt.is-me {
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 3px var(--accent);
+  opacity: 1;
+}
+/* De kijker-punt is een echte knop (#1241): spring naar jouw baan. */
+button.race-overview__punt {
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+}
+button.race-overview__punt::after {
+  /* Raakvlak ruim boven de 12px-punt zelf. */
+  content: "";
+  position: absolute;
+  inset: -14px;
+}
+button.race-overview__punt:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
 }
 
 .race-axis,
@@ -179,7 +261,8 @@
 }
 .race-lane {
   position: relative;
-  min-height: 58px;
+  /* Compacter (#1241): bij 20+ spelers moet het veld te overzien blijven. */
+  min-height: 48px;
   padding: 0 var(--sp-4);
   border-top: 1px solid var(--line);
   background: var(--surface);
@@ -255,7 +338,7 @@
 .race-lane__track {
   display: flex;
   align-items: center;
-  min-height: 57px;
+  min-height: 46px;
 }
 .race-lane__track::before {
   content: "";
@@ -287,6 +370,12 @@
   opacity: 0.28;
   pointer-events: none;
 }
+/* De poort waar de kijker naartoe rijdt (#1241): nadruk op de eigen lane. */
+.race-lane__checkpoint.is-doel {
+  width: 3px;
+  border-radius: 999px;
+  opacity: 0.8;
+}
 .race-lane__progress {
   position: absolute;
   left: 0;
@@ -297,6 +386,28 @@
   border-radius: 999px;
   background: var(--accent);
   opacity: 0.58;
+}
+/* Spoor (#1241): waar de marker vandaan komt — de vorige speeldag in rust,
+ *  het vorige frame tijdens het scrubben. */
+.race-lane__spoor {
+  position: absolute;
+  left: var(--race-spoor-links);
+  top: 50%;
+  width: var(--race-spoor-breedte);
+  height: 5px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  opacity: 0.55;
+}
+.race-lane__spoor.is-op {
+  background: var(--success);
+}
+.race-lane__spoor.is-neer {
+  background: var(--danger);
+}
+/* Nog niet gedebuteerd in dit deel van de film: aanwezig, maar gedimd. */
+.race-lane.is-voor-debuut {
+  opacity: 0.45;
 }
 .race-lane__marker {
   position: absolute;
@@ -332,6 +443,11 @@
 .race-lane__marker.is-near-end {
   flex-direction: row-reverse;
 }
+/* Buiten de veld-as geknipt (#1241): het getal is echt, de positie geklemd. */
+.race-lane__marker.is-off-axis .race-lane__rating {
+  box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line-strong);
+  color: var(--ink-soft);
+}
 
 .race-lane__info {
   position: absolute;
@@ -363,52 +479,49 @@
   background: var(--surface);
 }
 .race-lane__info:hover,
-.race-lane__info:focus-visible,
-.race-lane.is-open .race-lane__info {
+.race-lane__info:focus-visible {
   color: var(--accent);
 }
 .race-lane__info:hover::before,
-.race-lane__info:focus-visible::before,
-.race-lane.is-open .race-lane__info::before {
+.race-lane__info:focus-visible::before {
   border-color: var(--accent);
 }
 .race-lane__info:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -4px;
 }
-.race-lane__tooltip {
-  position: absolute;
-  z-index: 10;
-  right: 0;
-  top: calc(50% + 20px);
+
+/* Spelersdetails in het gedeelde sheet (#1241); basis komt uit ui.css. */
+.race-detail__body {
   display: grid;
-  gap: 0.2rem;
-  width: min(18rem, calc(100vw - var(--sp-8)));
-  padding: var(--sp-3);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--ink-soft);
-  box-shadow: var(--shadow-lg);
-  font-size: var(--fs-xs);
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-4) var(--sp-4);
 }
-.race-lane__tooltip strong {
-  color: var(--ink);
+.race-detail__stand {
+  margin: 0;
+  color: var(--ink-soft);
   font-size: var(--fs-sm);
 }
-.race-lane__pack-gaps {
+.race-detail__stand strong {
+  color: var(--ink);
+  font-size: var(--fs-base);
+}
+.race-detail__feiten {
+  display: grid;
+  gap: var(--sp-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+.race-detail__verloop {
   padding-top: var(--sp-1);
   border-top: 1px solid var(--line);
 }
-.race-lane:hover .race-lane__tooltip,
-.race-lane:focus-within .race-lane__tooltip,
-.race-lane.is-open .race-lane__tooltip {
-  visibility: visible;
-  opacity: 1;
-  pointer-events: auto;
+.race-detail__verloop .sparkline {
+  width: 100%;
+  height: 2.5rem;
 }
 
 .race-pack {
@@ -456,10 +569,11 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .race-board.is-moving .race-lane__marker,
-  .race-board.is-moving .race-lane__progress {
+  .race-lane__marker,
+  .race-lane__progress,
+  .race-lane__spoor {
     transition-property: left, width;
-    transition-duration: 800ms;
+    transition-duration: 700ms;
     transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
@@ -471,13 +585,17 @@
   .race-summary {
     width: 100%;
   }
-  .race-replay {
+  .race-tijdlijn {
     align-items: stretch;
   }
-  .race-replay__button {
+  .race-tijdlijn__knoppen .btn {
     min-height: 44px;
   }
-  .race-replay__status {
+  .race-tijdlijn__scrubber {
+    flex: 1;
+    width: auto;
+  }
+  .race-tijdlijn__status {
     text-align: center;
   }
   .race-axis,
@@ -505,25 +623,28 @@
   .race-checkpoint-label {
     font-size: var(--fs-xs);
   }
+  .race-overview {
+    grid-template-columns: 0 minmax(0, 1fr);
+    padding-inline: var(--sp-2);
+  }
+  .race-overview__track {
+    margin-inline: 1.5rem;
+  }
   .race-lane {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
-    min-height: 104px;
-    padding: var(--sp-2);
+    min-height: 84px;
+    padding: var(--sp-1) var(--sp-2);
   }
   .race-lane__identity {
     padding: 0 var(--sp-8) 0 0;
   }
   .race-lane__track {
-    min-height: 52px;
+    min-height: 44px;
   }
   .race-lane__info {
     right: calc(-1 * var(--sp-2));
     top: calc(-1 * var(--sp-4));
-  }
-  .race-lane__tooltip {
-    right: 0;
-    top: var(--sp-4);
   }
   .race-pack {
     margin-inline: var(--sp-1);

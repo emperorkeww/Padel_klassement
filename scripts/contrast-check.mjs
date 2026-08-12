@@ -215,7 +215,13 @@ for (const [name, tokens, strict] of [
 // [lichter, donkerder, minimale stap in L*, omschrijving]
 const LADDER = [
   ["surface", "bg", 4, "kaart tilt op van de pagina"],
-  ["bg", "sidebar-bg", 3, "navigatie zakt weg onder de pagina"],
+  // Sinds de OLED-omslag (#1243) zijn pagina en zijbalk op donker béíde puur
+  // zwart: de pixels gaan echt uit, en de scheiding komt van de zijbalkrand
+  // (rgba-wit) en het baanfoto-verloop in DashboardLayout.css — niet van een
+  // lichtheidsstap. Het minimum staat daarom op 0 ("mag samenvallen, maar de
+  // zijbalk mag nooit lichter worden dan de pagina"); op licht was deze regel
+  // altijd al informatief.
+  ["bg", "sidebar-bg", 0, "navigatie zakt weg onder de pagina (of valt samen)"],
   ["surface-2", "surface", 3, "subtiel vlak binnen een kaart"],
   ["surface-elevated", "surface", 3, "verhoogd vlak (hero, sheets)"],
   ["surface-hover", "surface", 4, "hover is voelbaar"],

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import MANIFEST from "./bigdaddy/onderdelen.json";
 import { DashboardHero, type HeroStatus } from "./DashboardHero";
@@ -64,14 +64,12 @@ function renderKaart(
         naam={naam}
         rating={rating}
         ratingGames={12}
-        rank={6}
         heeftStand
         loading={false}
         status={{ ...LEGE_STATUS, ...status }}
         earnedBadges={[]}
         form={["W", "W", "W", "L", "W"]}
         briefing="Nog 6 Elo tot de volgende divisie."
-        generateCta={{ to: "/groepen", label: "Wedstrijden genereren" }}
       />
     </MemoryRouter>,
   );
@@ -95,30 +93,27 @@ const VARIANTEN: ReadonlyArray<
 
 describe("<DashboardHero /> — gedeelde basis", () => {
   it.each(VARIANTEN)(
-    "houdt in de %s-variant dezelfde zones en dezelfde drie acties",
+    "houdt in de %s-variant dezelfde zones en de ene primaire actie",
     (_naam, status) => {
       renderKaart(status);
-      // Eyebrow, begroeting, rankingzin, coachbericht, vormreeks.
-      expect(screen.getByText("Racket in de aanslag?")).toBeInTheDocument();
+      // Begroeting, coachbericht, vormreeks. De rang/rating-zin en de eyebrow
+      // zijn sinds #1242 weg: de cijfers wonen in het cijferblok van de
+      // pagina, en de begroeting plus Rudy's regel zíjn de boodschap.
+      expect(screen.queryByText("Racket in de aanslag?")).toBeNull();
       expect(
         screen.getByRole("heading", { name: /hoi, remco/i }),
       ).toBeInTheDocument();
-      expect(screen.getByText(/plek #6 .* rating van 994/i)).toBeInTheDocument();
+      expect(screen.queryByText(/plek #\d/i)).toBeNull();
       expect(screen.getByRole("note")).toHaveTextContent(/nog 6 elo/i);
       expect(screen.getByText("Vorm")).toBeInTheDocument();
-      // De drie acties: zelfde labels, zelfde volgorde, zelfde doelen (AC8).
+      // Eén actie (#1242): loggen. Genereren en banen hebben hun eigen plek
+      // (Spelen-tab, baanteaser) en verwaterden de primaire knop.
       const acties = screen
         .getAllByRole("link")
         .filter((l) => l.className.includes("btn"));
-      expect(acties.map((l) => l.textContent)).toEqual([
-        "+ Match loggen",
-        "Wedstrijden genereren",
-        "Vrije banen",
-      ]);
+      expect(acties.map((l) => l.textContent)).toEqual(["+ Match loggen"]);
       expect(acties.map((l) => l.getAttribute("href"))).toEqual([
         "/spelen?log=1",
-        "/groepen",
-        "/banen",
       ]);
       expect(acties[0]).toHaveClass("btn--primary");
     },
@@ -146,24 +141,21 @@ describe("<DashboardHero /> — gedeelde basis", () => {
           naam="Wendy"
           rating={1207}
           ratingGames={30}
-          rank={2}
           heeftStand
           loading={false}
           status={LEGE_STATUS}
           earnedBadges={[]}
           form={["L", "L"]}
           briefing={null}
-          generateCta={{ to: "/banen", label: "Baan zoeken" }}
         />
       </MemoryRouter>,
     );
     expect(
       screen.getByRole("heading", { name: /hoi, wendy/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/plek #2 .* rating van 1207/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Baan zoeken" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Naar mijn profiel" })).toHaveAttribute(
       "href",
-      "/banen",
+      "/spelers/p9",
     );
     // Zonder briefing geen leeg coachvlak.
     expect(screen.queryByRole("note")).toBeNull();
@@ -674,6 +666,29 @@ describe("<DashboardHero /> — compacte hero (#939)", () => {
     expect(
       hero.querySelector(".hero__badge-slot .hero-crest--badge"),
     ).toBeInTheDocument();
+  });
+
+  it("kapt de chip-rij af op drie titels en klapt de rest uit via de teller (#1242)", () => {
+    // Zeven statussen tegelijk — de stress-case uit de showcase. De badge is
+    // de overlay; van de zes overige chips blijven er drie staan en telt de
+    // knop de rest. Eén tik toont alles; dicht klapt hij bewust niet meer.
+    const hero = renderKaart({
+      dictator: true,
+      bigDaddy: true,
+      kampioen: true,
+      inForm: true,
+      onFire: true,
+      pias: true,
+      piet: true,
+      thema: "dictator",
+      overlay: "inform",
+    });
+    const rij = () => hero.querySelectorAll(".hero__crests .hero-crest");
+    expect(rij()).toHaveLength(3);
+    const meer = screen.getByRole("button", { name: /nog 3 titels tonen/i });
+    fireEvent.click(meer);
+    expect(rij()).toHaveLength(6);
+    expect(screen.queryByRole("button", { name: /titels tonen/i })).toBeNull();
   });
 
   it("krimpt meerdere titels op mobiel tot hun icoon, met het label in de DOM", () => {

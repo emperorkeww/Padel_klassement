@@ -637,6 +637,8 @@ export function Leaderboard() {
   // net zo goed kwijt, maar de chip bestond er niet.
   const meKaartRef = useRef<HTMLLIElement | null>(null);
   const meDivisieRef = useRef<HTMLLIElement | null>(null);
+  // De race kreeg zijn anker in #1241, toen de chip er ging werken.
+  const meRaceRef = useRef<HTMLDivElement | null>(null);
   // Op elke weergave waarin jíj als speler voorkomt — dus niet op Teams.
   const myRankIdx =
     tab === "team" ? -1 : displayRows.findIndex((r) => r.isMe);
@@ -646,6 +648,7 @@ export function Leaderboard() {
       meRowRef.current,
       meKaartRef.current,
       meDivisieRef.current,
+      meRaceRef.current,
     ].find((e) => e && e.offsetParent !== null);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
@@ -660,7 +663,7 @@ export function Leaderboard() {
   let klassementCoach: { tekst: string; mood: CoachMood } | null = null;
   const mijnIdx =
     tab !== "team" ? displayRows.findIndex((r) => r.isMe) : -1;
-  if (mijnIdx >= 0 && !isRaceView && !usingScope && !q.trim() && !loading && !error) {
+  if (mijnIdx >= 0 && !usingScope && !q.trim() && !loading && !error) {
     const feiten = klassementFeiten(
       displayRows.map((r) => ({
         playerId: r.key,
@@ -1162,7 +1165,12 @@ export function Leaderboard() {
         ) : isRaceView ? (
           <RaceLeaderboard
             rows={visibleRows}
-            allowReplay={!usingScope && !nq}
+            // Het volledige veld ankert de as en de pack-drempels (#1241):
+            // zoeken of filteren mag de baan niet verschuiven.
+            axisRows={rankedRows}
+            allowTimeline={!usingScope && !nq}
+            meRef={meRaceRef}
+            onJumpToMe={scrollToMe}
           />
         ) : tab === "kaarten" ? (
           <KaartRaster
@@ -1245,13 +1253,13 @@ export function Leaderboard() {
           checken krijgt die meteen bovenaan te zien. */}
       <KlassementUitleg />
 
-      {/* Op elke klassieke spelersweergave (#913), niet alleen de Spelers-tab:
-          op de kaartenwand en tussen de divisies ben je jezelf net zo goed kwijt.
-          Race heeft bovenaan al een eigen persoonlijke positiesamenvatting en
-          markeert de eigen lane; daar zou deze zwevende chip informatie bedekken.
+      {/* Op elke spelersweergave (#913, #1241), niet alleen de Spelers-tab:
+          op de kaartenwand, tussen de divisies én op de race ben je jezelf
+          net zo goed kwijt. Sinds de doelkop (#1241) is de race-samenvatting
+          één regel en bedekt de chip daar niets wezenlijks meer.
           De drempel van 8 rijen blijft — bij een korte lijst zie je jezelf al —
           net als de troon-uitzondering: wie erop zit staat bovenaan in beeld. */}
-      {tab !== "team" && !isRaceView && myRankIdx >= 0 && rows.length > 8 && !nq &&
+      {tab !== "team" && myRankIdx >= 0 && rows.length > 8 && !nq &&
         !throneRow?.isMe && (
         <button
           className={`me-chip zwevende-actie glas glas--interactief glas--pil${

@@ -122,14 +122,12 @@ function Kaart({
         naam={naam}
         rating={rating}
         ratingGames={24}
-        rank={6}
         heeftStand
         loading={false}
         status={s}
         earnedBadges={badges}
         form={["W", "W", "W", "L", "W"]}
         briefing={briefing}
-        generateCta={{ to: "/groepen", label: "Wedstrijden genereren" }}
       />
     </section>
   );
@@ -241,6 +239,18 @@ export function HeroShowcase() {
         titel="Meerdere titels tegelijk"
         uitleg="Eén badge, de rest compact als chips, badgerij eronder — kleur is nooit de enige indicator."
         status={status("bigdaddy", "inform", { piet: true, kampioen: true })}
+        badges={BADGES}
+      />
+      <Kaart
+        titel="Alle zeven titels tegelijk (#1242)"
+        uitleg="De chip-rij kapt af op drie en telt de rest in de '+N'-knop; één tik klapt hem uit."
+        status={status("dictator", "inform", {
+          bigDaddy: true,
+          kampioen: true,
+          onFire: true,
+          pias: true,
+          piet: true,
+        })}
         badges={BADGES}
       />
       <Kaart
