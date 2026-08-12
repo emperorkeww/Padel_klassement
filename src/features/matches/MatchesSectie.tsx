@@ -50,6 +50,8 @@ export function MatchesSectie({
   logDirect = false,
   onLogVerbruikt,
   verbergActie = false,
+  zonderNieuweMatch = false,
+  titel,
 }: {
   /** "" = alle groepen. Losse matches (zonder groep) vallen daarmee buiten een
    *  gekozen groep. */
@@ -71,6 +73,15 @@ export function MatchesSectie({
    *  belangrijkers open heeft staan (#1123): op telefoonbreedte ligt hij
    *  anders precies over de knop van het aanmaakformulier. */
   verbergActie?: boolean;
+  /** Laat de zwevende knop en zijn sheet helemaal weg (#1212). Binnen de
+   *  groepspagina is loggen al de taak van de Vandaag-tab; een tweede
+   *  zwevende knop zou daar een concurrerende ingang zijn in plaats van een
+   *  extra. */
+  zonderNieuweMatch?: boolean;
+  /** Kop boven de historie. Standaard de titel van MatchHistory zelf; de
+   *  groepspagina zet er "Gespeelde matches" boven, want daar gaat het over de
+   *  geschiedenis van déze groep en niet over "recent" (#1212). */
+  titel?: string;
 }) {
   const { user } = useAuth();
   const myId = user?.id ?? "";
@@ -237,6 +248,7 @@ export function MatchesSectie({
       )}
 
       <MatchHistory
+        title={titel}
         matches={recent}
         teams={tmap}
         profiles={pmap}
@@ -261,12 +273,14 @@ export function MatchesSectie({
                 : "Je racket is nog ongebruikt."
             }
             action={
-              <button
-                className="btn btn--primary"
-                onClick={() => openSheet("score")}
-              >
-                + Log je eerste match
-              </button>
+              zonderNieuweMatch ? undefined : (
+                <button
+                  className="btn btn--primary"
+                  onClick={() => openSheet("score")}
+                >
+                  + Log je eerste match
+                </button>
+              )
             }
           >
             {pmap[myId]
@@ -299,27 +313,31 @@ export function MatchesSectie({
           je een uitslag logt of een match plant (#1123). Hij wijkt bij
           vooruitscrollen (#942) — anders ligt hij over de steppers en de
           Opslaan-knop van de kaart eronder. */}
-      <button
-        type="button"
-        className={`btn btn--primary matches__fab zwevende-actie${
-          fabVerborgen || verbergActie ? " is-verborgen" : ""
-        }`}
-        onClick={() => openSheet()}
-      >
-        <span className="matches__fab-plus" aria-hidden="true">
-          +
-        </span>
-        <span className="matches__fab-label">Match</span>
-      </button>
+      {!zonderNieuweMatch && (
+        <>
+          <button
+            type="button"
+            className={`btn btn--primary matches__fab zwevende-actie${
+              fabVerborgen || verbergActie ? " is-verborgen" : ""
+            }`}
+            onClick={() => openSheet()}
+          >
+            <span className="matches__fab-plus" aria-hidden="true">
+              +
+            </span>
+            <span className="matches__fab-label">Match</span>
+          </button>
 
-      <NewMatchSheet
-        open={sheetOpen}
-        players={selectablePlayers}
-        mode={sheetMode}
-        onClose={() => setSheetOpen(false)}
-        onCreated={reloadAll}
-        onGuestCreated={profiles.reload}
-      />
+          <NewMatchSheet
+            open={sheetOpen}
+            players={selectablePlayers}
+            mode={sheetMode}
+            onClose={() => setSheetOpen(false)}
+            onCreated={reloadAll}
+            onGuestCreated={profiles.reload}
+          />
+        </>
+      )}
     </>
   );
 }

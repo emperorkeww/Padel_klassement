@@ -24,7 +24,8 @@ import {
 import { getProfilesMap } from "@/features/profiles/api";
 import { getZwartePiet } from "./zwartePietApi";
 import { getMyFriendships, categorize, otherId } from "@/features/friends/api";
-import { MatchHistory } from "@/features/matches/components/MatchHistory";
+import { MatchesSectie } from "@/features/matches/MatchesSectie";
+import { useSpeelParams } from "@/features/matches/speelParams";
 import { buildMatchRatings } from "@/features/groups/maandpias";
 import { VandaagTab } from "@/features/groups/components/VandaagTab";
 import { computePlayerStandings, matchesInSeason } from "@/features/rating/standings";
@@ -192,6 +193,10 @@ function GroepPagina() {
   useRealtime("match_predictions", onPredictions, `group_id=eq.${id}`);
 
   const toast = useToast();
+  // Periodefilter van de Historie-tab (#1212). Dezelfde hook als de Spelen-hub,
+  // zodat er één schrijver op de querystring blijft: hij patcht `?periode=`
+  // bovenop wat er staat en laat `?tab=` en `?seizoen=` ongemoeid.
+  const speel = useSpeelParams();
   const [busy, setBusy] = useState(false);
   const setView = (v: View) => {
     const next = new URLSearchParams(params);
@@ -522,24 +527,25 @@ function GroepPagina() {
           />
         )}
 
+        {/* Eén matchlijst per groep (#1212). Deze tab monteerde MatchHistory
+            rechtstreeks, zonder periodefilter en zonder "Te spelen" — een
+            armere kopie van wat /spelen?groep=<id> al toont. #1123 hief de
+            losse Matches-tab op om precies die verdubbeling weg te nemen;
+            hier stond ze nog. De sectie is er sinds #1123 op gebouwd: hij
+            bezit zijn data, de pagina bezit de URL.
+
+            De groepskeuze-rij blijft weg (vaste groep, `groepen` leeg) en de
+            zwevende +Match-knop ook: loggen is binnen de groep de taak van de
+            Vandaag-tab. */}
         {view === "matches" && (
-          <MatchHistory
-            title="Gespeelde matches"
-            matches={completedMatches}
-            teams={tmap}
-            profiles={pmap}
-            myId={myId}
-            upsets={upsets}
-            canManage={isOwner}
-            onChanged={onMatches}
-            loading={matches.loading}
-            error={matches.error}
-            emptyAll={
-              <p className="empty">
-                Nog geen gespeelde matches in deze groep — log er een op de
-                Vandaag-tab.
-              </p>
-            }
+          <MatchesSectie
+            groepId={id}
+            onGroep={() => {}}
+            periode={speel.periode}
+            onPeriode={speel.zetPeriode}
+            onWisFilters={speel.wisFilters}
+            titel="Gespeelde matches"
+            zonderNieuweMatch
           />
         )}
 
