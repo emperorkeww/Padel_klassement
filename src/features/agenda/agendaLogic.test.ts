@@ -8,6 +8,7 @@ import {
   daysInMonth,
   duurLabel,
   kannersOpDag,
+  komendeItems,
   maandLabel,
   maandVan,
   markersByDay,
@@ -17,12 +18,14 @@ import {
   schuifMaand,
   splitMarkers,
   statusChip,
+  perMaand,
   telInMaand,
   tijdenLabel,
   tijdvak,
   toetsStap,
   volgendeSpeeldagen,
   volgendeStap,
+  wachtOpJou,
   windowFor,
   zelfdeDagAndereMaand,
   zelfdeMaand,
@@ -288,6 +291,78 @@ describe("telInMaand", () => {
 
   it("verwart een maand niet met dezelfde maand in een ander jaar", () => {
     expect(telInMaand([inAug("2025-08-08")], { jaar: 2026, maand: 8 })).toBe(0);
+  });
+});
+
+describe("komendeItems en wachtOpJou", () => {
+  const komend = (overrides: Partial<AgendaMarker> = {}) =>
+    ({
+      pollId: "poll-1",
+      optionId: `opt-${overrides.date ?? ""}-${overrides.startTime ?? ""}`,
+      date: "2026-08-13",
+      startTime: "20:00",
+      duration: 90,
+      status: "open",
+      past: false,
+      iVoted: false,
+      myVote: null,
+      groupName: "Vamos!",
+      yesVoterIds: [],
+      ...overrides,
+    }) as AgendaMarker;
+
+  it("zet de komende speeldagen op volgorde en houdt vandaag erbij", () => {
+    const items = komendeItems(
+      [
+        komend({ date: "2026-09-01", pollId: "p3" }),
+        komend({ date: "2026-08-07", pollId: "p1" }),
+        komend({ date: "2026-08-20", pollId: "p2" }),
+        // Geweest: hoort niet in een vooruitblik.
+        komend({ date: "2026-08-05", pollId: "p0", past: true }),
+      ],
+      "2026-08-07",
+    );
+    expect(items.map((i) => i.eerste.date)).toEqual([
+      "2026-08-07",
+      "2026-08-20",
+      "2026-09-01",
+    ]);
+  });
+
+  it("groepeert per maand in de volgorde van de lijst", () => {
+    const groepen = perMaand(
+      komendeItems(
+        [
+          komend({ date: "2026-08-13", pollId: "p1" }),
+          komend({ date: "2026-08-20", pollId: "p2" }),
+          komend({ date: "2026-09-01", pollId: "p3" }),
+        ],
+        "2026-08-01",
+      ),
+    );
+    expect(groepen).toHaveLength(2);
+    expect(groepen[0].maand).toEqual({ jaar: 2026, maand: 8 });
+    expect(groepen[0].items).toHaveLength(2);
+    expect(groepen[1].maand).toEqual({ jaar: 2026, maand: 9 });
+  });
+
+  it("meldt alleen open polls waarop jij nog niets zei", () => {
+    const vragen = wachtOpJou(
+      [
+        // Twee momenten van dezelfde onbeantwoorde poll: één vraag, en de
+        // vroegste dag is waar je heen springt.
+        komend({ pollId: "p1", date: "2026-08-20" }),
+        komend({ pollId: "p1", date: "2026-08-13" }),
+        // Beantwoord (poll-breed), dus geen vraag meer.
+        komend({ pollId: "p2", date: "2026-08-14", iVoted: true }),
+        // Al vastgelegd: daar valt niet meer op te stemmen.
+        komend({ pollId: "p3", date: "2026-08-15", status: "booked" }),
+      ],
+      "2026-08-07",
+    );
+    expect(vragen).toEqual([
+      { pollId: "p1", date: "2026-08-13", groupName: "Vamos!" },
+    ]);
   });
 });
 

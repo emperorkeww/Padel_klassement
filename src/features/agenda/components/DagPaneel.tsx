@@ -1,32 +1,23 @@
-import { Avatar } from "@/ui/Avatar";
-import { courtsLabel, longDay, shortDay } from "@/features/groups/planPollHelpers";
+import { longDay, shortDay } from "@/features/groups/planPollHelpers";
 import type { Profile } from "@/types";
 import {
   dagItems,
-  duurLabel,
-  kannersOpDag,
   metHoofdletter,
-  statusChip,
   statusLabel,
-  tijdenLabel,
-  volgendeStap,
   type AgendaMarker,
-  type DagItem,
 } from "../agendaLogic";
 import { StatusGlyph } from "@/ui/StatusGlyph";
+import { SpeeldagKaart } from "./SpeeldagKaart";
+import "../Agenda.css";
 
 /* ------------------------------------------------------------------ */
 /* Het dagpaneel onder het raster (#1112).                             */
 /*                                                                     */
-/* Hier staat wat in het raster niet meer past. De kaart is bewust een  */
-/* *samenvatting* en geen detail: tijd, groep, plek en wie er kan. Wie  */
-/* meer wil — stemmen, banen, toegangscode, .ics — tikt de kaart aan en */
-/* krijgt het dag-sheet dat er altijd al was. Zo blijft er één plek     */
-/* waar je handelt, in plaats van twee die uit elkaar gaan lopen.       */
+/* Hier staat wat in het raster niet meer past: per speeldag een        */
+/* samenvattingskaart (SpeeldagKaart, sinds #1182 gedeeld met de        */
+/* lijstweergave), en onder een lege dag de wegwijzer naar wat er wél   */
+/* aankomt.                                                            */
 /* ------------------------------------------------------------------ */
-
-/** Hoeveel gezichten er in de rij passen voordat de rest een telling wordt. */
-const MAX_AVATARS = 4;
 
 export function DagPaneel({
   datum,
@@ -189,94 +180,6 @@ function IconChevron() {
       <path d="M9 5l7 7-7 7" />
     </svg>
   );
-}
-
-function SpeeldagKaart({
-  item,
-  leden,
-  profielen,
-  onOpen,
-}: {
-  item: DagItem;
-  leden: number;
-  profielen: Record<string, Profile>;
-  onOpen: () => void;
-}) {
-  const marker = item.eerste;
-  const status = marker.past ? "past" : marker.status;
-  const kanners = kannersOpDag(item.momenten);
-  // Eén duur onder de tijden zeggen kan alleen als ze allemaal even lang zijn;
-  // anders hoort die regel bij een tijd die er niet meer los staat.
-  const gelijkeDuur = item.momenten.every((m) => m.duration === marker.duration);
-  // Op deze dag stemmen telt als stemmen: wie op 20:00 "ik kan" zei, hoeft van
-  // 21:30 niets meer te vinden om zijn antwoord kwijt te zijn.
-  const mijnStem = item.momenten.find((m) => m.myVote != null)?.myVote ?? null;
-  // Waar deze speeldag op wacht (#1121). De Plannen-tab zei dit in een balk
-  // bovenaan, over precies één speeldag; hier hoort het bij de kaart waar het
-  // over gaat — er kunnen er drie tegelijk lopen, elk in een andere fase.
-  const stap = volgendeStap(mijnStem === marker.myVote ? marker : { ...marker, myVote: mijnStem });
-  const opJou = marker.status === "open" && !marker.past && mijnStem == null;
-  return (
-    <button type="button" className="speeldag" onClick={onOpen}>
-      {/* Het staafje links draagt dezelfde status als de stip in het raster —
-          zo herken je de dag terug die je net aantikte. */}
-      <span className={`speeldag__rail speeldag__rail--${status}`} aria-hidden="true" />
-      <span className="speeldag__body">
-        <span className="speeldag__top">
-          <span className="speeldag__tijd">{tijdenLabel(item.momenten)}</span>
-          {gelijkeDuur && (
-            <span className="speeldag__duur">{duurLabel(marker.duration)}</span>
-          )}
-          <span className={`speeldag__chip speeldag__chip--${status}`}>
-            {statusChip(marker.status, marker.past)}
-          </span>
-        </span>
-        <span className="speeldag__titel">{marker.groupName}</span>
-        <span className="speeldag__plek">{plek(marker)}</span>
-        {kanners.length > 0 && (
-          <span className="speeldag__spelers">
-            <span className="speeldag__avatars" aria-hidden="true">
-              {kanners.slice(0, MAX_AVATARS).map((id) => (
-                <Avatar key={id} profile={profielen[id]} size={24} short />
-              ))}
-            </span>
-            <span className="speeldag__telling">
-              {spelersLabel(marker, leden, kanners.length)}
-            </span>
-          </span>
-        )}
-        {stap && (
-          <span
-            className={`speeldag__stap${opJou ? " is-jij" : ""}`}
-          >
-            {stap}
-          </span>
-        )}
-      </span>
-    </button>
-  );
-}
-
-/** Waar er gespeeld wordt. Zolang de baan niet geboekt is valt daar nog niets
- *  over te zeggen, en dat is precies wat er dan hoort te staan. */
-function plek(m: AgendaMarker): string {
-  if (m.status === "booked" && m.courts) return `${m.clubName} · ${courtsLabel(m.courts)}`;
-  if (m.status === "open") return `${m.clubName} · baan nog te kiezen`;
-  return m.clubName;
-}
-
-/**
- * Wie er meedoet. Bij een open poll is dat een tússenstand — "2 van 4 kunnen" —
- * en bij een vastgelegde of geboekte dag zijn het gewoon de spelers.
- *
- * `n` komt van buiten: bij een gebundelde speeldag telt iedereen mee die op
- * mínstens één moment van die dag kan (#1182).
- */
-function spelersLabel(m: AgendaMarker, leden: number, n: number): string {
-  if (m.status === "open" && !m.past) {
-    return leden > 0 ? `${n} van ${leden} kunnen` : `${n} kunnen`;
-  }
-  return `${n} ${n === 1 ? "speler" : "spelers"}`;
 }
 
 export default DagPaneel;
