@@ -520,18 +520,28 @@
   --accent-line: #24513f;
   --accent-ink: #02120c;
 
-  /* Coach Rudy — warm amber, gedempt op bijna-zwart. */
-  --coach: #d9964a;
-  --coach-soft: #3c3425;
-  --coach-line: #4a3c26;
-  --coach-ink: #201305;
-  --coach-diep: #ecbc7f;
+  /* Coach Rudy — gebrand oranje (h≈52). Vóór #1255 deelden acht rollen
+     (coach, poll, dorst, warn, dictator, cat-champ, effect-inzet,
+     chem-midden) praktisch één amber: alle accenten zitten in dezelfde
+     lichtheidsband (L* 58-79), dus alleen kleur onderscheidt ze nog — en
+     juist daar vielen ze samen. Elke rol kreeg een eigen laan (hue, of
+     chroma waar de hueband vol zat, met de dictator-gouden als vast anker);
+     de afstanden worden bewaakt door de ΔE-parenlijst in
+     scripts/contrast-check.mjs. */
+  --coach: #e18353;
+  --coach-soft: #423128;
+  --coach-line: #52382a;
+  --coach-ink: #211207;
+  --coach-diep: #fdaf81;
 
   /* Open poll (#1112) — op donker moet hij juist oplichten in plaats van
-     inzakken; zelfde omkering als --lime-deep en --dorst. */
-  --poll: #dda254;
-  --poll-soft: #403321;
-  --poll-diep: #ecbf82;
+     inzakken; zelfde omkering als --lime-deep en --dorst. De warme hueband
+     zat vol (coach, dorst, inzet, dictator, goud), dus poll onderscheidt
+     zich op de chroma-as: gedempt perzik (C* 32) tussen verzadigde buren
+     (#1255). */
+  --poll: #e1b384;
+  --poll-soft: #423222;
+  --poll-diep: #f5ca9c;
 
   /* Lime (padelbal). Sinds #1243 gedempt: hij blijft het enige token dat
      energie draagt (rating, grafieklijn, gekozen icoon, focus), maar op
@@ -543,16 +553,19 @@
   --lime-deep: #b3dd63;
   --lime-soft: #303821;
 
-  /* Lef-violet, licht genoeg voor leesbare tekst op donkere vlakken. */
-  --lef: #ab97d9;
-  --lef-soft: #393146;
-  --lef-line: #453b58;
-  --lef-ink: #120e1c;
+  /* Lef-violet, licht genoeg voor leesbare tekst op donkere vlakken.
+     Warmer paars (h≈315) sinds #1255: het koele violet viel samen met de
+     meester-tier. */
+  --lef: #bb90d3;
+  --lef-soft: #3d3044;
+  --lef-line: #4b3955;
+  --lef-ink: #160d1b;
 
-  /* Dorst-amber, licht genoeg voor leesbare tekst op donkere vlakken. */
-  --dorst: #d9a44c;
-  --dorst-soft: #3c3424;
-  --dorst-line: #4c3e2c;
+  /* Dorst — donker bier-brons (h≈68, een stap donkerder dan de rest van de
+     warme band), weg van dictator-goud en kampioensgoud (#1255). */
+  --dorst: #d6924c;
+  --dorst-soft: #413225;
+  --dorst-line: #4f3d2d;
   --dorst-ink: #190f05;
 
   /* Jokerblauw, licht genoeg voor leesbare tekst op donkere vlakken. */
@@ -563,18 +576,22 @@
 
   /* Dezelfde semantische families op donker; de swirl-composiet (ink over
      gestapelde lagen op de kaart) wordt hard bewaakt en wint juist bij de
-     donkerdere kaart. */
+     donkerdere kaart. Inzet werd oranje-geel (h≈70): het oude amber lag op
+     ΔE 9,7 van het dictator-goud (#1255). */
   --effect-lef: #a78bfa;
   --effect-joker: #60a5fa;
-  --effect-inzet: #f5b942;
+  --effect-inzet: #ffb462;
 
-  /* Padelveld (#427): gedempt donkergroen, lijnen zachter. */
+  /* Padelveld (#427): gedempt donkergroen, lijnen zachter. De chemieschaal
+     leende vóór #1255 de statuskleuren (hoog ≈ success op ΔE 1,8, laag ≈
+     danger op 3,9): een lage chemie las als fout. Nu een eigen decoratieve
+     schaal — mint / zand (lage chroma) / zalm — los van de semantiek. */
   --court: #17392d;
   --court-deep: #122f25;
   --court-line: rgba(255, 255, 255, 0.32);
-  --chem-hoog: #46c07f;
-  --chem-midden: #dba743;
-  --chem-laag: #e08585;
+  --chem-hoog: #25c0a7;
+  --chem-midden: #bcaa7c;
+  --chem-laag: #e78b76;
   --chem-onbekend: #93a89b;
 
   /* Structurele navigatie (zijbalk, mobiele onderbalk, glasbalk): puur zwart,
@@ -584,16 +601,19 @@
   --sidebar-ink: #b0b7c1;
   --sidebar-ink-strong: #f2f4f7;
 
-  /* Statuskleuren gedempt: duidelijk, niet fluorescerend. */
-  --success: #43bd7f;
-  --success-soft: #24392f;
-  --success-line: #275c40;
+  /* Statuskleuren gedempt: duidelijk, niet fluorescerend. Sinds #1255 zijn
+     dit exclusieve banen: success koeler groen (h≈148, weg van accent en
+     accent-hover), warn citroen-amber (h≈97, weg van de gouden); decoratie
+     (chemie, tiers, categorieën) mag hier niet meer in. */
+  --success: #5ab671;
+  --success-soft: #28392c;
+  --success-line: #2e5b3c;
   --danger: #e5878e;
   --danger-soft: #44302e;
   --danger-line: #5c3a3d;
-  --warn: #ddb852;
-  --warn-soft: #3c3423;
-  --warn-line: #57482a;
+  --warn: #cebd47;
+  --warn-soft: #3a3523;
+  --warn-line: #524a2a;
 
   /* Tiers op donker (#664): zelfde materiaalladder, gedempt maar licht
      genoeg voor leesbare badge-tekst op de donkere soft-vlakken. */
@@ -615,7 +635,7 @@
   --diamant-soft: #2e344b;
   --meester: #b6a5f2;
   --meester-soft: #37314d;
-  --legende: #ef7c95;
+  --legende: #e9779a;
   --legende-soft: #472e36;
   /* El Padelissimo (#527): warm goud op diepbordeaux (zie light-blok). */
   --dictator: #dcab4a;
@@ -633,8 +653,8 @@
   /* Feed-categoriekleuren op donker (zie licht-blok). --cat-match volgt
      --accent en hoeft dus niet apart. */
   --cat-rank: #6f9bff;
-  --cat-champ: #d9a83c;
-  --cat-roast: #e56ba6;
+  --cat-champ: #bd8e28;
+  --cat-roast: #ce68ac;
 
   /* Avatar-tinten op donker (#74): zelfde hue-families, gedempte donkere
      vlakken + lichte initialen (zie licht-blok). */

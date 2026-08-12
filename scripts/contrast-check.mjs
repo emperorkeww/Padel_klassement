@@ -344,6 +344,78 @@ console.log("\n— Soft-vlakken: boven hover en echt getint (donker) —");
   }
 }
 
+// ---- ΔE-afstand tussen accentrollen (#1255) ----
+// Op donker zitten vrijwel alle accenten in dezelfde lichtheidsband
+// (L* 58-79): lichtheid onderscheidt niets meer, kleur is het enige signaal.
+// Twee tokens die iets ánders betekenen maar vrijwel dezelfde kleur hebben,
+// zijn dan onzichtbaar verwisseld — chem-laag las als danger, een gehoverde
+// knop als success, en acht rollen deelden één amber.
+//
+// Dit is een gecureerde lijst, geen alle-paren-matrix: alleen paren met
+// verschíllende betekenis die samen in beeld kunnen staan. Bewust níet
+// opgenomen: tokens uit dezelfde familie (accent vs accent-hover), de
+// tier-ladder onderling (karton naast hout is een bewúst doorlopende
+// materiaalreeks) en paren die elkaar nooit op hetzelfde scherm treffen.
+// Wie een nieuw accenttoken toevoegt: zet zijn buren hier bij.
+// ΔE₇₆ ≥ 10 — ruwweg "duidelijk verschillend bij aandachtig kijken".
+function labOf(value) {
+  const rgb = parseColor(value);
+  if (!rgb) return null;
+  const [r, g, b] = rgb.slice(0, 3).map((c) => {
+    const v = c / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  const X = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047;
+  const Y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const Z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
+  const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+  return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+}
+const DELTA_MIN = 10;
+const DELTA_PAREN = [
+  // Semantiek vs look-alikes: status mag nooit verward worden met decoratie.
+  ["success", "chem-hoog"], ["success", "accent"], ["success", "accent-hover"],
+  ["danger", "chem-laag"], ["danger", "legende"], ["danger", "cat-roast"],
+  ["warn", "coach"], ["warn", "poll"], ["warn", "dorst"], ["warn", "dictator"],
+  ["warn", "dictator-gold"], ["warn", "cat-champ"], ["warn", "effect-inzet"],
+  ["warn", "chem-midden"], ["warn", "gold"], ["warn", "lime"],
+  // De voormalige ambergroep: acht rollen, elk een eigen laan.
+  ["coach", "poll"], ["coach", "dorst"], ["coach", "dictator"],
+  ["coach", "cat-champ"], ["coach", "effect-inzet"], ["coach", "chem-midden"],
+  ["coach", "chem-laag"],
+  ["poll", "dorst"], ["poll", "dictator"], ["poll", "cat-champ"],
+  ["poll", "effect-inzet"], ["poll", "chem-midden"],
+  ["dorst", "dictator"], ["dorst", "cat-champ"], ["dorst", "chem-midden"],
+  ["dorst", "karton"], ["dorst", "gold"],
+  ["dictator", "cat-champ"], ["dictator-gold", "effect-inzet"],
+  ["dictator-gold", "cat-champ"],
+  ["cat-champ", "chem-midden"], ["cat-champ", "gold"], ["cat-champ", "effect-inzet"],
+  ["coach-diep", "poll-diep"],
+  // Roze, violet en blauw: één look-alike per hoek.
+  ["bigdaddy", "cat-roast"], ["bigdaddy", "legende"],
+  ["lef", "meester"], ["effect-lef", "meester"],
+  ["joker", "platina"], ["cat-rank", "diamant"], ["cat-rank", "joker"],
+  ["chem-hoog", "accent"], ["chem-hoog", "accent-hover"], ["chem-hoog", "platina"],
+];
+
+let deltaFailures = 0;
+console.log("\n— ΔE tussen accentrollen (donker) —");
+for (const [a, b] of DELTA_PAREN) {
+  const la = labOf(dark[a]);
+  const lb = labOf(dark[b]);
+  if (!la || !lb) {
+    console.error(`  FAIL ${a} of ${b} ontbreekt of is geen kleur`);
+    deltaFailures++;
+    continue;
+  }
+  const d = Math.hypot(la[0] - lb[0], la[1] - lb[1], la[2] - lb[2]);
+  const ok = d >= DELTA_MIN;
+  if (!ok) deltaFailures++;
+  console.log(
+    `  ${ok ? "ok  " : "FAIL"} dE ${d.toFixed(1).padStart(5)} ≥ ${DELTA_MIN}  ${a} ~ ${b}`,
+  );
+}
+
 // ---- Token-eilanden van de dashboard player card (#771) ----
 // De thema's van de kaart herdefiniëren de neutrale tokens naar hun eigen
 // materiaal (papier, karton, speelkaart). Die hexen staan buiten index.css en
@@ -625,6 +697,7 @@ if (
   darkFailures > 0 ||
   richtingFailures > 0 ||
   softFailures > 0 ||
+  deltaFailures > 0 ||
   islandFailures > 0 ||
   divisieFailures > 0 ||
   swirlFailures > 0
@@ -635,6 +708,8 @@ if (
     console.error(`${richtingFailures} richtingspa(a)r(en) omgekeerd of te vlak.`);
   if (softFailures > 0)
     console.error(`${softFailures} soft-vlak(ken) onder hover of te grijs.`);
+  if (deltaFailures > 0)
+    console.error(`${deltaFailures} accentpa(a)r(en) te dicht op elkaar (ΔE).`);
   if (islandFailures > 0)
     console.error(`${islandFailures} kaart-eiland-pa(a)r(en) onder de drempel.`);
   if (divisieFailures > 0)
