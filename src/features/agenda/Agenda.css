@@ -970,39 +970,7 @@
   border-top: 1px solid var(--line);
 }
 
-.stemrij {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  /* Raakdoel in een sheet (#374); de segmentknoppen zelf zijn 34px hoog. */
-  min-height: 44px;
-}
-
-.stemrij__wanneer {
-  font-size: var(--fs-sm);
-  font-weight: 600;
-}
-
-.stemrij__aantal {
-  font-size: var(--fs-xs);
-  color: var(--ink-soft);
-}
-
-/* Vrije banen per moment (#1121): een stil getal naast de stemtelling, maar
-   "vol" mag opvallen — dat is het enige dat je keuze meteen verandert. */
-.stemrij__banen {
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  color: var(--ink-soft);
-}
-.stemrij__banen.is-vol {
-  color: var(--warn);
-}
-
-/* Knoppen rechts uitlijnen, ook als de telling ontbreekt. */
-.stemrij .seg {
-  margin-left: auto;
-}
+/* De rijen zelf staan in StemRij.css, bij de component (#1196). */
 
 .dagsheet__acties {
   display: flex;

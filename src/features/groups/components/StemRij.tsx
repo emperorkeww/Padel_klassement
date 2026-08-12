@@ -1,9 +1,11 @@
 import type { PollVoteStatus } from "@/features/groups/pollsApi";
-import { VOTE_SEGMENTS } from "@/features/groups/planPollHelpers";
-import { PollJaIcon, PollNeeIcon } from "@/features/groups/components/pollIconen";
+import { VOTE_SEGMENTS } from "../planPollHelpers";
+import { PollJaIcon, PollNeeIcon } from "./pollIconen";
+import "@/features/groups/Proposals.css";
+import "./StemRij.css";
 
 /* ------------------------------------------------------------------ */
-/* Eén moment om op te stemmen, zoals het in het dag-sheet staat.      */
+/* Eén moment om op te stemmen: dag, telling en de drie knoppen.       */
 /*                                                                     */
 /* Dezelfde handeling als op de Plannen-tab, dus dezelfde knoppen:      */
 /* VOTE_SEGMENTS en de `seg`-klassen uit Proposals.css, precies zoals   */
@@ -12,6 +14,12 @@ import { PollJaIcon, PollNeeIcon } from "@/features/groups/components/pollIconen
 /* rij in een sheet moet dragen. De vrije banen komen er sinds #1121    */
 /* wél bij: zonder dat getal kies je tussen twee momenten op stemmen    */
 /* alleen, terwijl er op één ervan geen baan meer is.                   */
+/*                                                                     */
+/* Woont bij de polls en niet bij de agenda (#1196): stemmen op een     */
+/* moment is groups-domein, de agenda was toevallig de eerste plek waar */
+/* het zo compact moest. Hij brengt daarom zijn eigen CSS mee — feature- */
+/* CSS hangt aan de route, dus zonder deze twee imports komt de rij      */
+/* elders ongestyled binnen.                                            */
 /* ------------------------------------------------------------------ */
 
 export function StemRij({
