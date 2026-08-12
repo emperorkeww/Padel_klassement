@@ -335,6 +335,35 @@ describe("<RaceLeaderboard />", () => {
     expect(container.querySelector(".race-lane")).toHaveAttribute("data-rank", "1");
   });
 
+  it("schuift een baan ook echt verticaal naar zijn nieuwe plek", () => {
+    // jsdom meet geen layout, dus we geven elke baan een hoogte op grond van
+    // zijn getoonde rang; dan ziet de FLIP-hook een echte verplaatsing.
+    const origRect = Element.prototype.getBoundingClientRect;
+    const bewegingen: number[] = [];
+    Element.prototype.getBoundingClientRect = function () {
+      const rang = (this as HTMLElement).dataset?.rank;
+      return { ...origRect.call(this), top: rang ? Number(rang) * 100 : 0 } as DOMRect;
+    };
+    const origAnimate = Element.prototype.animate;
+    Element.prototype.animate = function (frames: unknown) {
+      const eerste = (frames as { transform?: string }[])?.[0]?.transform ?? "";
+      const px = /translateY\((-?\d+(?:\.\d+)?)px\)/.exec(eerste);
+      if (px) bewegingen.push(Number(px[1]));
+      return { finished: Promise.resolve() } as unknown as Animation;
+    };
+    try {
+      render(film(inhaalRows()));
+      fireEvent.click(screen.getByRole("button", { name: "Vorige speeldag" }));
+
+      // Twee banen die van plek wisselen: eentje schuift omhoog, de ander omlaag.
+      expect(bewegingen.some((d) => d > 0)).toBe(true);
+      expect(bewegingen.some((d) => d < 0)).toBe(true);
+    } finally {
+      Element.prototype.getBoundingClientRect = origRect;
+      Element.prototype.animate = origAnimate;
+    }
+  });
+
   it("toont op het slotframe de verschuiving van díe speeldag, niet de live pijl", () => {
     render(film(inhaalRows()));
     // Live hoort de pijl uit het klassement te komen.
