@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { DagPaneel } from "./DagPaneel";
 import type { AgendaMarker } from "../agendaLogic";
 
@@ -40,6 +41,7 @@ function toon(props: Partial<Parameters<typeof DagPaneel>[0]> = {}) {
   const onPlan = vi.fn();
   const onKiesDag = vi.fn();
   render(
+    <MemoryRouter>
     <DagPaneel
       datum="2026-08-08"
       vandaag="2026-08-07"
@@ -51,7 +53,8 @@ function toon(props: Partial<Parameters<typeof DagPaneel>[0]> = {}) {
       onPlan={onPlan}
       onKiesDag={onKiesDag}
       {...props}
-    />,
+    />
+    </MemoryRouter>,
   );
   return { onOpen, onPlan, onKiesDag };
 }
@@ -150,6 +153,39 @@ describe("<DagPaneel />", () => {
     // Anders staat er van alles onder elkaar dat over verschillende dagen gaat.
     toon({ volgende: [marker({ optionId: "v1", date: "2026-08-15" })] });
     expect(screen.queryByText("Hierna")).not.toBeInTheDocument();
+  });
+
+  it("zegt niet dat er niets gespeeld is als er wél gespeeld is (#1182)", () => {
+    toon({
+      markers: [],
+      datum: "2026-08-01",
+      onPlan: undefined,
+      wedstrijden: [
+        { date: "2026-08-01", groupId: "g1", matchIds: ["m1", "m2", "m3"] },
+      ],
+      groepNamen: { g1: "Vrijdagavond Padel" },
+    });
+    expect(screen.queryByText(/deze dag is geweest/i)).not.toBeInTheDocument();
+    expect(screen.getByText("3 wedstrijden")).toBeInTheDocument();
+    // Meerdere wedstrijden: naar het matchoverzicht van de groep, want een
+    // dagfilter bestaat daar niet.
+    expect(screen.getByRole("link", { name: /3 wedstrijden/ })).toHaveAttribute(
+      "href",
+      "/spelen?groep=g1",
+    );
+  });
+
+  it("linkt bij één wedstrijd naar die wedstrijd", () => {
+    toon({
+      markers: [],
+      datum: "2026-08-01",
+      onPlan: undefined,
+      wedstrijden: [{ date: "2026-08-01", groupId: "g1", matchIds: ["m1"] }],
+    });
+    expect(screen.getByRole("link", { name: /1 wedstrijd/ })).toHaveAttribute(
+      "href",
+      "/matches/m1",
+    );
   });
 
   it("biedt op een lege dag die geweest is niets aan", () => {

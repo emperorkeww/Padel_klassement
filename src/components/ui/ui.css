@@ -1968,3 +1968,18 @@ textarea {
 .agenda-glyph--past {
   background: var(--line-strong);
 }
+
+/* Gespeelde wedstrijden (#1182): een ruit, want de drie andere plekken zijn
+   bezet door de rondjes en het blokje van een speeldag. Vorm draagt de
+   betekenis (WCAG 1.4.1); de kleur is die van een dag die geweest is, want dat
+   is wat dit is.
+
+   De schaal hoort bij de draaiing: een vierkant van 6px meet over zijn diagonaal
+   8,5px en zou anderhalve pixel boven en onder de stippenrij van 6px uitsteken.
+   Met 0,75 komt de diagonaal weer op ruim 6px uit — even groot als de rest, en
+   in silhouet nog altijd geen rondje. */
+.agenda-glyph--played {
+  border-radius: 1px;
+  background: var(--ink-soft);
+  transform: rotate(45deg) scale(0.75);
+}

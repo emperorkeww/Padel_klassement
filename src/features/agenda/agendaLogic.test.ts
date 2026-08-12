@@ -20,12 +20,14 @@ import {
   statusChip,
   perMaand,
   telInMaand,
+  telWedstrijden,
   tijdenLabel,
   tijdvak,
   toetsStap,
   volgendeSpeeldagen,
   volgendeStap,
   wachtOpJou,
+  wedstrijdDagen,
   windowFor,
   zelfdeDagAndereMaand,
   zelfdeMaand,
@@ -291,6 +293,54 @@ describe("telInMaand", () => {
 
   it("verwart een maand niet met dezelfde maand in een ander jaar", () => {
     expect(telInMaand([inAug("2025-08-08")], { jaar: 2026, maand: 8 })).toBe(0);
+  });
+});
+
+describe("wedstrijdDagen (#1182)", () => {
+  const rij = (id: string, played_at: string | null, group_id = "g1") => ({
+    id,
+    group_id,
+    played_at,
+  });
+
+  it("groepeert per dag en per groep", () => {
+    const uit = wedstrijdDagen(
+      [
+        rij("m1", "2026-08-08T18:00:00Z"),
+        rij("m2", "2026-08-08T19:00:00Z"),
+        rij("m3", "2026-08-08T19:00:00Z", "g2"),
+        rij("m4", "2026-08-09T10:00:00Z"),
+      ],
+      "Europe/Brussels",
+    );
+    expect(Object.keys(uit).sort()).toEqual(["2026-08-08", "2026-08-09"]);
+    expect(uit["2026-08-08"]).toHaveLength(2);
+    expect(uit["2026-08-08"][0].matchIds).toEqual(["m1", "m2"]);
+    expect(telWedstrijden(uit["2026-08-08"])).toBe(3);
+  });
+
+  it("rekent de dag in clubtijd, niet in UTC", () => {
+    // 22:30 UTC is in Brussel al de volgende dag — dezelfde les als #783.
+    const uit = wedstrijdDagen([rij("m1", "2026-08-08T22:30:00Z")], "Europe/Brussels");
+    expect(Object.keys(uit)).toEqual(["2026-08-09"]);
+  });
+
+  it("laat rijen zonder dag of groep vallen", () => {
+    const uit = wedstrijdDagen(
+      [rij("m1", null), { id: "m2", group_id: null, played_at: "2026-08-08T18:00:00Z" }],
+      "Europe/Brussels",
+    );
+    expect(uit).toEqual({});
+  });
+
+  it("zet de wedstrijden in de naam van de dagknop", () => {
+    // De ruit in de cel is decoratief; wat hij betekent hoort in de naam.
+    expect(dagLabel("2026-08-08", [], true, 3)).toBe(
+      "zaterdag 8 augustus, 3 wedstrijden gespeeld",
+    );
+    expect(dagLabel("2026-08-08", [], true, 0)).toBe(
+      "zaterdag 8 augustus, niets gespeeld",
+    );
   });
 });
 

@@ -564,6 +564,20 @@
   background: var(--poll);
 }
 
+/* Gespeelde wedstrijden (#1182). Het staafje is dat van een dag die geweest is;
+   de rij zelf is een link naar de wedstrijd of naar het overzicht van de groep,
+   en hoeft dus niet als kaart om aandacht te vragen. */
+.speeldag__rail--past {
+  background: var(--line-strong);
+}
+.speeldag--gespeeld {
+  box-shadow: none;
+  background: var(--surface-2);
+}
+.speeldag--gespeeld:hover {
+  box-shadow: var(--shadow-sm);
+}
+
 .speeldag__body {
   display: grid;
   gap: 2px;
