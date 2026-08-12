@@ -128,7 +128,11 @@ export function ProfileSettings() {
         {/* Deze pagina heette "Profiel", net als de profielweergave op
             /spelers/:id — de "Ik"-tab en de topbalk-avatar landden hier en je
             kwam nergens meer. Vandaar "Instellingen" als titel én een directe
-            link naar je eigen kaart (#706). */}
+            link naar je eigen kaart (#706).
+
+            Sinds #1211 landt "Ik" op die kaart en komt je hier via het
+            tandwiel in de kop daarvan. Deze link blijft dus staan, maar als de
+            weg terug in plaats van als reparatie van een verkeerde landing. */}
         <div className="row-between">
           <h1 className="page-title">Instellingen</h1>
           <div className="btn-row">

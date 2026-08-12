@@ -114,8 +114,11 @@ export function PlayerProfile() {
   // in plaats van naar een tussenstand te flitsen.
   usePageTitle(profile.data ? displayName(profile.data) : null);
   // Bij een deeplink uit een pushbericht is er geen vorige pagina — dan naar
-  // het klassement in plaats van de app uit (#910).
-  const terug = useBackTo("/klassement");
+  // het klassement in plaats van de app uit (#910). Op je eigen profiel is dat
+  // sinds #1211 het overzicht: dit is nu de landing van "Ik", en wie hier via
+  // de tab binnenkomt hoort terug te vallen op zijn startpagina en niet in een
+  // ranglijst waar hij niet vandaan kwam.
+  const terug = useBackTo(isMe ? "/" : "/klassement");
   const standing = useAsync(() => getPlayerStanding(id), [id]);
   // Volledige stand voor de klassementpositie (#N), net als het dashboard.
   const standings = useAsync(getPlayerStandings, []);
@@ -664,6 +667,15 @@ export function PlayerProfile() {
             data={shareData}
             label={isMe ? "↗ Deel mijn profiel" : "↗ Deel profiel"}
           />
+          {/* Instellingen als discrete stap vanaf je eigen kaart (#1211): de
+              spiegel van de "Mijn profiel →"-link die #706 op de
+              instellingenpagina zette. Nu "Ik" hier landt, is dít de kop waar
+              je wachtwoord, meldingen en privacy vandaan bereikt worden. */}
+          {isMe && (
+            <Link className="btn btn--sm" to="/profiel">
+              ⚙️ Instellingen
+            </Link>
+          )}
         </div>
       </header>
 
