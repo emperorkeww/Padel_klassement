@@ -167,6 +167,22 @@ export function Agenda() {
   // erger dan de vorige maand nog even zien.
   const laadt = groepen.loading || (venster.loading && venster.data == null);
   const geenGroepen = !groepen.loading && lijst.length === 0;
+  // Bladeren naar een andere maand houdt het vorige venster in beeld (useAsync
+  // laat zijn data staan). Zonder teken zie je dus even de stippen én de
+  // telling van de máánd die je net verliet, en gelooft dat de nieuwe leeg is
+  // (#1182). Vandaar: raster op aria-busy, stippen gedimd, telling stil.
+  const verversen = venster.loading && venster.data != null;
+
+  // De legenda legt alleen uit wat er te zien is: in een maand met alleen
+  // geboekte speeldagen zeggen de andere twee regels niets.
+  const zichtbareStatussen = useMemo(() => {
+    const aanwezig = new Set(
+      markers
+        .filter((m) => m.date >= raster.from && m.date <= raster.to)
+        .map((m) => m.status),
+    );
+    return (["booked", "locked", "open"] as const).filter((s) => aanwezig.has(s));
+  }, [markers, raster.from, raster.to]);
 
   /**
    * De tab-stop verplaatsen. Loopt hij het raster uit — pijltje voorbij de
@@ -243,7 +259,7 @@ export function Agenda() {
             {metHoofdletter(maandLabel(maand))}
           </h1>
           <p className="agenda-kop__telling">
-            {laadt
+            {laadt || verversen
               ? " "
               : inMaand === 0
                 ? "Nog niets gepland"
@@ -254,6 +270,14 @@ export function Agenda() {
           <button
             type="button"
             className="agenda-kop__vandaag"
+            // Sta je er al, dan blijft de knop staan — hem weghalen laat de kop
+            // springen en haalt het ankerpunt weg waar je na het rondlopen met
+            // de pijltjes op terugvalt. Hij zegt alleen dat je er al bent.
+            aria-current={
+              zelfdeMaand(maand, maandVan(vandaag)) && gekozenDag === vandaag
+                ? "date"
+                : undefined
+            }
             onClick={() => {
               setMaand(maandVan(vandaag));
               setFocusDag(vandaag);
@@ -314,6 +338,7 @@ export function Agenda() {
             <MaandRaster
               weeks={weeks}
               perDag={perDag}
+              bezig={verversen}
               vandaag={vandaag}
               gekozenDag={gekozenDag}
               focusDag={focusDag}
@@ -322,14 +347,16 @@ export function Agenda() {
             />
           )}
 
-          <ul className="agenda-legenda">
-            {(["booked", "locked", "open"] as const).map((status) => (
-              <li key={status} className="agenda-legenda__item">
-                <StatusGlyph status={status} size={8} />
-                {statusChip(status)}
-              </li>
-            ))}
-          </ul>
+          {zichtbareStatussen.length > 0 && (
+            <ul className="agenda-legenda">
+              {zichtbareStatussen.map((status) => (
+                <li key={status} className="agenda-legenda__item">
+                  <StatusGlyph status={status} size={8} />
+                  {statusChip(status)}
+                </li>
+              ))}
+            </ul>
+          )}
 
           {/* Wat er in het raster niet meer past (#1112). De instap-kaart die
               hier stond legde uit dat je een dag kon aantikken; dit paneel

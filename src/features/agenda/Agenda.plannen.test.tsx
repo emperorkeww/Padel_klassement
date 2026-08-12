@@ -245,6 +245,27 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("legt alleen de statussen uit die in beeld staan", async () => {
+    // In dit venster staat één geboekte speeldag. De legenda die daar "Open
+    // poll" en "Vastgelegd" bij zet, legt vormen uit die nergens staan (#1182).
+    toon();
+    expect(await screen.findByText("Geboekt")).toBeInTheDocument();
+    expect(screen.queryByText("Open poll")).not.toBeInTheDocument();
+    expect(screen.queryByText("Vastgelegd")).not.toBeInTheDocument();
+  });
+
+  it("zegt dat je al op vandaag kijkt", async () => {
+    toon();
+    const vandaag = await screen.findByRole("button", { name: "Vandaag" });
+    // Bij het openen sta je erop...
+    expect(vandaag).toHaveAttribute("aria-current", "date");
+    // ...en zodra je ergens anders kijkt, brengt de knop je weer ergens heen.
+    await userEvent.click(
+      screen.getByRole("button", { name: /donderdag 13 augustus/ }),
+    );
+    expect(vandaag).not.toHaveAttribute("aria-current");
+  });
+
   it("bladert mee naar de maand van een aangetikte randdag", async () => {
     toon();
     // Het raster van augustus 2026 begint op maandag 27 juli.

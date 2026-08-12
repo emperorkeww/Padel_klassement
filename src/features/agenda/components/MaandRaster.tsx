@@ -25,6 +25,7 @@ const WEEKDAGEN = ["ma", "di", "wo", "do", "vr", "za", "zo"];
 export function MaandRaster({
   weeks,
   perDag,
+  bezig = false,
   vandaag,
   gekozenDag,
   focusDag,
@@ -33,6 +34,9 @@ export function MaandRaster({
 }: {
   weeks: RasterDag[][];
   perDag: Record<string, AgendaMarker[]>;
+  /** De maand staat er al, maar de speeldagen zijn nog onderweg (#1182). De
+   *  stippen die je dan ziet horen bij het vorige venster. */
+  bezig?: boolean;
   vandaag: string;
   /** De dag waar het paneel eronder over gaat (#1112). Los van `focusDag`: met
    *  de pijltjes loop je door het raster zonder telkens iets te kiezen. */
@@ -62,7 +66,7 @@ export function MaandRaster({
   }
 
   return (
-    <div className="agenda-raster">
+    <div className="agenda-raster" data-bezig={bezig ? "ja" : undefined}>
       <div className="agenda-raster__koppen" aria-hidden="true">
         {WEEKDAGEN.map((d) => (
           <span key={d} className="agenda-raster__kop">
@@ -75,6 +79,7 @@ export function MaandRaster({
         className="agenda-raster__grid"
         role="grid"
         aria-label="Maandraster met je speeldagen"
+        aria-busy={bezig || undefined}
         onKeyDown={(e) => {
           const naar = toetsStap(focusDag, e.key);
           if (naar == null) return;

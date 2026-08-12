@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getGroupMatches } from "@/features/matches/api";
 import {
@@ -41,6 +41,7 @@ export function AgendaSuggesties({
 }) {
   const [open, setOpen] = useState(false);
   const laden = open && groepId != null;
+  const labelId = useId();
 
   const polls = useAsync(() => getGroupPolls(groepId ?? ""), [groepId], {
     enabled: laden,
@@ -59,23 +60,28 @@ export function AgendaSuggesties({
 
   return (
     <section className="agenda-suggesties" aria-label="Suggesties">
+      {/* Met een eigen label en een eigen vorm (#1182). Dit was dezelfde
+          chiprij als het groepsfilter bovenaan, met dezelfde groepsnamen erin,
+          terwijl het iets anders doet: hier kies je er precies één, en die
+          keuze filtert niets maar bepaalt waarvoor gerekend wordt. */}
       {groepen.length > 1 && (
-        <div
-          className="agenda-filter"
-          role="group"
-          aria-label="Suggesties voor welke groep"
-        >
-          {groepen.map((g) => (
-            <button
-              key={g.id}
-              type="button"
-              className="agenda-filter__chip"
-              aria-pressed={g.id === groepId}
-              onClick={() => onGroep(g.id)}
-            >
-              {g.name}
-            </button>
-          ))}
+        <div className="agenda-suggesties__keuze">
+          <span className="agenda-suggesties__label" id={labelId}>
+            Suggesties voor
+          </span>
+          <div className="agenda-keuze" role="group" aria-labelledby={labelId}>
+            {groepen.map((g) => (
+              <button
+                key={g.id}
+                type="button"
+                className="agenda-keuze__chip"
+                aria-pressed={g.id === groepId}
+                onClick={() => onGroep(g.id)}
+              >
+                {g.name}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
