@@ -1080,11 +1080,14 @@ textarea {
 }
 
 /* ---------- Tabs ---------- */
+/* Track en actief segment komen uit het --track-paar (#1255): --surface-2 en
+   --surface keren op donker van volgorde om, waardoor het gekozen segment
+   daar als gat las in plaats van als opgetild plaatje. */
 .tabs {
   display: inline-flex;
   gap: var(--sp-1);
   padding: var(--sp-1);
-  background: var(--surface-2);
+  background: var(--track);
   border: 1px solid var(--line);
   border-radius: 999px;
   margin-bottom: var(--sp-5);
@@ -1112,7 +1115,7 @@ textarea {
   color: var(--ink);
 }
 .tab.is-active {
-  background: var(--surface);
+  background: var(--track-actief);
   color: var(--accent);
   box-shadow: var(--shadow-sm);
 }

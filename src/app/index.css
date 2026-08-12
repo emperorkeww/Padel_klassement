@@ -48,6 +48,17 @@
   --surface-hover: #eef3ee; /* hover op kaarten, nav-items, knoppen */
   --surface-active: #e6f5ee; /* gekozen nav-item, pressed */
   --divider: #e4eae4; /* separator — zwakker dan een kaartrand */
+  /* ---- Segmentbalk (#1255) ----
+     Track en actief segment als eigen paar. De balken leenden --surface-2
+     (track) en --surface (actief); op licht klopt dat — actief ligt bóven de
+     track — maar op donker keren die twee tokens van volgorde om en werd het
+     gekozen segment een gat in de balk. Het paar wijst in beide thema's
+     dezelfde kant op: actief boven track (richtingsregel in
+     scripts/contrast-check.mjs). De lichte waarden zijn expres gelijk aan wat
+     de balken hiervóór al gebruikten, zodat het lichte thema geen pixel
+     verschuift. */
+  --track: #eef3ee; /* de balk zelf, verzonken t.o.v. zijn drager */
+  --track-actief: #ffffff; /* het gekozen segment, opgetild op de track */
   /* Dashboardrollen (#1120): de bestaande korte tokens blijven de bron, deze
      semantische namen leggen vast wáár een kleur voor dient. Zo kan de nieuwe
      shell hiërarchie krijgen zonder een tweede lokaal palet te beginnen. */
@@ -457,6 +468,13 @@
   --surface-elevated: #22262d; /* hero, sheets, popovers */
   --surface-hover: #262b33; /* hover op kaarten, nav-items, knoppen */
   --surface-active: #123527; /* gekozen nav-item — smaragd getint */
+  /* Segmentbalk (#1255): de track zakt ónder het kaartniveau (L* 5,8 — een
+     verzonken goot, waar hij ook op ligt: pagina, kaart of sheet), het gekozen
+     segment ligt er ruim bovenop (L* 17,4, het hover-niveau). Vóór dit paar
+     leende de balk --surface-2/--surface en die keren op donker juist om:
+     het actieve segment las als een gat. */
+  --track: #101317;
+  --track-actief: #262b33;
   --background-navigation: #000000;
   --navigation-ink: #f2f4f7;
   --navigation-muted: #a0a9b3;
