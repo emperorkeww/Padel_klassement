@@ -167,6 +167,81 @@ describe("<RaceLeaderboard />", () => {
     }
   });
 
+  // Twee speeldagen = drie frames, zodat het afspelen ook halverwege kan staan.
+  const filmRows = (extraDag = false): Row[] => [
+    row("p1", extraDag ? 1055 : 1040, {
+      rank: 1,
+      name: "Stijger",
+      history: [
+        { match_id: "m1", rating_before: 990, rating_after: 1010, delta: 20, played_at: "2026-08-01T20:00:00Z" },
+        { match_id: "m2", rating_before: 1010, rating_after: 1040, delta: 30, played_at: "2026-08-05T20:00:00Z" },
+        ...(extraDag
+          ? [{ match_id: "m5", rating_before: 1040, rating_after: 1055, delta: 15, played_at: "2026-08-09T20:00:00Z" }]
+          : []),
+      ],
+    }),
+    row("p2", 1000, {
+      rank: 2,
+      history: [
+        { match_id: "m3", rating_before: 1030, rating_after: 1015, delta: -15, played_at: "2026-08-01T20:00:00Z" },
+        { match_id: "m4", rating_before: 1015, rating_after: 1000, delta: -15, played_at: "2026-08-05T20:00:00Z" },
+      ],
+    }),
+  ];
+  const film = (rows: Row[]) => (
+    <MemoryRouter>
+      <ToastProvider>
+        <RaceLeaderboard rows={rows} axisRows={rows} allowTimeline />
+      </ToastProvider>
+    </MemoryRouter>
+  );
+
+  // #1254: scrollen zet state in het klassement erboven, dat rendert opnieuw en
+  // geeft nieuwe — inhoudelijk gelijke — rij-arrays door. Toen stopte de film
+  // en sprong de baan terug naar nu.
+  it("speelt door als het klassement opnieuw rendert met dezelfde rijen", () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender } = render(film(filmRows()));
+      fireEvent.click(screen.getByRole("button", { name: /speel af/i }));
+      act(() => {
+        vi.advanceTimersByTime(900);
+      });
+      expect(screen.getByLabelText("Stijger: 1010 rating")).toBeInTheDocument();
+
+      rerender(film(filmRows()));
+
+      expect(screen.getByLabelText("Stijger: 1010 rating")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /pauzeer/i })).toBeInTheDocument();
+      // En hij loopt ook echt verder na de rerender.
+      act(() => {
+        vi.advanceTimersByTime(900);
+      });
+      expect(screen.getByLabelText("Stijger: 1040 rating")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("valt wél terug naar de live stand zodra er een nieuwe uitslag bij komt", () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender } = render(film(filmRows()));
+      fireEvent.click(screen.getByRole("button", { name: /speel af/i }));
+      act(() => {
+        vi.advanceTimersByTime(900);
+      });
+      expect(screen.getByLabelText("Stijger: 1010 rating")).toBeInTheDocument();
+
+      rerender(film(filmRows(true)));
+
+      expect(screen.getByLabelText("Stijger: 1055 rating")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /speel af/i })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("biedt geen tijdlijn zonder aantoonbare wijziging", () => {
     renderRace([row("p1", 1000), row("p2", 990)]);
     expect(screen.queryByRole("button", { name: /speel af/i })).toBeNull();

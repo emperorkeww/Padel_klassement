@@ -56,9 +56,27 @@ export function RaceLeaderboard({
     () => rows.filter((row): row is Row & { rating: number } => row.rating != null),
     [rows],
   );
+  // Handtekening van de film (#1254). Het klassement geeft bij elke render
+  // nieuwe (inhoudelijk gelijke) rij-arrays door — scrollen alleen al zet state
+  // in `useVerbergBijScrollen` (#942) — en daarmee bouwde de tijdlijn zich
+  // telkens opnieuw op. Het afspelen viel dan terug naar de live stand. Deze
+  // string verandert pas als de historie of het veld écht anders is.
+  const timelineSig = useMemo(
+    () =>
+      ratedRows
+        .map(
+          (row) =>
+            `${row.key}:${row.rating}:${row.history.length}:${row.history.at(-1)?.match_id ?? ""}`,
+        )
+        .join("|"),
+    [ratedRows],
+  );
   const timeline = useMemo(
     () => (allowTimeline ? buildRaceTimeline(ratedRows) : null),
-    [allowTimeline, ratedRows],
+    // `ratedRows` staat er bewust niet bij: de handtekening hierboven dekt de
+    // inhoud, de array-identiteit zegt niets.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allowTimeline, timelineSig],
   );
   const me = useMemo(() => findCurrentUser(axisRows), [axisRows]);
   const axis = useMemo(() => {
@@ -92,10 +110,14 @@ export function RaceLeaderboard({
   const vorigFrame = timeline && shownIdx > 0 ? timeline.frames[shownIdx - 1] : null;
   const scrubbing = timeline != null && shownIdx < laatste;
 
+  // Terug naar live zodra er een ándere film is: een nieuwe uitslag, een ander
+  // seizoen, een andere groep. Bewust aan de handtekening en niet aan het
+  // `timeline`-object: `useMemo` is een optimalisatie, geen garantie, en dit
+  // effect mag de kijker nooit onderbreken om een identiteitswissel.
   useEffect(() => {
     setFrameIdx(null);
     setPlaying(false);
-  }, [timeline]);
+  }, [timelineSig, allowTimeline]);
 
   useEffect(() => {
     if (!playing || !timeline) return;
