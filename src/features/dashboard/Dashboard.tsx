@@ -97,7 +97,7 @@ export function Dashboard() {
   );
   const rankIdx = eloRanked.findIndex((p) => p.player_id === myId);
   const rank = rankIdx >= 0 ? rankIdx + 1 : null;
-  const { incoming, accepted } = categorize(friendships.data ?? [], myId);
+  const { accepted } = categorize(friendships.data ?? [], myId);
   const myProfile = pmap[myId];
   // Titels voor de rechterbovenhoek van de hero (#287): de kroon als je #1 van
   // het klassement bent (Big Daddy), de Zwarte Piet als je in een van je
@@ -297,19 +297,6 @@ export function Dashboard() {
     vandaag: new Date().toISOString().slice(0, 10),
   });
 
-  // Wat de kaart hieronder níét al oppakt (#1210): de kaart neemt de eerste,
-  // de chip wijst naar de rest.
-  const restUitslagen = Math.max(0, planned.length - 1);
-
-  // Komen alle openstaande uitslagen uit één groep, link dan direct naar de
-  // rondes van die groep in plaats van naar de algemene matchespagina.
-  const plannedGroupId =
-    planned.length > 0 &&
-    planned[0].group_id &&
-    planned.every((m) => m.group_id === planned[0].group_id)
-      ? planned[0].group_id
-      : null;
-
   if (coreError) {
     return (
       <DashboardError
@@ -356,42 +343,12 @@ export function Dashboard() {
         generateCta={generateCta}
       />
 
-      {/* De acties staan direct onder de hero (#911): "3 uitslagen wachten op
-          jou" is het enige op deze pagina waar iemand iets mee móet.
-
-          Sinds #1210 telt de chip alleen wat er *naast* de matchkaart nog
-          openstaat: die kaart vult de eerste uitslag zelf in, dus als er maar
-          één wacht is de chip een omweg naar een handeling die twee kaarten
-          lager al klaarstaat. */}
-      {(restUitslagen > 0 || incoming.length > 0) && (
-        <div className="todo-strip">
-          {restUitslagen > 0 && (
-            <Link
-              className="todo-chip"
-              to={plannedGroupId ? `/groepen/${plannedGroupId}` : "/spelen"}
-            >
-              <span className="todo-chip__count">{restUitslagen}</span>
-              {restUitslagen === 1
-                ? "andere uitslag wacht op jou"
-                : "andere uitslagen wachten op jou"}
-              <span className="todo-chip__pijl" aria-hidden="true">
-                →
-              </span>
-            </Link>
-          )}
-          {incoming.length > 0 && (
-            <Link className="todo-chip todo-chip--accent" to="/vrienden">
-              <span className="todo-chip__count">{incoming.length}</span>
-              {incoming.length === 1
-                ? "vriendschapsverzoek"
-                : "vriendschapsverzoeken"}
-              <span className="todo-chip__pijl" aria-hidden="true">
-                →
-              </span>
-            </Link>
-          )}
-        </div>
-      )}
+      {/* Hier stond tot #1232 een pillenstrook (#911, #1210). Beide pillen
+          wezen naar iets dat inmiddels dichterbij ligt: de matchkaart in de
+          Vandaag-zone opent de score-sheet zelf en Spelen draagt sinds #1227
+          de attentiestip voor de rest, en een vriendschapsverzoek komt via de
+          meldingen-inbox (#1090) binnen. De hero sluit nu direct aan op de
+          eerstvolgende kaart. */}
 
       <OnboardCard
         myId={myId}

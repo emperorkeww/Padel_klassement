@@ -32,10 +32,9 @@
   background: var(--accent-soft);
 }
 
-/* De teller. Vorm van .todo-chip__count op het dashboard, maar kleiner (hij
-   hangt op een knop van 32px) en met een ánder vlak. Nagerekend met
+/* De teller: een klein rond telbolletje op een knop van 32px. Nagerekend met
    contrast-check.mjs, voor tekst van 11px die dus gewoon 4,5 moet halen:
-     accent-ink op --warn  (de todo-chip)  3,19 licht — en niets bewaakt dat
+     accent-ink op --warn                  3,19 licht — en niets bewaakt dat
      accent-ink op --accent (de knoptekst) 4,36 licht — bestaande "let-op"
      accent-ink op --accent-strong         5,79 licht · 5,04 donker ✓
    Vandaar het derde. Groen sluit bovendien aan op de ongelezen-stip. */
