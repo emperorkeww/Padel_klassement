@@ -66,7 +66,6 @@ function input(over: Partial<BriefingInput> = {}): BriefingInput {
     eloRanked: [ME],
     nextMatch: null,
     rival: null,
-    tierNext: null,
     nextBadge: null,
     vandaag: "2026-07-03",
     ...over,

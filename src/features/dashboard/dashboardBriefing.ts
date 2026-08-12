@@ -1,10 +1,9 @@
-import { coachBriefing, PROMOTIE_DREMPEL } from "@/features/coach/coachMoments";
+import { coachBriefing } from "@/features/coach/coachMoments";
 import { klassementFeiten } from "@/features/coach/klassementFeiten";
 import { verliesreeksTegen } from "@/features/coach/coachStats";
 import { inTeam } from "@/features/rating/results";
 import { displayName } from "@/features/profiles/api";
 import type { Badge } from "@/features/profiles/badges";
-import type { tierProgress } from "@/features/rating/tiers";
 import type { Match, PlayerRating, PlayerStanding, Profile, Team } from "@/types";
 import type { Rival } from "./dashboardHelpers";
 
@@ -36,7 +35,6 @@ export type BriefingInput = {
   eloRanked: PlayerStanding[];
   nextMatch: Match | null;
   rival: Rival | null;
-  tierNext: ReturnType<typeof tierProgress>;
   nextBadge: Badge | null;
   /** Datumdeel van de seed, zodat de regel een dag lang stabiel blijft. */
   vandaag: string;
@@ -47,7 +45,7 @@ export function dashboardBriefing(input: BriefingInput): string | null {
   const {
     myId, me, profile, rank, streak, losing, vorm, dayDelta,
     matches, teams, profiles, ratings, eloRanked, nextMatch, rival,
-    tierNext, nextBadge, vandaag,
+    nextBadge, vandaag,
   } = input;
   if (!me) return null;
 
@@ -68,19 +66,6 @@ export function dashboardBriefing(input: BriefingInput): string | null {
     return { naam: displayName(profiles[rival.oppId]), verliesreeks };
   })();
 
-  // Promotie binnen handbereik.
-  const promotieNabij =
-    tierNext?.volgende &&
-    tierNext.puntenNodig != null &&
-    tierNext.puntenNodig > 0 &&
-    tierNext.puntenNodig <= PROMOTIE_DREMPEL
-      ? {
-          divisie: tierNext.volgende.naam,
-          emoji: tierNext.volgende.emoji,
-          punten: tierNext.puntenNodig,
-        }
-      : null;
-
   // Badge op een haar na klaar.
   const badgeNabij = nextBadge?.voortgang
     ? {
@@ -97,7 +82,6 @@ export function dashboardBriefing(input: BriefingInput): string | null {
     losing,
     heeftMatch: !!nextMatch,
     rivaalMatch,
-    promotieNabij,
     dayDelta,
     vorm,
     badgeNabij,

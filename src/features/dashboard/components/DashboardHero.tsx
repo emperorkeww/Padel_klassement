@@ -159,21 +159,18 @@ export function DashboardHero({
   naam,
   rating,
   ratingGames,
-  rank,
   heeftStand,
   loading,
   status,
   earnedBadges,
   form,
   briefing,
-  generateCta,
 }: {
   myId: string;
   profile: Profile | undefined;
   naam: string;
   rating: number | null;
   ratingGames: number;
-  rank: number | null;
   /** Staat de speler al in het klassement? Zo niet: lege-staat-tekst. */
   heeftStand: boolean;
   loading: boolean;
@@ -181,7 +178,6 @@ export function DashboardHero({
   earnedBadges: Badge[];
   form: ("W" | "D" | "L")[];
   briefing: string | null;
-  generateCta: { to: string; label: string };
 }) {
   const { thema, overlay } = status;
   const crests = crestsVan(status, myId);
@@ -225,14 +221,17 @@ export function DashboardHero({
               dimmed={ratingGames > 0 && ratingGames < THIN_GAMES}
             />
           </h1>
+          {/* De subregel is sinds #1242 alleen nog de lege staat: rang en
+              rating wonen in het cijferblok ("Jouw cijfers"), waar ze mét
+              context staan — hier stonden ze er nog eens naast. De skeleton
+              blijft zolang de stand laadt, zodat de lege-staat-tekst niet
+              flitst voor iemand die allang speelt. */}
           {loading ? (
-            // Geen "speel je eerste match"-flits terwijl de stand nog laadt.
             <span className="sk sk--line hero__sub-sk" aria-hidden="true" />
           ) : (
-            <p className="hero__sub">
-              {heeftStand
-                ? `Je bezet momenteel plek #${rank || "?"} in het klassement met een rating van ${rating || "1000"}.`
-                : profile
+            !heeftStand && (
+              <p className="hero__sub">
+                {profile
                   ? coachEmptyState({
                       type: "dashboard",
                       seed: `${myId}-empty-dashboard`,
@@ -242,7 +241,8 @@ export function DashboardHero({
                       },
                     })
                   : "Kom in beweging en speel je eerste match om het klassement te bestormen!"}
-            </p>
+              </p>
+            )
           )}
         </div>
         {/* Titels en badges staan sinds #939 op de volle kaartbreedte in plaats
@@ -304,21 +304,21 @@ export function DashboardHero({
       )}
       <div className="hero__divide" aria-hidden="true" />
       <div className="hero__foot">
+        {/* Vorm is informatie, geen navigatie (#1242): de profiel-ingang is de
+            avatar met zijn label, en twee stille links naar dezelfde plek is er
+            één te veel. */}
         {form.length > 0 && (
-          <Link className="hero__form" to={`/spelers/${myId}`}>
+          <div className="hero__form">
             <span className="hero__form-label">Vorm</span>
             <FormChips form={form} />
-          </Link>
+          </div>
         )}
+        {/* Eén primaire actie (#1242). "Vrije banen" heeft zijn eigen kaart op
+            de pagina en "Wedstrijden genereren" (#73) zijn eigen ingang op de
+            Spelen-tab — drie knoppen maakten van de belangrijkste er geen. */}
         <div className="hero__actions">
           <Link className="btn btn--primary" to="/spelen?log=1">
             + Match loggen
-          </Link>
-          <Link className="btn" to={generateCta.to}>
-            {generateCta.label}
-          </Link>
-          <Link className="btn" to="/banen">
-            Vrije banen
           </Link>
         </div>
       </div>

@@ -122,14 +122,12 @@ function Kaart({
         naam={naam}
         rating={rating}
         ratingGames={24}
-        rank={6}
         heeftStand
         loading={false}
         status={s}
         earnedBadges={badges}
         form={["W", "W", "W", "L", "W"]}
         briefing={briefing}
-        generateCta={{ to: "/groepen", label: "Wedstrijden genereren" }}
       />
     </section>
   );

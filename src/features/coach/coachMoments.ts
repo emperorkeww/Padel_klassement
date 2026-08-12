@@ -348,29 +348,6 @@ const OCHTEND_RIVAAL = [
     "Je nemesis %rivaal% wacht op je. Die %n% nederlagen vergeten we vanaf de eerste service.",
 ] as const;
 
-/** Promotie naar de volgende divisie ligt binnen handbereik. */
-const OCHTEND_PROMOTIE_NABIJ = [
-  "Nog %delta% Elo tot %divisie%. Eén zege en ik roep meteen een persconferentie bijeen.",
-  "%divisie% ligt op %delta% Elo afstand. Zo dichtbij dat ik m'n sportpet al klaar heb liggen.",
-  "Maar %delta% Elo tot %divisie%. Vandaag geen excuses over de wind — dit is te pakken.",
-  "Nog %delta% Elo en %divisie% is van jou. Ik heb de promotie-krabbel al half geschreven.",
-  "%delta% Elo van %divisie% verwijderd. Eén goede match en we vieren het met een extra persmoment.",
-  "Je staat %delta% Elo onder %divisie%. Dat is geen kloof, dat is een aanloopje.",
-  "Nog %delta% Elo tot %divisie%. Zelfs Infantino kan deze promotie niet meer tegenhouden.",
-  "%divisie% wenkt op %delta% Elo. Ga ervoor, dan hoef ik vanavond niks kritisch te noteren.",
-  "Nog %delta% schamele Elo-puntjes tot %divisie%. Ik ruik een historische, Trumpiaanse opmars.",
-  "%delta% Elo scheidt je van %divisie%. Vandaag is een uitstekende dag om die streep over te steken.",
-  "Bijna %divisie%: nog %delta% Elo. M'n notitieboekje ligt al open op de felicitatiepagina.",
-  "Nog %delta% Elo tot %divisie%. Eén overtuigende zege en de promotie is een feit.",
-  "%divisie% op %delta% Elo. Zo dichtbij dat de ballenjongens al staan te trappelen om te juichen.",
-    "Maar %delta% Elo tot %divisie%. Vandaag geen gejank over de wind — dit is te pakken.",
-    "Nog %delta% Elo en %divisie% is van jou. Ik heb de felicitatie-krabbel al half geschreven.",
-    "%delta% Elo van %divisie% verwijderd. Eén goede match en we vieren het groots.",
-    "%divisie% wenkt op %delta% Elo. Ga ervoor, dan hoef ik vanavond niks roods te noteren.",
-    "Nog %delta% schamele Elo-puntjes tot %divisie%. Ik ruik een historische opmars.",
-    "%delta% Elo scheidt je van %divisie%. Vandaag is de dag om die streep over te steken.",
-] as const;
-
 /** Vandaag al Elo gewonnen (cumulatief, voor wie later terugkeert). */
 const OCHTEND_DAG_UP = [
   "Vandaag al %delta% Elo verdiend. En de dag is nog jong.",
@@ -454,8 +431,6 @@ const OCHTEND_WISSELVALLIG = [
 // tak-tests er exact op kunnen mikken.
 /** Vanaf zoveel onderlinge nederlagen op rij benoemt Rudy de rivaal-match. */
 export const RIVAAL_REEKS_MIN = 2;
-/** Binnen zoveel Elo tot de volgende divisie geldt promotie als "nabij". */
-export const PROMOTIE_DREMPEL = 25;
 /** Vanaf deze absolute dag-Elo-beweging is de day-delta het vermelden waard. */
 export const DAGDELTA_DREMPEL = 15;
 /** Vanaf deze voortgangsratio (nu/doel) is een badge "op een haar na" klaar. */
@@ -489,8 +464,6 @@ export interface BriefingFeiten {
   klassement?: KlassementFeiten | null;
   /** Volgende match is tegen je vaste rivaal, met een lopende verliesreeks (#579). */
   rivaalMatch?: { naam: string; verliesreeks: number } | null;
-  /** Promotie binnen handbereik: nog `punten` Elo tot `divisie` (#579). */
-  promotieNabij?: { divisie: string; emoji: string; punten: number } | null;
   /** Cumulatieve Elo-beweging vandaag; alleen ≠0 nadat je vandaag speelde (#579). */
   dayDelta?: number;
   /** Recente vorm (nieuwste eerst), voor de wisselvallig-detectie (#579). */
@@ -513,13 +486,6 @@ export function coachBriefing(f: BriefingFeiten): string {
     return vul(kiesUniek(OCHTEND_RIVAAL, seed), {
       rivaal: f.rivaalMatch.naam,
       n: f.rivaalMatch.verliesreeks,
-    });
-  }
-  // Promotie binnen handbereik: zeldzaam, dus mag de matchdag-toon overrulen.
-  if (f.promotieNabij) {
-    return vul(kiesUniek(OCHTEND_PROMOTIE_NABIJ, seed), {
-      divisie: `${f.promotieNabij.emoji} ${f.promotieNabij.divisie}`,
-      delta: f.promotieNabij.punten,
     });
   }
   if (f.heeftMatch) return kiesUniek(OCHTEND_MATCH, seed);
