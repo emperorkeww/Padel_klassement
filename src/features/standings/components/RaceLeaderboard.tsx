@@ -1,9 +1,9 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
-  type ReactNode,
   type Ref,
 } from "react";
 import { Link } from "react-router-dom";
@@ -97,6 +97,9 @@ export function RaceLeaderboard({
     return detectRatingPacks(ratedRows, drempels.neighborGap, drempels.maxSpread);
   }, [axisRows, ratedRows]);
 
+  const boardRef = useRef<HTMLDivElement | null>(null);
+  const tijdlijnRef = useRef<HTMLDivElement | null>(null);
+
   // null = live (het laatste frame); een getal = de kijker scrubt of speelt af.
   const [frameIdx, setFrameIdx] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -132,6 +135,51 @@ export function RaceLeaderboard({
       setPlaying(false);
     }
   }, [playing, timeline, frameIdx]);
+
+  // Afspelen heeft geen zin als niemand kijkt: een verborgen tabblad, of een
+  // baan die helemaal uit beeld is gescrold. Scrollen bínnen de baan speelt
+  // gewoon door — dat is juist het moment waarop je kijkt.
+  useEffect(() => {
+    if (!playing) return;
+    const stop = () => setPlaying(false);
+    const bijZichtbaarheid = () => {
+      if (document.hidden) stop();
+    };
+    document.addEventListener("visibilitychange", bijZichtbaarheid);
+    const board = boardRef.current;
+    // Ontbreekt IntersectionObserver (jsdom, oudere webviews), dan blijft het
+    // afspelen gewoon doorlopen — stil niets doen is hier het veilige gedrag.
+    const kijker =
+      board && typeof IntersectionObserver !== "undefined"
+        ? new IntersectionObserver(([entry]) => {
+            if (!entry.isIntersecting) stop();
+          })
+        : null;
+    if (board) kijker?.observe(board);
+    return () => {
+      document.removeEventListener("visibilitychange", bijZichtbaarheid);
+      kijker?.disconnect();
+    };
+  }, [playing]);
+
+  // De as en de divisiepoorten plakken onder de bediening; hoe hoog die is
+  // hangt aan de tekst erin ("Speeldag 12 september · stand 3 van 8" wikkelt op
+  // een smal scherm), dus meten in plaats van een vaste waarde in CSS.
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+    const balk = tijdlijnRef.current;
+    if (!balk) {
+      board.style.removeProperty("--race-tijdlijn-h");
+      return;
+    }
+    const meet = () => board.style.setProperty("--race-tijdlijn-h", `${balk.offsetHeight}px`);
+    meet();
+    if (typeof ResizeObserver !== "function") return;
+    const ro = new ResizeObserver(meet);
+    ro.observe(balk);
+    return () => ro.disconnect();
+  }, [timeline]);
 
   if (ratedRows.length === 0) {
     return <p className="empty">Geen spelers met een rating om in de race te tonen.</p>;
@@ -174,18 +222,23 @@ export function RaceLeaderboard({
     : null;
 
   return (
-    <div className="race-board">
-      <RaceHeader rows={axisRows} packs={packs}>
-        {timeline && (
-          <RaceTijdlijn
-            frames={timeline.frames}
-            shownIdx={shownIdx}
-            playing={playing}
-            onKies={kiesFrame}
-            onSpeel={toggleSpelen}
-          />
-        )}
-      </RaceHeader>
+    <div className="race-board" ref={boardRef}>
+      <RaceHeader rows={axisRows} packs={packs} />
+
+      {/* Bewust een eigen balk onder de kop en niet ín de kop: alleen als
+          directe zoon van de baan kan hij over de volle hoogte blijven plakken
+          (#1254). Anders scrolde de dagaanduiding weg juist terwijl je langs de
+          banen keek, en was er geen pauzeknop meer in beeld. */}
+      {timeline && (
+        <RaceTijdlijn
+          balkRef={tijdlijnRef}
+          frames={timeline.frames}
+          shownIdx={shownIdx}
+          playing={playing}
+          onKies={kiesFrame}
+          onSpeel={toggleSpelen}
+        />
+      )}
 
       {/* De strook is decor; dit is hetzelfde verhaal voor schermlezers. */}
       <p className="sr-only">{raceSrSummary(axisRows, checkpoints)}</p>
@@ -203,7 +256,7 @@ export function RaceLeaderboard({
         <RaceAxis axis={axis} />
         <DivisionCheckpointLabels axis={axis} checkpoints={checkpoints} />
         {riser && riserRow && (
-          <p className="race-tijdlijn__verhaal" aria-live="polite">
+          <p className="race-tijdlijn__verhaal" aria-live={playing ? "off" : "polite"}>
             <span aria-hidden="true">📈</span> {riserRow.name} klimt van #{riser.from}{" "}
             naar #{riser.to}
           </p>
@@ -240,16 +293,7 @@ export function RaceLeaderboard({
   );
 }
 
-function RaceHeader({
-  rows,
-  packs,
-  children,
-}: {
-  rows: Row[];
-  packs: RacePack[];
-  /** De tijdlijn-bediening, naast of onder de samenvatting. */
-  children?: ReactNode;
-}) {
+function RaceHeader({ rows, packs }: { rows: Row[]; packs: RacePack[] }) {
   const me = findCurrentUser(rows);
   const goal =
     me?.rating != null ? raceGoal(me as Row & { rating: number }, rows) : null;
@@ -275,19 +319,19 @@ function RaceHeader({
           <span>Elke marker staat op zijn echte rating.</span>
         </div>
       )}
-
-      {children}
     </div>
   );
 }
 
 function RaceTijdlijn({
+  balkRef,
   frames,
   shownIdx,
   playing,
   onKies,
   onSpeel,
 }: {
+  balkRef: Ref<HTMLDivElement>;
   frames: RaceFrame[];
   shownIdx: number;
   playing: boolean;
@@ -299,7 +343,7 @@ function RaceTijdlijn({
   const label = frame.day ? `Speeldag ${formatDay(frame.day)}` : "Startstand";
 
   return (
-    <div className="race-tijdlijn">
+    <div className="race-tijdlijn" ref={balkRef}>
       <div className="race-tijdlijn__knoppen">
         <button
           type="button"
@@ -339,7 +383,10 @@ function RaceTijdlijn({
           {playing ? "Pauzeer" : "Speel af"}
         </button>
       </div>
-      <span className="race-tijdlijn__status" aria-live="polite">
+      {/* Tijdens het afspelen wisselt dit elke 900ms; een schermlezer zou dan
+          onafgebroken door de film heen praten. De stand wordt gemeld zodra de
+          film stilstaat — bij pauze, bij het einde, en na elke stap of scrub. */}
+      <span className="race-tijdlijn__status" aria-live={playing ? "off" : "polite"}>
         {shownIdx === laatste && !playing
           ? "Na de laatste speeldag"
           : `${label} · stand ${shownIdx + 1} van ${frames.length}`}
