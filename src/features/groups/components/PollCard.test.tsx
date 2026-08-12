@@ -16,9 +16,20 @@ vi.mock("@/lib/supabase/client", async () => {
   return { supabase: makeSupabaseMock({ session: SESSION, tables }) };
 });
 
+// Het vastleggen zelf (#1181) draait om één API-call; die mocken we, zodat de
+// test over de keuze van de kaart gaat en niet over de netwerklaag.
+const lockPoll = vi.hoisted(() => vi.fn(async () => {}));
+const reopenPoll = vi.hoisted(() => vi.fn(async () => {}));
+
+vi.mock("@/features/groups/pollsApi", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/groups/pollsApi")>()),
+  lockPoll,
+  reopenPoll,
+}));
+
 import { PollCard } from "./PollCard";
 import { GROUP_MEMBERS, PROFILES } from "@/test/fixtures";
-import type { PlayPoll, PollOption } from "@/features/groups/pollsApi";
+import type { PlayPoll, PollOption, PollVote } from "@/features/groups/pollsApi";
 
 const profileMap = Object.fromEntries(PROFILES.map((p) => [p.id, p])) as Record<
   string,
@@ -69,7 +80,14 @@ function vangDownload(): { tekst: () => Promise<string> } {
   return { tekst: async () => (blob ? await blob.text() : "") };
 }
 
-function renderCard(poll: PlayPoll) {
+function renderCard(
+  poll: PlayPoll,
+  extra: {
+    options?: PollOption[];
+    votes?: PollVote[];
+    isOwner?: boolean;
+  } = {},
+) {
   return render(
     <MemoryRouter>
       {/* AuthProvider omdat de kaart sinds #1159 vraagt of de kijker beheerder
@@ -80,11 +98,11 @@ function renderCard(poll: PlayPoll) {
             poll={poll}
             groupName="Vrijdagavond padel"
             members={GROUP_MEMBERS as GroupMember[]}
-            options={[option]}
-            votes={[]}
+            options={extra.options ?? [option]}
+            votes={extra.votes ?? []}
             profiles={profileMap}
             myId="p1"
-            isOwner
+            isOwner={extra.isOwner ?? true}
             onChanged={() => {}}
           />
         </ToastProvider>
@@ -234,6 +252,125 @@ describe("<PollCard /> — geboekte speeldag klapt dicht (#1141)", () => {
     await screen.findByRole("heading", { name: /^boeken$/i });
     expect(
       screen.queryByRole("button", { name: /details/i }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+// De voet stelde één moment voor — dat met de meeste ja's onder de haalbare —
+// en dat was meteen het enige moment dat je kón vastleggen (#1181).
+describe("<PollCard /> — elk moment vastlegbaar (#1181)", () => {
+  const openPoll = {
+    ...bookedPoll,
+    status: "open",
+    locked_option_id: null,
+    locked_at: null,
+    booked_at: null,
+  } as PlayPoll;
+
+  /** Tweede kandidaat, een dag later; standaard genoeg banen vrij. */
+  const tweede = { ...option, id: "opt-2", date: "2030-01-11", start_time: "20:00" };
+
+  const stem = (
+    playerId: string,
+    optionId: string,
+    status: PollVote["status"] = "yes",
+  ): PollVote => ({
+    option_id: optionId,
+    group_id: "g1",
+    player_id: playerId,
+    status,
+    updated_at: NOW,
+  });
+
+  beforeEach(() => {
+    tables.play_polls = [openPoll];
+    tables.play_poll_options = [option, tweede];
+    tables.play_poll_votes = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, status: 200, json: async () => [] })),
+    );
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    lockPoll.mockClear();
+    reopenPoll.mockClear();
+  });
+
+  it("legt het moment vast dat de beheerder kiest, niet dat van de telling", async () => {
+    renderCard(openPoll, {
+      options: [option, tweede],
+      // opt-1 leidt met 2 ja's; opt-2 heeft er geen.
+      votes: [stem("p1", "opt-1"), stem("p2", "opt-1")],
+    });
+
+    // De aanbeveling staat in de voet …
+    expect(
+      await screen.findByRole("button", { name: /^kies .*19:00$/i }),
+    ).toBeInTheDocument();
+    // … en de rest van de lijst achter "Ander moment…".
+    await userEvent.click(
+      screen.getByRole("button", { name: /ander moment/i }),
+    );
+    await userEvent.click(
+      await screen.findByRole("button", { name: /20:00/ }),
+    );
+
+    expect(lockPoll).toHaveBeenCalledWith("poll-1", "opt-2");
+  });
+
+  it("vraagt eerst te bevestigen als er te weinig banen vrij zijn", async () => {
+    // Vijf ja's → 2 banen nodig, en er is er maar 1 vrij.
+    const krap = { ...tweede, courts_free: 1 };
+    renderCard(openPoll, {
+      options: [option, krap],
+      votes: ["p1", "p2", "p3", "p4", "p5"].map((p) => stem(p, "opt-2")),
+    });
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /ander moment/i }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: /20:00/ }));
+
+    // Nog niets vastgelegd: eerst de vraag, met het knelpunt erin.
+    expect(lockPoll).not.toHaveBeenCalled();
+    expect(
+      await screen.findByRole("heading", { name: /toch dit moment vastleggen/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/1 baan vrij .*2 nodig/i)).toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /toch vastleggen/i }),
+    );
+    expect(lockPoll).toHaveBeenCalledWith("poll-1", "opt-2");
+  });
+
+  it("verzet een gekozen speeldag zonder de stemming weg te gooien", async () => {
+    renderCard(
+      { ...openPoll, status: "locked", locked_option_id: "opt-1", locked_at: NOW },
+      { options: [option, tweede] },
+    );
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /ander moment/i }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: /20:00/ }));
+
+    expect(lockPoll).toHaveBeenCalledWith("poll-1", "opt-2");
+    // Heropenen zet iedereen terug in de stemfase; dat hoeft hier juist niet.
+    expect(reopenPoll).not.toHaveBeenCalled();
+  });
+
+  it("houdt de keuze bij de beheerder", async () => {
+    renderCard(
+      { ...openPoll, created_by: "p9" },
+      { options: [option, tweede], isOwner: false },
+    );
+
+    await screen.findByRole("heading", { name: /speeldag-poll/i });
+    expect(
+      screen.queryByRole("button", { name: /ander moment/i }),
     ).not.toBeInTheDocument();
   });
 });

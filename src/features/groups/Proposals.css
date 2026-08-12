@@ -544,6 +544,76 @@
   color: var(--accent-ink);
 }
 
+/* "Ander moment…" (#1181): de volledige lijst in een sheet, met de cijfers
+   waarop de beheerder beslist. Zelfde taal als een stemrij — surface, dunne
+   lijn, kleine radius — maar als één grote tikbare kaart per moment. */
+.moment-kiezer__uitleg {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.moment-kiezer {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.moment-kiezer__optie {
+  display: grid;
+  gap: var(--sp-1);
+  width: 100%;
+  min-height: 44px; /* tap-target ≥44px (WCAG 2.5.5) */
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.moment-kiezer__optie:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.moment-kiezer__kop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.moment-kiezer__when {
+  font-weight: 700;
+}
+.moment-kiezer__when::first-letter {
+  text-transform: uppercase;
+}
+.moment-kiezer__meter {
+  display: inline-grid;
+  place-items: center;
+}
+.moment-kiezer__meta {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.moment-kiezer__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+.moment-kiezer__badge {
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.moment-kiezer__badge.is-aanbevolen {
+  border-color: var(--success);
+  color: var(--success);
+}
+
 .poll-row-detail {
   display: grid;
   gap: var(--sp-2);
@@ -584,8 +654,7 @@
     min-height: 44px; /* tap-target ≥44px (WCAG 2.5.5) */
     padding-inline: var(--sp-3);
   }
-  .seg,
-  .poll-row__alt {
+  .seg {
     grid-area: votes;
     justify-self: end;
   }

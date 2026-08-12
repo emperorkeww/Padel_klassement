@@ -32,10 +32,12 @@ import {
 import { useIsAdmin } from "@/features/admin/useIsAdmin";
 import { zetPollStatus } from "@/features/admin/api";
 import {
+  besteOptie,
   diffPollOptions,
   nonVoters,
   optionState,
   tallyOption,
+  vastlegbaar,
 } from "@/features/groups/pollLogic";
 import {
   downloadSpeeldagIcs,
@@ -45,10 +47,12 @@ import { shareOrCopyText } from "@/lib/utils/shareText";
 import type { GroupMember, Profile } from "@/types";
 import { openPollShareText } from "../pollShareText";
 import { shortDay } from "../planPollHelpers";
+import { useConfirm } from "@/ui/ConfirmDialog";
 import { PollWizard } from "./PollWizard";
 import { PollWizardSheet } from "./PollWizardSheet";
 import { WinnerCard } from "./WinnerCard";
 import { PollOptionRow } from "./PollOptionRow";
+import { MomentKiezer } from "./MomentKiezer";
 
 /* ------------------------------------------------------------------ */
 /* Poll-kaart: fase-verloop + compacte stemrijen.                      */
@@ -117,6 +121,9 @@ export function PollCard({
   }, [poll.status]);
   // "Dagen aanpassen" (#128): wizard heropent met de bestaande momenten.
   const [editing, setEditing] = useState(false);
+  // "Ander moment…" (#1181): de lijst waaruit de beheerder zelf kiest.
+  const [kiezen, setKiezen] = useState(false);
+  const [confirm, confirmUi] = useConfirm();
   // Optimistisch stemmen: de tik is meteen zichtbaar, de server volgt.
   const [voteOverlay, setVoteOverlay] = useState<
     Map<string, PollVoteStatus | null>
@@ -292,18 +299,51 @@ export function PollCard({
         )
       : [];
 
-  // Beste kandidaat voor de "Kies …"-knop: meeste ja's onder de haalbare.
-  const bestOption = useMemo(() => {
-    let best: { option: PollOption; yes: number } | null = null;
-    for (const o of options) {
-      const t = tallyOption(o, votes);
-      const state = optionState(t.yes.length, liveFree(o));
-      if (state === "onhaalbaar" || o.date < today) continue;
-      if (!best || t.yes.length > best.yes) best = { option: o, yes: t.yes.length };
-    }
-    return best?.option ?? null;
+  // Beste kandidaat voor de "Kies …"-knop: meeste ja's onder de haalbare. Een
+  // advies, geen wet: via "Ander moment…" legt de beheerder er zelf één vast.
+  const bestOption = useMemo(
+    () => besteOptie(options, votes, liveFree, today),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [options, votes, week, today]);
+    [options, votes, week, today],
+  );
+
+  /* Momenten waaruit nog te kiezen valt (#1181). Bij één kandidaat voegt de
+     lijst niets toe aan de knop die 'm al voorstelt. */
+  const keuzes = options.filter((o) => vastlegbaar(o, today));
+  const magKiezen =
+    isManager && (poll.status === "open" || poll.status === "locked");
+  const toonKiezer = magKiezen && keuzes.length > (poll.status === "open" ? 1 : 0);
+
+  /**
+   * Een moment vastleggen — ook eentje dat de telling niet voorstelt. Alleen
+   * een onhaalbaar moment vraagt eerst om een bevestiging: Playtomic ziet dan
+   * te weinig banen, en dat is meestal een vergissing en soms een baan die je
+   * telefonisch al regelde.
+   */
+  async function kiesMoment(o: PollOption) {
+    setKiezen(false);
+    const t = tallyOption(o, votes);
+    const vrij = liveFree(o);
+    if (optionState(t.yes.length, vrij) === "onhaalbaar") {
+      // Onhaalbaar kán alleen met bekende beschikbaarheid; ?? 0 is voor de
+      // typechecker, niet voor een geval dat hier langskomt.
+      const banen = vrij ?? 0;
+      const ok = await confirm({
+        title: "Toch dit moment vastleggen?",
+        body: `${shortDay(o.date)} · ${o.start_time}: ${
+          banen === 1 ? "1 baan" : `${banen} banen`
+        } vrij volgens ${club.name}, en je hebt er ${t.needed} nodig voor ${
+          t.yes.length
+        } ${t.yes.length === 1 ? "speler" : "spelers"}.`,
+        confirmLabel: "Toch vastleggen",
+      });
+      if (!ok) return;
+    }
+    await run(
+      () => lockPoll(poll.id, o.id),
+      poll.locked_option_id ? "Moment verzet." : "Moment vastgelegd.",
+    );
+  }
 
   // Bij locked/booked: winnaar groot, de rest ingeklapt. Bij booked blijven de
   // niet-gekozen opties zelfs helemaal verborgen (#322): je kunt toch niet meer
@@ -504,11 +544,21 @@ export function PollCard({
             <button
               className="btn btn--sm btn--primary"
               disabled={busy}
-              onClick={() =>
-                run(() => lockPoll(poll.id, bestOption.id), "Moment vastgelegd.")
-              }
+              onClick={() => kiesMoment(bestOption)}
             >
               Kies {shortDay(bestOption.date)} · {bestOption.start_time}
+            </button>
+          )}
+          {/* De aanbeveling is één tik; hier staat de rest van de lijst (#1181).
+              Bij een al gekozen speeldag verzet dit het moment zonder dat de
+              stemming eerst heropend — en dus weggegooid — moet worden. */}
+          {toonKiezer && (
+            <button
+              className="btn btn--sm"
+              disabled={busy}
+              onClick={() => setKiezen(true)}
+            >
+              {poll.status === "locked" ? "📅 Ander moment" : "Ander moment…"}
             </button>
           )}
           {isManager && poll.status === "locked" && (
@@ -568,6 +618,21 @@ export function PollCard({
       )}
 
       {editSheet}
+      {kiezen && (
+        <MomentKiezer
+          open
+          onClose={() => setKiezen(false)}
+          options={options}
+          votes={votes}
+          today={today}
+          vrijOp={liveFree}
+          prijsOp={perPersonAt}
+          aanbevolenId={bestOption?.id ?? null}
+          huidigId={poll.locked_option_id}
+          onKies={kiesMoment}
+        />
+      )}
+      {confirmUi}
     </section>
   );
 }
