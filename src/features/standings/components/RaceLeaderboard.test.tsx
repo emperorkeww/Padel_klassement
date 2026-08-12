@@ -26,11 +26,11 @@ const row = (key: string, rating: number, options: Partial<Row> = {}): Row => ({
   ...options,
 });
 
-function renderRace(rows: Row[], allowReplay = true) {
+function renderRace(rows: Row[], allowReplay = true, axisRows: Row[] = rows) {
   return render(
     <MemoryRouter>
       <ToastProvider>
-        <RaceLeaderboard rows={rows} allowReplay={allowReplay} />
+        <RaceLeaderboard rows={rows} axisRows={axisRows} allowReplay={allowReplay} />
       </ToastProvider>
     </MemoryRouter>,
   );

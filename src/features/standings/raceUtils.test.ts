@@ -2,12 +2,19 @@ import { describe, expect, it } from "vitest";
 import type { Row } from "./leaderboardHelpers";
 import {
   buildRaceReplay,
-  calculateAxisRange,
+  calculateDivisionAxis,
   calculateRacePosition,
   calculateRankingMovement,
   detectRatingPacks,
+  divisionCheckpoints,
   findCurrentUser,
   getNextDivision,
+  PACK_GAP_MAX,
+  PACK_GAP_MIN,
+  PACK_MAX_SPREAD,
+  PACK_NEIGHBOR_GAP,
+  packThresholds,
+  raceGoal,
 } from "./raceUtils";
 
 const row = (key: string, rating: number | null, options: Partial<Row> = {}): Row => ({
@@ -30,30 +37,143 @@ const row = (key: string, rating: number | null, options: Partial<Row> = {}): Ro
 });
 
 describe("race-as", () => {
-  it("zet ratings op één gedeelde x-schaal", () => {
-    const axis = calculateAxisRange([900, 1000, 1200]);
-    expect(calculateRacePosition(axis.min, axis)).toBe(0);
-    expect(calculateRacePosition(axis.max, axis)).toBe(100);
-    expect(calculateRacePosition((axis.min + axis.max) / 2, axis)).toBe(50);
+  it("verankert de as aan divisiegrenzen, niet aan de toevallige min/max", () => {
+    const axis = calculateDivisionAxis([940, 1010, 1080, 1150]);
+    expect(axis).toMatchObject({ min: 900, max: 1200, step: 50, zoomBand: null });
+    expect(axis.ticks[0]).toBe(900);
+    expect(axis.ticks.at(-1)).toBe(1200);
+    expect(divisionCheckpoints(axis).map((c) => c.naam)).toEqual([
+      "Wannabe",
+      "Glazenwasser",
+    ]);
   });
 
-  it("rondt min en max dynamisch af en bevat waarden buiten het normale bereik", () => {
-    const axis = calculateAxisRange([347, 1842]);
-    expect(axis.min).toBeLessThanOrEqual(347);
-    expect(axis.max).toBeGreaterThanOrEqual(1842);
-    expect(axis.ticks[0]).toBe(axis.min);
-    expect(axis.ticks.at(-1)).toBe(axis.max);
+  it("staat stil zolang het veld geen divisiegrens over gaat", () => {
+    const veld = calculateDivisionAxis([1017, 1120]);
+    expect(veld.min).toBe(1000);
+    expect(veld.max).toBe(1200);
+    // Andere ratings binnen dezelfde banden: exact dezelfde as.
+    expect(calculateDivisionAxis([1099, 1101])).toEqual(veld);
   });
 
-  it("geeft gelijke ratings dezelfde positie op een niet-lege as", () => {
-    const axis = calculateAxisRange([1000, 1000]);
+  it("knipt een verre, dunbezette uitschieterband van de as", () => {
+    const veld = [950, 960, 970, 980, 990, 1010, 1020, 1030, 1040, 1620];
+    const axis = calculateDivisionAxis(veld);
+    expect(axis.min).toBe(900);
+    expect(axis.max).toBe(1100);
+    // De uitschieter blijft bestaan en klemt op de rand.
+    expect(calculateRacePosition(1620, axis)).toBe(100);
+  });
+
+  it("knipt de band van de kijker nooit weg", () => {
+    const veld = [950, 960, 970, 980, 990, 1010, 1020, 1030, 1040, 1620];
+    const axis = calculateDivisionAxis(veld, 1620);
+    expect(axis.max).toBe(1700);
+    expect(calculateRacePosition(1620, axis)).toBeLessThan(100);
+  });
+
+  it("kent één totaalbudget: een gespreid veld knipt zich niet leeg", () => {
+    // Twee losse enkelingen aan de onderkant; alleen de verste mag eraf.
+    const veld = [500, 700, 1010, 1020, 1030, 1040, 1050, 1060, 1070, 1080];
+    const axis = calculateDivisionAxis(veld);
+    expect(axis.min).toBe(700);
+    expect(axis.max).toBe(1100);
+  });
+
+  it("zoomt in op sub-niveaus als het hele veld binnen één band valt", () => {
+    const axis = calculateDivisionAxis([1010, 1040, 1090]);
+    expect(axis).toMatchObject({ min: 1000, max: 1100, step: 25 });
+    expect(axis.zoomBand?.naam).toBe("Wannabe");
+    expect(divisionCheckpoints(axis)).toEqual([
+      expect.objectContaining({ naam: "Wannabe II", min: 1034 }),
+      expect.objectContaining({ naam: "Wannabe I", min: 1067 }),
+    ]);
+  });
+
+  it("geeft gelijke ratings een leesbare as", () => {
+    const axis = calculateDivisionAxis([1000, 1000]);
     expect(axis.max).toBeGreaterThan(axis.min);
-    expect(calculateRacePosition(1000, axis)).toBe(50);
+    expect(calculateRacePosition(1000, axis)).toBe(0);
   });
 
   it("klemt ratings die buiten een aangeleverde as vallen", () => {
     expect(calculateRacePosition(800, { min: 900, max: 1100 })).toBe(0);
     expect(calculateRacePosition(1200, { min: 900, max: 1100 })).toBe(100);
+  });
+});
+
+describe("adaptieve packs", () => {
+  it("wordt strenger in een vlak veld en klemt op de ondergrens", () => {
+    expect(packThresholds([1000, 995, 992, 988, 985])).toEqual({
+      neighborGap: PACK_GAP_MIN,
+      maxSpread: 2 * PACK_GAP_MIN,
+    });
+  });
+
+  it("wordt ruimer in een gespreid veld en klemt op de bovengrens", () => {
+    expect(packThresholds([1400, 1300, 1150, 1000, 900])).toEqual({
+      neighborGap: PACK_GAP_MAX,
+      maxSpread: 2 * PACK_GAP_MAX,
+    });
+  });
+
+  it("schaalt met de mediaan van de buurmansgaten", () => {
+    expect(packThresholds([1100, 1080, 1060, 1040, 1020])).toEqual({
+      neighborGap: 30,
+      maxSpread: 60,
+    });
+  });
+
+  it("valt bij een miniveld terug op de vaste drempels", () => {
+    expect(packThresholds([1000, 950])).toEqual({
+      neighborGap: PACK_NEIGHBOR_GAP,
+      maxSpread: PACK_MAX_SPREAD,
+    });
+  });
+});
+
+describe("doelkop", () => {
+  const rated = (key: string, rating: number, isMe = false) =>
+    row(key, rating, { isMe }) as Row & { rating: number };
+
+  it("kiest de dichtstbijzijnde speler als die het kleinste doel is", () => {
+    const rows = [rated("p1", 1040), rated("p2", 1030, true)];
+    expect(raceGoal(rows[1], rows)).toEqual({
+      kop: "10 rating achter p1",
+      sub: "Nog 70 rating tot 🪟 Glazenwasser",
+    });
+  });
+
+  it("kiest de divisiepoort als die dichterbij is dan de speler erboven", () => {
+    const rows = [rated("p1", 1190), rated("p2", 1090, true)];
+    expect(raceGoal(rows[1], rows)).toEqual({
+      kop: "Nog 10 rating tot 🪟 Glazenwasser",
+      sub: "100 rating achter p1",
+    });
+  });
+
+  it("geeft de leider zijn volgende divisie als doel", () => {
+    const rows = [rated("p1", 1050, true), rated("p2", 1000)];
+    expect(raceGoal(rows[0], rows)).toEqual({
+      kop: "Nog 50 rating tot 🪟 Glazenwasser",
+      sub: "Je leidt het klassement",
+    });
+  });
+
+  it("laat een leider zonder volgende divisie zijn voorsprong zien", () => {
+    const rows = [rated("p1", 1650, true), rated("p2", 1400)];
+    expect(raceGoal(rows[0], rows)).toEqual({
+      kop: "Je leidt het klassement",
+      sub: "250 rating voorsprong op p2",
+    });
+  });
+
+  it("benoemt een gelijke stand expliciet", () => {
+    const rows = [rated("p1", 1000), rated("p2", 1000, true)];
+    expect(raceGoal(rows[1], rows)).toEqual({
+      kop: "Gelijk met p1",
+      sub: "Nog 100 rating tot 🪟 Glazenwasser",
+    });
   });
 });
 
