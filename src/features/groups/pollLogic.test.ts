@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   activePolls,
+  besteOptie,
   courtsNeeded,
   diffPollOptions,
   nonVoters,
@@ -8,6 +9,7 @@ import {
   pollExpired,
   pollOptions,
   tallyOption,
+  vastlegbaar,
 } from "./pollLogic";
 import type {
   NewPollOption,
@@ -104,6 +106,59 @@ describe("tallyOption", () => {
     expect(t.no).toEqual(["p4"]);
     expect(t.needed).toBe(1);
     expect(t.enoughPlayers).toBe(false);
+  });
+});
+
+describe("besteOptie", () => {
+  const today = "2026-07-08";
+  /** Twee banen vrij, tenzij de optie zelf iets anders zegt. */
+  const vrij = (o: PollOption) => o.courts_free;
+
+  it("kiest het moment met de meeste ja-stemmen", () => {
+    const vroeg = option({ id: "opt-1", date: "2026-07-10" });
+    const laat = option({ id: "opt-2", date: "2026-07-11" });
+    const stemmen = [
+      vote("p1", "yes", "opt-1"),
+      vote("p1", "yes", "opt-2"),
+      vote("p2", "yes", "opt-2"),
+    ];
+
+    expect(besteOptie([vroeg, laat], stemmen, vrij, today)?.id).toBe("opt-2");
+  });
+
+  it("laat bij gelijkspel het vroegste moment winnen", () => {
+    const vroeg = option({ id: "opt-1", date: "2026-07-10" });
+    const laat = option({ id: "opt-2", date: "2026-07-11" });
+    const stemmen = [vote("p1", "yes", "opt-1"), vote("p2", "yes", "opt-2")];
+
+    expect(besteOptie([vroeg, laat], stemmen, vrij, today)?.id).toBe("opt-1");
+  });
+
+  it("slaat onhaalbare en voorbije momenten over", () => {
+    const voorbij = option({ id: "opt-1", date: "2026-07-01" });
+    const vol = option({ id: "opt-2", date: "2026-07-10", courts_free: 1 });
+    const kan = option({ id: "opt-3", date: "2026-07-11" });
+    // Vijf ja's → 2 banen nodig; opt-2 heeft er maar 1 vrij.
+    const stemmen = ["p1", "p2", "p3", "p4", "p5"].flatMap((p) => [
+      vote(p, "yes", "opt-1"),
+      vote(p, "yes", "opt-2"),
+    ]);
+
+    expect(besteOptie([voorbij, vol, kan], stemmen, vrij, today)?.id).toBe(
+      "opt-3",
+    );
+  });
+
+  it("stelt niets voor als er niets vastlegbaar is", () => {
+    const voorbij = option({ id: "opt-1", date: "2026-07-01" });
+
+    expect(besteOptie([voorbij], [], vrij, today)).toBeNull();
+    expect(besteOptie([], [], vrij, today)).toBeNull();
+  });
+
+  it("telt een moment op vandaag nog mee", () => {
+    expect(vastlegbaar(option({ date: today }), today)).toBe(true);
+    expect(vastlegbaar(option({ date: "2026-07-07" }), today)).toBe(false);
   });
 });
 

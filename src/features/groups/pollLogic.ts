@@ -65,6 +65,38 @@ export function tallyOption(
   };
 }
 
+/** Een moment is vastlegbaar zolang de dag zelf niet voorbij is. */
+export function vastlegbaar(option: PollOption, today: string): boolean {
+  return option.date >= today;
+}
+
+/**
+ * Het moment dat de app voorstelt: onder de nog vastlegbare, niet-onhaalbare
+ * opties die met de meeste ja-stemmen. Bij gelijkspel wint de vroegste — de
+ * lijst komt gesorteerd binnen uit `pollOptions`.
+ *
+ * Bewust een advies en geen wet (#1181): de beheerder mag in de MomentKiezer
+ * élk moment vastleggen, ook een onhaalbaar of minder populair.
+ *
+ * `vrijOp` levert de vrije banen van een optie, zodat de kaart zijn live
+ * beschikbaarheid kan meegeven in plaats van de momentopname op de rij.
+ */
+export function besteOptie(
+  options: PollOption[],
+  votes: PollVote[],
+  vrijOp: (option: PollOption) => number | null,
+  today: string,
+): PollOption | null {
+  let best: { option: PollOption; yes: number } | null = null;
+  for (const o of options) {
+    if (!vastlegbaar(o, today)) continue;
+    const yes = tallyOption(o, votes).yes.length;
+    if (optionState(yes, vrijOp(o)) === "onhaalbaar") continue;
+    if (!best || yes > best.yes) best = { option: o, yes };
+  }
+  return best?.option ?? null;
+}
+
 /** Marge na afloop van het slot voordat een moment als verlopen telt (#440):
  *  uitloop op de baan en de laatste uitslagen invullen. */
 export const SLOT_EXPIRY_MARGIN_MIN = 30;
