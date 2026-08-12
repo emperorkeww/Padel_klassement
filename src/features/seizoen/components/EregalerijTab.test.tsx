@@ -48,7 +48,11 @@ const match = (over: Partial<Match> = {}): Match => ({
   ...over,
 });
 
-function setup(matches: Match[], profiles = PROFILES) {
+function setup(
+  matches: Match[],
+  profiles = PROFILES,
+  seizoenId?: string,
+) {
   return render(
     <MemoryRouter>
       <ToastProvider>
@@ -59,6 +63,7 @@ function setup(matches: Match[], profiles = PROFILES) {
           groepsnaam="De Testploeg"
           myId="a"
           now={NU}
+          seizoenId={seizoenId}
         />
       </ToastProvider>
     </MemoryRouter>,
@@ -168,5 +173,28 @@ describe("<EregalerijTab />", () => {
     );
     expect(screen.getByText("🏅 Uitreiking")).toBeInTheDocument();
     expect(screen.queryByText("Pias van het seizoen")).not.toBeInTheDocument();
+  });
+  // #1216: de galerij woont sinds die issue óók onder de stand van één
+  // afgesloten seizoen. Dan hoort wat eronder staat bij de tabel erboven.
+  it("toont met een seizoenId alleen dat seizoen", () => {
+    setup(
+      [
+        match({ played_at: "2026-02-10T19:00:00" }),
+        match({ played_at: "2026-05-04T19:00:00" }),
+      ],
+      PROFILES,
+      "2026-q1",
+    );
+    expect(screen.getByText("❄️ Winter 2026")).toBeInTheDocument();
+    expect(screen.queryByText("🌱 Lente 2026")).not.toBeInTheDocument();
+    // Het recordboek blijft: dat gaat over de groep, niet over dit kwartaal.
+    expect(screen.getByText(/Recordboek/)).toBeInTheDocument();
+  });
+
+  it("zegt het eerlijk als er in dat seizoen niet gespeeld is", () => {
+    setup([match({ played_at: "2026-02-10T19:00:00" })], PROFILES, "2026-q2");
+    expect(
+      screen.getByText(/in dit seizoen is er niet gespeeld/i),
+    ).toBeInTheDocument();
   });
 });

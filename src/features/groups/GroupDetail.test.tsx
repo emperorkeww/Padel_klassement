@@ -340,6 +340,47 @@ describe("<GroupDetail />", () => {
     );
   });
 
+  // ── #1216: de eregalerij ís de stand, alleen die van vroeger ──────────
+
+  it("heeft geen Eregalerij-tab meer", async () => {
+    renderPage();
+    await screen.findByRole("tab", { name: /^stand$/i });
+    expect(
+      screen.queryByRole("tab", { name: /eregalerij/i }),
+    ).not.toBeInTheDocument();
+    // Vier tabs over: Vandaag · Historie · Stand · Leden.
+    expect(
+      screen.getAllByRole("tab", { name: /vandaag|historie|stand|leden/i }),
+    ).toHaveLength(4);
+  });
+
+  it("zet de eregalerij onder de stand van een afgesloten seizoen", async () => {
+    renderPage("/groepen/g1?tab=stand&seizoen=2026-q1");
+    // Q1 2026 is voorbij, dus de galerij hoort erbij te staan — ook al is er in
+    // dat kwartaal (fixtures) niet gespeeld.
+    expect(
+      await screen.findByRole("heading", { name: /eregalerij/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("laat het lopende seizoen de gewone stand houden", async () => {
+    renderPage("/groepen/g1?tab=stand");
+    await screen.findByRole("tab", { name: /^stand$/i });
+    expect(
+      screen.queryByRole("heading", { name: /eregalerij/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("laat een oude ?tab=eregalerij-link op de stand landen", async () => {
+    renderPage("/groepen/g1?tab=eregalerij");
+    await waitFor(() =>
+      expect(screen.getByRole("tab", { name: /^stand$/i })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      ),
+    );
+  });
+
   // #673/#674: de URL-keys "spelen" (de oude Teams-tab), "rondes" en "matches"
   // staan hard in de edge functions en in pushberichten die al op telefoons
   // staan. Sinds Teams en Vandaag zijn samengevoegd wijzen "spelen" en
