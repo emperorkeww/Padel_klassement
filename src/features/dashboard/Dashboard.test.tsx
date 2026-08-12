@@ -171,14 +171,18 @@ describe("<Dashboard />", () => {
     }
   });
 
-  it("toont de lopende speeldag-poll prominent op het overzicht", async () => {
+  it("laat je op het overzicht zelf op de lopende speeldag stemmen (#1196)", async () => {
     renderPage();
+    // Alice stemde al op het enige moment (fixtures) → rustige kop, maar de
+    // knoppen blijven staan om je keuze te kunnen herzien.
     expect(
-      await screen.findByText(/speeldag-poll loopt · vrijdagavond padel/i),
+      await screen.findByText(/je stem staat genoteerd · vrijdagavond padel/i),
     ).toBeInTheDocument();
-    // Alice stemde al (fixtures) → neutrale call-to-action.
     expect(
-      screen.getByRole("link", { name: /bekijk de poll/i }),
+      screen.getByRole("button", { name: /ik kan — zaterdag 5 januari 20:00/i }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("link", { name: /bekijk de speeldag/i }),
     ).toBeInTheDocument();
   });
 

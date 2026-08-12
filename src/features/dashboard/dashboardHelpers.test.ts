@@ -62,29 +62,43 @@ function vote(overrides: Partial<PollVote> = {}): PollVote {
 }
 
 describe("pickPollBanner", () => {
-  it("prijst een lopende open poll aan zolang er een moment te spelen valt", () => {
+  // Tot #1196 won een lopende poll hier ("Stem nu"). Dat doet de stemkaart nu,
+  // en op tijd in plaats van op groepsvolgorde; deze banner gaat alleen nog
+  // over wat al vastligt.
+  it("laat een lopende open poll met rust", () => {
     const rows = [
       { group: group(), polls: [poll()], options: [option()], votes: noVotes },
     ];
-    const pick = pickPollBanner(rows, "p1", at("2026-07-09T12:00:00Z"));
-    expect(pick?.kind).toBe("open");
+    expect(pickPollBanner(rows, "p1", at("2026-07-09T12:00:00Z"))).toBeNull();
   });
 
-  // #886: zonder poll-id linkte "Stem nu →" naar de tab, waarna je bij drie
-  // lopende speeldagen zelf mocht raden welke de banner bedoelde.
-  it("draagt de poll-id mee zodat de banner naar díé speeldag kan linken", () => {
-    const open = [
+  it("kijkt voorbij een open poll naar de geboekte speeldag van een andere groep", () => {
+    // Vóór #1196 keerde de functie terug bij de eerste groep met een open poll;
+    // de reminder van je tweede groep kwam daardoor nooit in beeld.
+    const rows = [
       {
-        group: group(),
+        group: group("g1"),
         polls: [poll({ id: "poll-open" })],
         options: [option({ poll_id: "poll-open" })],
         votes: noVotes,
       },
+      {
+        group: group("g2"),
+        polls: [
+          poll({ id: "poll-geboekt", status: "booked", locked_option_id: "opt-1" }),
+        ],
+        options: [option({ poll_id: "poll-geboekt" })],
+        votes: [vote()],
+      },
     ];
-    expect(pickPollBanner(open, "p1", at("2026-07-09T12:00:00Z"))).toMatchObject(
-      { kind: "open", pollId: "poll-open" },
+    expect(pickPollBanner(rows, "p1", at("2026-07-09T12:00:00Z"))).toMatchObject(
+      { kind: "fixed", pollId: "poll-geboekt" },
     );
+  });
 
+  // #886: zonder poll-id landde de knop op de tab, waarna je bij drie
+  // speeldagen zelf mocht raden welke de banner bedoelde.
+  it("draagt de poll-id mee zodat de banner naar díé speeldag kan linken", () => {
     const geboekt = [
       {
         group: group(),

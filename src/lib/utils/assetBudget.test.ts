@@ -67,7 +67,13 @@ const ASSETS = pad("../../../dist/assets");
 // nog steeds ruim onder de per-bestandsgrens die een ongecomprimeerde bron vangt.
 // Voor de volgende die dit leest: méét, en verhoog vanaf de gemeten stand — niet
 // vanaf de vorige grens.
-const TOTAAL_MAX_MB = 11.0;
+//
+// En weer: die 248 kB was 2,4 kB. `develop` stond gemeten op 10,9977 MB, dus de
+// stemkaart van #1196 (netto +3,2 kB: Dashboard.js +1,8, StemRij.js/.css +1,6,
+// Dashboard.css +0,6, Agenda -1,1 — de rij verhuisde naar een eigen chunk) liep
+// er als eerste tegenaan. Weer code, geen artwork. Nu 11,1 MB, gemeten vanaf
+// 11,0009 MB: ~100 kB lucht, en dit keer is dat een meting en geen raming.
+const TOTAAL_MAX_MB = 11.1;
 // Bovengrens per bestand: de twee audiofragmenten (2,14 MB) zijn de zwaarste
 // die hier thuishoren.
 const BESTAND_MAX_MB = 2.5;
