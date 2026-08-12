@@ -172,6 +172,29 @@
   display: none;
 }
 
+/* Welke kant vervaagt komt uit data-schaduw (#912, hier toegepast in #1195):
+   een fade die er altijd staat liegt zodra je aan het einde bent. Zonder dit
+   liep de derde chip gewoon van het scherm af — gemeten 443px inhoud in een
+   rij van 358px — zonder enig teken dat er meer stond. */
+.agenda-filter {
+  --fade: 24px;
+}
+.agenda-filter[data-schaduw="rechts"] {
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--fade)), transparent);
+}
+.agenda-filter[data-schaduw="links"] {
+  mask-image: linear-gradient(to left, #000 calc(100% - var(--fade)), transparent);
+}
+.agenda-filter[data-schaduw="beide"] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade),
+    #000 calc(100% - var(--fade)),
+    transparent
+  );
+}
+
 .agenda-filter__chip {
   flex: none;
   height: 30px;

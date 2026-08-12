@@ -407,7 +407,10 @@ export function Agenda() {
               : laadt || verversen
               ? " "
               : inMaand === 0
-                ? "Nog niets gepland"
+                ? // Niet "Nog niets gepland": dat staat een halve pagina lager
+                  // ook al, in het dagpaneel, en gaat daar over de gekozen dag
+                  // (#1195). Deze regel telt de máánd, dus zegt hij dat ook.
+                  "Geen activiteiten deze maand"
                 : `${inMaand} ${inMaand === 1 ? "activiteit" : "activiteiten"} deze maand`}
           </p>
         </div>

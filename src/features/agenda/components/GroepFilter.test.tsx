@@ -71,3 +71,32 @@ describe("<GroepFilter /> (#1121)", () => {
     expect(onWissel).toHaveBeenCalledWith([]);
   });
 });
+
+describe("<GroepFilter /> — schuifrand (#1195)", () => {
+  it("draagt het schaduw-attribuut waar de CSS zijn fade op tekent", () => {
+    // De chips lopen op telefoonbreedte van het scherm af (gemeten: 443px
+    // inhoud in een rij van 358px) zonder scrollbar. jsdom rekent geen layout,
+    // dus de waarde is hier altijd "geen"; dát hij meemeet is wat telt.
+    // schaduwVoor zelf is los getest in useScrollSchaduw.test.ts.
+    render(<GroepFilter groepen={GROEPEN} gekozen={[]} onWissel={() => {}} />);
+    expect(screen.getByRole("group", { name: "Filter op groep" })).toHaveAttribute(
+      "data-schaduw",
+    );
+  });
+
+  it("meet ook als de groepen pas later binnenkomen", () => {
+    // De rij zit in een eigen component omdat de meet-hook zich bij zijn eerste
+    // effect aan het element hecht. Rendert de rij op dat moment nog niet — de
+    // groepen komen async binnen — dan wordt de scroll-listener nooit gekoppeld
+    // en blijft de fade aan dezelfde kant hangen.
+    const { container, rerender } = render(
+      <GroepFilter groepen={[]} gekozen={[]} onWissel={() => {}} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+
+    rerender(<GroepFilter groepen={GROEPEN} gekozen={[]} onWissel={() => {}} />);
+    expect(screen.getByRole("group", { name: "Filter op groep" })).toHaveAttribute(
+      "data-schaduw",
+    );
+  });
+});
