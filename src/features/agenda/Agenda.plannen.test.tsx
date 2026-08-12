@@ -266,6 +266,25 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
     expect(vandaag).not.toHaveAttribute("aria-current");
   });
 
+  it("laat de lijst zien wat eraan komt, en opent daar hetzelfde sheet", async () => {
+    // De lijst is een tweede manier om te kijken, niet om te handelen (#1182):
+    // dezelfde kaart, hetzelfde dag-sheet.
+    toon();
+    await userEvent.click(await screen.findByRole("tab", { name: "Lijst" }));
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Wat komt eraan",
+    );
+    // Geen maandnavigatie meer: de lijst loopt gewoon door.
+    expect(
+      screen.queryByRole("button", { name: /volgende maand/i }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByText("do 13 aug · 20:00"));
+    expect(
+      await screen.findByRole("dialog", { name: /donderdag 13 augustus/ }),
+    ).toBeInTheDocument();
+  });
+
   it("bladert mee naar de maand van een aangetikte randdag", async () => {
     toon();
     // Het raster van augustus 2026 begint op maandag 27 juli.

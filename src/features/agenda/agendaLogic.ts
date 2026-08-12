@@ -323,6 +323,75 @@ export function volgendeSpeeldagen(
     .slice(0, max);
 }
 
+/**
+ * Alles wat er nog aankomt, als speeldagen op volgorde (#1182) — de bron van de
+ * lijstweergave.
+ *
+ * Het maandraster beantwoordt "wat staat er in augustus"; deze lijst
+ * beantwoordt "wat komt eraan", en dat is een andere vraag: hij houdt niet op
+ * bij de maandgrens. Vandaag telt mee — een speeldag van vanavond is nog
+ * helemaal niet voorbij.
+ */
+export function komendeItems(
+  markers: AgendaMarker[],
+  vanaf: string,
+  max = 40,
+): DagItem[] {
+  const perDag = markersByDay(markers.filter((m) => m.date >= vanaf && !m.past));
+  return Object.keys(perDag)
+    .sort()
+    .flatMap((dag) => dagItems(perDag[dag]))
+    .slice(0, max);
+}
+
+/** Speeldagen gegroepeerd per maand, in dezelfde volgorde als ze binnenkwamen —
+ *  de kopjes van de lijstweergave. */
+export function perMaand(items: DagItem[]): { maand: Maand; items: DagItem[] }[] {
+  const uit: { maand: Maand; items: DagItem[] }[] = [];
+  for (const item of items) {
+    const maand = maandVan(item.eerste.date);
+    const laatste = uit[uit.length - 1];
+    if (laatste && zelfdeMaand(laatste.maand, maand)) laatste.items.push(item);
+    else uit.push({ maand, items: [item] });
+  }
+  return uit;
+}
+
+/** Een speeldag die op jouw antwoord wacht. */
+export type OpenVraag = {
+  pollId: string;
+  /** De vroegste dag van deze poll die nog komt — daar spring je heen. */
+  date: string;
+  groupName: string;
+};
+
+/**
+ * Welke polls op jóuw stem wachten (#1182).
+ *
+ * De kaart zegt dit al per speeldag ("Jij moet nog stemmen"), maar alleen op de
+ * dag die je toevallig aangetikt hebt. In een maand met drie open polls zie je
+ * in het raster enkel stippen; hiermee staat er bovenaan wat er van je gevraagd
+ * wordt.
+ *
+ * Per poll en niet per moment: `iVoted` is de poll-brede waarheid, en wie één
+ * kandidaat beantwoordde heeft de vraag beantwoord.
+ */
+export function wachtOpJou(markers: AgendaMarker[], vanaf: string): OpenVraag[] {
+  const perPoll = new Map<string, OpenVraag>();
+  for (const m of markers) {
+    if (m.status !== "open" || m.past || m.iVoted || m.date < vanaf) continue;
+    const bestaand = perPoll.get(m.pollId);
+    if (bestaand == null || m.date < bestaand.date) {
+      perPoll.set(m.pollId, {
+        pollId: m.pollId,
+        date: m.date,
+        groupName: m.groupName,
+      });
+    }
+  }
+  return [...perPoll.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
 /* ------------------------------------------------------------------ */
 /* Het raster zelf.                                                    */
 /* ------------------------------------------------------------------ */

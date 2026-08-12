@@ -100,6 +100,55 @@
   color: var(--ink);
 }
 
+/* ---- Wat op jou wacht (#1182) ---- */
+
+/* Eén regel plus één knop. Bewust geen kaart met kop en icoon: dit staat boven
+   het raster en elke pixel hoogte hier duwt de laatste week onder de vouw. */
+.actiestrook {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1.5px solid var(--accent-line);
+  border-radius: 14px;
+  background: var(--accent-soft);
+}
+
+.actiestrook__tekst {
+  margin: 0;
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.actiestrook__knop {
+  flex: none;
+}
+
+/* ---- Lijstweergave (#1182) ---- */
+
+.agenda-lijst {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.agenda-lijst__maand {
+  margin: 0 0 var(--sp-1);
+  font-family: var(--font-rounded);
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.agenda-lijst__laadt {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
 /* ---- Groepsfilter (#1121) ---- */
 
 /* Eén rij chips die horizontaal mag schuiven in plaats van te wrappen: het
