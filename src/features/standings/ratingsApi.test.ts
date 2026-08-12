@@ -79,6 +79,25 @@ describe("getRecentRatingHistories (#731)", () => {
     enqueue({ error: new Error("boem") });
     await expect(getRecentRatingHistories()).rejects.toThrow("boem");
   });
+
+  it("pagineert langs max_rows heen (#1241)", async () => {
+    // Een volle eerste pagina betekent: er kan meer zijn — vraag door.
+    const vol = Array.from({ length: 1000 }, (_, i) =>
+      rij(`p${i % 40}`, `2026-07-01T${String(i % 24).padStart(2, "0")}:00:00Z`, 1000 + i),
+    );
+    enqueue({ data: vol }, { data: [rij("p-laatste", "2026-07-20T19:00:00Z", 1480)] });
+
+    const byPlayer = await getRecentRatingHistories();
+
+    const rpcs = calls.filter((c) => c.method === "rpc");
+    const ranges = calls.filter((c) => c.method === "range");
+    expect(rpcs).toHaveLength(2);
+    expect(ranges.map((c) => c.args)).toEqual([
+      [0, 999],
+      [1000, 1999],
+    ]);
+    expect(byPlayer["p-laatste"]).toHaveLength(1);
+  });
 });
 
 describe("getRatingHistoriesForMatches (#731)", () => {

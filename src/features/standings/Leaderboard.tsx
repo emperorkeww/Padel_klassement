@@ -1165,7 +1165,7 @@ export function Leaderboard() {
             // Het volledige veld ankert de as en de pack-drempels (#1241):
             // zoeken of filteren mag de baan niet verschuiven.
             axisRows={rankedRows}
-            allowReplay={!usingScope && !nq}
+            allowTimeline={!usingScope && !nq}
           />
         ) : tab === "kaarten" ? (
           <KaartRaster

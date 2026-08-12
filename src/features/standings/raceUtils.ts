@@ -1,4 +1,3 @@
-import { byRank } from "@/features/rating/standings";
 import {
   tierProgress,
   TIER_BANDEN,
@@ -365,89 +364,5 @@ export function raceSrSummary(
   return `${volgorde}.${poorten}`;
 }
 
-export function calculateRankingMovement(
-  currentRank: number,
-  previousRank: number | null,
-): number | "nieuw" {
-  return previousRank == null ? "nieuw" : previousRank - currentRank;
-}
-
-export interface RaceReplayPlayer {
-  key: string;
-  currentRating: number;
-  previousRating: number;
-  currentRank: number;
-  previousRank: number | null;
-  movement: number | "nieuw";
-}
-
-export interface RaceReplay {
-  day: string;
-  players: Map<string, RaceReplayPlayer>;
-  event: string | null;
-}
-
-/**
- * Reconstrueert de markers van vóór de recentste speeldag uit echte history.
- * Zonder minstens één aantoonbare ratingwijziging is er bewust geen replay.
- */
-export function buildRaceReplay(rows: readonly Row[]): RaceReplay | null {
-  const rated = rows.filter((r): r is Row & { rating: number } => r.rating != null);
-  const latestDay = rated
-    .flatMap((row) => row.history.map((point) => point.played_at.slice(0, 10)))
-    .sort()
-    .at(-1);
-  if (!latestDay) return null;
-
-  const previousRating = new Map<string, number>();
-  let changed = false;
-  for (const row of rated) {
-    const points = row.history
-      .filter((point) => point.played_at.slice(0, 10) === latestDay)
-      .sort((a, b) => a.played_at.localeCompare(b.played_at));
-    const before = points[0]?.rating_before ?? row.rating;
-    previousRating.set(row.key, before);
-    if (before !== row.rating) changed = true;
-  }
-  if (!changed) return null;
-
-  const previousOrder = [...rated].sort(
-    (a, b) =>
-      previousRating.get(b.key)! - previousRating.get(a.key)! ||
-      byRank(
-        { points: a.points, goal_diff: a.goalDiff, won: a.won },
-        { points: b.points, goal_diff: b.goalDiff, won: b.won },
-      ) ||
-      a.name.localeCompare(b.name),
-  );
-  const derivedRanks = new Map(previousOrder.map((row, index) => [row.key, index + 1]));
-  const players = new Map<string, RaceReplayPlayer>();
-
-  for (const [index, row] of rated.entries()) {
-    const currentRank = row.rank ?? index + 1;
-    const previousRank =
-      row.shift === "nieuw"
-        ? null
-        : typeof row.shift === "number"
-          ? currentRank + row.shift
-          : (derivedRanks.get(row.key) ?? currentRank);
-    players.set(row.key, {
-      key: row.key,
-      currentRating: row.rating,
-      previousRating: previousRating.get(row.key)!,
-      currentRank,
-      previousRank,
-      movement: calculateRankingMovement(currentRank, previousRank),
-    });
-  }
-
-  const riser = [...players.values()]
-    .filter((player) => typeof player.movement === "number" && player.movement > 0)
-    .sort((a, b) => (b.movement as number) - (a.movement as number))[0];
-  const riserRow = riser ? rated.find((row) => row.key === riser.key) : null;
-  return {
-    day: latestDay,
-    players,
-    event: riser && riserRow ? `${riserRow.name} stijgt naar #${riser.currentRank}` : null,
-  };
-}
+// De replay-reconstructie is in #1241 opgegaan in de speeldag-tijdlijn:
+// zie buildRaceTimeline in raceTimeline.ts.

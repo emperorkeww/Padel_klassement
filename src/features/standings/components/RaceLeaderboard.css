@@ -74,16 +74,35 @@
   color: color-mix(in srgb, var(--accent) 70%, var(--ink));
 }
 
-.race-replay {
+/* Tijdlijn-bediening (#1241): stap, scrub of speel het verloop af. */
+.race-tijdlijn {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   justify-content: center;
   gap: var(--sp-1);
 }
-.race-replay__status {
+.race-tijdlijn__knoppen {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.race-tijdlijn__scrubber {
+  width: clamp(6rem, 14vw, 10rem);
+  accent-color: var(--accent);
+}
+.race-tijdlijn__status {
   color: var(--ink-soft);
   font-size: var(--fs-xs);
+}
+.race-tijdlijn__verhaal {
+  margin: 0;
+  padding: var(--sp-1) var(--sp-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
 }
 
 .race-board__course {
@@ -352,6 +371,28 @@
   background: var(--accent);
   opacity: 0.58;
 }
+/* Spoor (#1241): waar de marker vandaan komt — de vorige speeldag in rust,
+ *  het vorige frame tijdens het scrubben. */
+.race-lane__spoor {
+  position: absolute;
+  left: var(--race-spoor-links);
+  top: 50%;
+  width: var(--race-spoor-breedte);
+  height: 5px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  opacity: 0.55;
+}
+.race-lane__spoor.is-op {
+  background: var(--success);
+}
+.race-lane__spoor.is-neer {
+  background: var(--danger);
+}
+/* Nog niet gedebuteerd in dit deel van de film: aanwezig, maar gedimd. */
+.race-lane.is-voor-debuut {
+  opacity: 0.45;
+}
 .race-lane__marker {
   position: absolute;
   z-index: 2;
@@ -512,10 +553,11 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .race-board.is-moving .race-lane__marker,
-  .race-board.is-moving .race-lane__progress {
+  .race-lane__marker,
+  .race-lane__progress,
+  .race-lane__spoor {
     transition-property: left, width;
-    transition-duration: 800ms;
+    transition-duration: 700ms;
     transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
@@ -527,13 +569,17 @@
   .race-summary {
     width: 100%;
   }
-  .race-replay {
+  .race-tijdlijn {
     align-items: stretch;
   }
-  .race-replay__button {
+  .race-tijdlijn__knoppen .btn {
     min-height: 44px;
   }
-  .race-replay__status {
+  .race-tijdlijn__scrubber {
+    flex: 1;
+    width: auto;
+  }
+  .race-tijdlijn__status {
     text-align: center;
   }
   .race-axis,

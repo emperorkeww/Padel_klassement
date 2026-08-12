@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Row } from "./leaderboardHelpers";
 import {
-  buildRaceReplay,
   calculateDivisionAxis,
   calculateRacePosition,
-  calculateRankingMovement,
   detectRatingPacks,
   divisionCheckpoints,
   findCurrentUser,
@@ -205,13 +203,6 @@ describe("race-afleidingen", () => {
     expect(getNextDivision(1600)?.volgende).toBeNull();
   });
 
-  it("berekent stijgen, dalen, gelijk en nieuw", () => {
-    expect(calculateRankingMovement(5, 7)).toBe(2);
-    expect(calculateRankingMovement(7, 5)).toBe(-2);
-    expect(calculateRankingMovement(5, 5)).toBe(0);
-    expect(calculateRankingMovement(5, null)).toBe("nieuw");
-  });
-
   it("labelt rangwissels ook zonder shift-veld via de vorige rang", () => {
     expect(rankShiftLabel(row("p1", 1000, { shift: "nieuw" }), null)).toBe("nieuw");
     expect(rankShiftLabel(row("p1", 1000, { shift: 2 }), null)).toBe("▲2");
@@ -231,30 +222,5 @@ describe("race-afleidingen", () => {
   });
 });
 
-describe("race-replay", () => {
-  it("reconstrueert vorige ratings en posities uit de laatste echte speeldag", () => {
-    const rows = [
-      row("p1", 1020, {
-        rank: 1,
-        shift: 1,
-        name: "Stijger",
-        history: [{ match_id: "m1", rating_before: 990, rating_after: 1020, delta: 30, played_at: "2026-08-01T20:00:00Z" }],
-      }),
-      row("p2", 1000, { rank: 2, shift: -1 }),
-    ];
-    const replay = buildRaceReplay(rows);
-    expect(replay?.day).toBe("2026-08-01");
-    expect(replay?.players.get("p1")).toMatchObject({
-      previousRating: 990,
-      currentRating: 1020,
-      previousRank: 2,
-      currentRank: 1,
-      movement: 1,
-    });
-    expect(replay?.event).toBe("Stijger stijgt naar #1");
-  });
-
-  it("biedt geen verzonnen replay zonder historische wijziging", () => {
-    expect(buildRaceReplay([row("p1", 1000)])).toBeNull();
-  });
-});
+// De replay-reconstructie is opgegaan in de speeldag-tijdlijn (#1241):
+// zie raceTimeline.test.ts.

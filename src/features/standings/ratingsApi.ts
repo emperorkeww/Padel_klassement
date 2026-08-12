@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
+import { fetchAllPages } from "@/lib/supabase/paginate";
 import { cached } from "@/lib/supabase/queryCache";
 import { warnIfTruncated } from "@/lib/supabase/truncation";
 import type { PlayerRating, RatingPoint } from "@/types";
@@ -17,12 +18,13 @@ export function getPlayerRatings(): Promise<Record<string, PlayerRating>> {
 // niet elke keer mee over de lijn.
 const HISTORY_LIMIT = 100;
 
-/** Punten per speler in de gedeelde historie (#731). Bij ~4 matches per week
- *  is dat ruim een maand — genoeg voor de sparkline, de In-Form-week en een
- *  On-Fire-reeks. De payload schaalt hiermee met het aantal SPELERS in plaats
- *  van met het aantal matches; spelers × dit getal moet onder `max_rows`
- *  blijven (de RPC klemt zelf op 50 per speler). */
-export const RECENT_HISTORY_LIMIT = 20;
+/** Punten per speler in de gedeelde historie (#731). Sinds de race-tijdlijn
+ *  (#1241) staat dit op het RPC-maximum van 50: genoeg voor een film over de
+ *  laatste speeldagen, en de sparkline downsampelt zelf al. De payload schaalt
+ *  met het aantal SPELERS in plaats van met het aantal matches; omdat
+ *  spelers × 50 wél boven `max_rows` uit kan komen, pagineert de aanroep
+ *  hieronder met `.range()`. */
+export const RECENT_HISTORY_LIMIT = 50;
 
 /** Groepeert history-rijen per speler, chronologisch (oud → nieuw). */
 function groupByPlayer(
@@ -54,11 +56,15 @@ export function getRecentRatingHistories(): Promise<
   Record<string, RatingPoint[]>
 > {
   return cached("ratings:history:recent", async () => {
-    const { data, error } = await supabase.rpc("recent_rating_history", {
-      p_limit: RECENT_HISTORY_LIMIT,
-    });
-    if (error) throw error;
-    const rows = warnIfTruncated(data ?? [], "recent_rating_history");
+    // Ook een RPC-resultaat gaat door `max_rows` heen, en spelers × 50 kan
+    // daarboven uitkomen. De functie sorteert deterministisch (player_id,
+    // played_at, match_id), dus pagineren met `.range()` is veilig (#1241).
+    const rows = await fetchAllPages<RatingPoint & { player_id: string }>(
+      (from, to) =>
+        supabase
+          .rpc("recent_rating_history", { p_limit: RECENT_HISTORY_LIMIT })
+          .range(from, to),
+    );
     return groupByPlayer(rows);
   });
 }
