@@ -42,13 +42,14 @@ export function PlanDagSheet({
     <Sheet
       open={datum != null}
       onClose={onClose}
+      title="Plan een speeldag"
+      // De datum staat eronder als subtitel; in de naam hoort hij wel, want
+      // een schermlezer heeft de kop alleen.
       ariaLabel={datum ? `Plan een speeldag op ${longDay(datum)}` : "Plannen"}
-      className="sheet--agenda"
     >
       {datum && (
         <div className="dagsheet">
           <p className="dagsheet__datum">{longDay(datum)}</p>
-          <p className="dagsheet__titel">Plan een speeldag</p>
 
           {/* Bij één groep valt de keuze weg: dan is er niets te kiezen. */}
           {!eenGroep && (

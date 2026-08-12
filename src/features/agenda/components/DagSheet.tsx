@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Sheet } from "@/ui/Sheet";
 import { Avatar } from "@/ui/Avatar";
+import { EmptyState } from "@/ui/EmptyState";
 import { useToast } from "@/ui/ToastProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { errorMessage } from "@/lib/utils/errors";
@@ -184,24 +185,24 @@ export function DagSheet({
   }
 
   return (
+    // De datum is de kop van het sheet en niet nog een regel erin (#1180):
+    // daarmee krijgt hij ook de standaard sluitknop, en die had dit sheet als
+    // enige van de app helemaal niet.
     <Sheet
       open={datum != null}
       onClose={onClose}
-      ariaLabel={datum ? longDay(datum) : "Dag"}
-      className="sheet--agenda"
+      title={datum ? longDay(datum) : "Dag"}
     >
       {datum && (
-        <div className="dagsheet">
-          <p className="dagsheet__datum">{longDay(datum)}</p>
+        <div
+          className={`dagsheet${markers.length > 1 ? " dagsheet--meerdere" : ""}`}
+        >
           {markers.length === 0 ? (
             // Alleen een dag in het verleden komt hier terecht: een lege dag
             // vanaf vandaag opent het plan-sheet.
-            <>
-              <p className="dagsheet__titel">Niets gespeeld</p>
-              <p className="dagsheet__leeg">
-                Deze dag is geweest en er stond geen speeldag op.
-              </p>
-            </>
+            <EmptyState icon="🎾" title="Niets gespeeld">
+              Deze dag is geweest en er stond geen speeldag op.
+            </EmptyState>
           ) : (
             markers.map((m) => (
               <Speeldag
@@ -249,6 +250,45 @@ function andereMomenten(
   return (momentenPerPoll[marker.pollId] ?? [])
     .filter((m) => m.optionId !== marker.optionId && !momentVoorbij(m, nowMs))
     .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+}
+
+/** Hoeveel namen er staan voordat de rest achter een knop schuift. */
+const MAX_NAMEN = 4;
+
+/**
+ * Een rij namen onder een labelkopje (#1180).
+ *
+ * "Nog niets gezegd" in een groep van twintig zette twintig namen als lopende
+ * tekst neer, en dan is het sheet ineens twee schermen lang terwijl de knoppen
+ * waar je voor kwam onderaan staan. De eerste paar namen dragen de vraag "wie
+ * kan ik nog porren?" prima; de rest is er als je hem zoekt.
+ */
+function NamenRij({ label, namen }: { label: string; namen: string[] }) {
+  const [alles, setAlles] = useState(false);
+  const rest = namen.length - MAX_NAMEN;
+  const zichtbaar = alles ? namen : namen.slice(0, MAX_NAMEN);
+  return (
+    <p className="dagsheet__namenrij">
+      <span className="dagsheet__tegel-label">{label}</span>
+      {/* Namen en knop in één regel-item: het labelkopje staat erboven, maar
+          "+3 meer" hoort in de zin te lopen en niet op een eigen regel. */}
+      <span>
+        {zichtbaar.join(", ")}
+        {rest > 0 && !alles && (
+          <>
+            {" "}
+            <button
+              type="button"
+              className="dagsheet__meer"
+              onClick={() => setAlles(true)}
+            >
+              +{rest} meer
+            </button>
+          </>
+        )}
+      </span>
+    </p>
+  );
 }
 
 function Speeldag({
@@ -339,6 +379,13 @@ function Speeldag({
             {stemmers.slice(0, MAX_AVATARS).map((id) => (
               <Avatar key={id} profile={profielen[id]} size={28} short />
             ))}
+            {/* Boven de zes viel de rest stilletjes weg: de telling erboven
+                zei "8 van 20" en er stonden er zes. */}
+            {stemmers.length > MAX_AVATARS && (
+              <span className="dagsheet__rest">
+                +{stemmers.length - MAX_AVATARS}
+              </span>
+            )}
             {leden > stemmers.length && (
               <span className="dagsheet__rest">
                 +{leden - stemmers.length} nog niet
@@ -352,16 +399,13 @@ function Speeldag({
           speler nodig" is dat de vraag: wie kan ik nog porren? De agenda gaf
           tot nu toe alleen het aantal ja-stemmers. */}
       {marker.maybeVoterIds.length > 0 && (
-        <p className="dagsheet__namenrij">
-          <span className="dagsheet__tegel-label">Misschien</span>
-          {marker.maybeVoterIds.map(naam).join(", ")}
-        </p>
+        <NamenRij label="Misschien" namen={marker.maybeVoterIds.map(naam)} />
       )}
       {marker.status === "open" && !marker.past && marker.nietGestemdIds.length > 0 && (
-        <p className="dagsheet__namenrij">
-          <span className="dagsheet__tegel-label">Nog niets gezegd</span>
-          {marker.nietGestemdIds.map(naam).join(", ")}
-        </p>
+        <NamenRij
+          label="Nog niets gezegd"
+          namen={marker.nietGestemdIds.map(naam)}
+        />
       )}
 
       {stembaar && (
