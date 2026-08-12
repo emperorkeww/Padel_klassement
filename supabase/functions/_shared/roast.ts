@@ -470,6 +470,20 @@ export const POLL_GEBOEKT: readonly string[] = [
     "Bevestigd. We gaan de kooi in voor een tactische masterclass.",
 ];
 
+/** Speeldag afgelast omdat er geen moment vier spelers haalde (#1234). Toon:
+ *  plagen mag, maar de boodschap moet als eerste binnenkomen — daarom staat
+ *  het waaróm in de body eromheen en niet in deze regels. */
+export const POLL_AFGELAST: readonly string[] = [
+  "Met drie man is het geen padel maar een wandeling.",
+  "Volgende keer op tijd stemmen, dan hoef ik dit niet te schrijven.",
+  "De baan blijft leeg. Mijn opstelling ook.",
+  "Geen vier spelers, geen wedstrijd. Zo simpel is de rekensom.",
+  "Ik heb m'n spiekbriefjes weer opgeborgen. Jammer.",
+  "De kooi blijft dicht. Probeer het opnieuw met meer volk.",
+  "Vier is het minimum, dat is niet mijn regel maar die van het spel.",
+  "Zonder tegenstanders valt er weinig te coachen.",
+];
+
 // ── Promotie / degradatie in het groepsklassement (#302) ────────────────────
 // Een tier-overgang (troon / top-3 / kelder) is promotie of degradatie. De
 // tiers zijn geordend kelder < middenmoot < jager < troon; 'nieuw' doet niet
@@ -977,6 +991,13 @@ export const TITEL_POLL_GEBOEKT: readonly string[] = [
   "Reservering rond ✓",
   "De kooi is gereserveerd ✓",
   "Baan vastgelegd ✓",
+];
+
+export const TITEL_POLL_AFGELAST: readonly string[] = [
+  "Speeldag gaat niet door",
+  "Te weinig spelers — afgelast",
+  "Geen speeldag deze keer",
+  "Afgelast: te weinig volk",
 ];
 
 export const TITEL_LAATSTE_KANS: readonly string[] = [
