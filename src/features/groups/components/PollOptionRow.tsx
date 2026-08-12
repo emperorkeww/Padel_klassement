@@ -4,7 +4,11 @@ import type {
   PollOption,
   PollVoteStatus,
 } from "@/features/groups/pollsApi";
-import type { OptionState, OptionTally } from "@/features/groups/pollLogic";
+import {
+  PLAYERS_PER_COURT,
+  type OptionState,
+  type OptionTally,
+} from "@/features/groups/pollLogic";
 import type { Profile } from "@/types";
 import { VOTE_SEGMENTS, shortDay } from "../planPollHelpers";
 import { PollJaIcon, PollNeeIcon, PollStateIcon } from "./pollIconen";
@@ -76,7 +80,9 @@ export function PollOptionRow({
         <button
           type="button"
           className={`poll-row__state poll-state--${state}`}
-          aria-label={`Haalbaarheid: ${state} — uitleg`}
+          aria-label={`Haalbaarheid: ${state}${
+            t.tekort > 0 ? `, nog ${t.tekort} speler(s) nodig` : ""
+          } — uitleg`}
           aria-expanded={detailOpen}
           onClick={onToggleDetail}
         >
@@ -120,6 +126,15 @@ export function PollOptionRow({
               : `${free} vrij (${state})`}
             {t.maybe.length > 0 && ` · ${t.maybe.length} misschien`}
           </p>
+          {/* De drempel waarop de cron beslist (#1234): onder de vier gaat de
+              speeldag niet door. Hier, naast de banen, want dit is de andere
+              helft van "kan dit doorgaan". */}
+          {t.tekort > 0 && (
+            <p className="proposal__meta poll-row-detail__tekort">
+              Nog {t.tekort} {t.tekort === 1 ? "speler" : "spelers"} nodig —
+              onder de {PLAYERS_PER_COURT} gaat de speeldag niet door.
+            </p>
+          )}
           {t.yes.length > 0 && (
             <p className="proposal__names">
               Kan: {t.yes.map(name).join(", ")}

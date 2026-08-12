@@ -59,6 +59,8 @@ const TALLY: OptionTally = {
   no: [],
   needed: 1,
   enoughPlayers: false,
+  mee: 2,
+  tekort: 2,
 };
 const PROFILES: Record<string, Profile> = {};
 
@@ -252,6 +254,8 @@ const ACHT_YES: OptionTally = {
   no: [],
   needed: 2,
   enoughPlayers: true,
+  mee: 8,
+  tekort: 0,
 };
 
 const GEBOEKT = { status: "booked" as const, booked_at: "2026-07-08T12:00:00Z" };

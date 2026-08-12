@@ -373,4 +373,40 @@ describe("<PollCard /> — elk moment vastlegbaar (#1181)", () => {
       screen.queryByRole("button", { name: /ander moment/i }),
     ).not.toBeInTheDocument();
   });
+
+  // De cron annuleert een speeldag waarvan geen enkel moment vier spelers
+  // haalt (#1234). Dat moet je kunnen zien zolang je er nog iets aan kunt doen.
+  it("waarschuwt zolang geen enkel moment vier spelers haalt", async () => {
+    renderCard(openPoll, {
+      options: [option, tweede],
+      // Drie op het ene moment, één op het andere: allebei onder de vier.
+      votes: [
+        stem("p1", "opt-1"),
+        stem("p2", "opt-1"),
+        stem("p3", "opt-1", "maybe"),
+        stem("p4", "opt-2"),
+      ],
+    });
+
+    expect(
+      await screen.findByText(/gaat deze speeldag niet door/i),
+    ).toBeInTheDocument();
+  });
+
+  it("zwijgt zodra één moment de vier haalt, ook met misschien-stemmen", async () => {
+    renderCard(openPoll, {
+      options: [option, tweede],
+      votes: [
+        stem("p1", "opt-1"),
+        stem("p2", "opt-1"),
+        stem("p3", "opt-1", "maybe"),
+        stem("p4", "opt-1", "maybe"),
+      ],
+    });
+
+    await screen.findByRole("heading", { name: /speeldag-poll/i });
+    expect(
+      screen.queryByText(/gaat deze speeldag niet door/i),
+    ).not.toBeInTheDocument();
+  });
 });
