@@ -4,6 +4,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
+import { useSleepSluiten } from "@/lib/hooks/useSleepSluiten";
 
 // Gedeelde dialoog/bottom-sheet (#72): backdrop + gecentreerde kaart (mobiel
 // een bottom-sheet via de .sheet-CSS in ui.css). Centraliseert het focusbeheer
@@ -37,6 +38,11 @@ export function Sheet({
   children: ReactNode;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
+
+  // Omlaag vegen sluit (#1180). Zit hier en niet per sheet: alle 25 sheets
+  // gedragen zich dan hetzelfde, en twee ervan hadden helemaal geen knop.
+  useSleepSluiten(dialogRef, backdropRef, onClose, open);
 
   // Focus in de dialoog bij openen; terug naar de opener bij sluiten.
   useEffect(() => {
@@ -64,7 +70,7 @@ export function Sheet({
   if (!open) return null;
 
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
+    <div className="sheet-backdrop" onClick={onClose} ref={backdropRef}>
       <div
         className={`sheet glas glas--sterk glas--scrollbaar${compact ? " sheet--compact" : ""}${className ? ` ${className}` : ""}`}
         role="dialog"
@@ -75,6 +81,11 @@ export function Sheet({
         onClick={(e) => e.stopPropagation()}
         onKeyDown={onKeyDown}
       >
+        {/* Sleepgreep: laat zien dát je hem weg kunt vegen. Bewust geen knop —
+            dat zou naast de X een tweede control met dezelfde naam geven — en
+            bewust niet sticky: hij scrolt weg op precies het moment dat het
+            gebaar ook uit gaat (de sheet scrollt dan zelf). */}
+        <div className="sheet__greep" aria-hidden="true" />
         {title != null && (
           <header className="sheet__head">
             <h2 className="sheet__title">{title}</h2>

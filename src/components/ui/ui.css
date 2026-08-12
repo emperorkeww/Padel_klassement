@@ -465,11 +465,27 @@ textarea {
      nog als egale waas overbleef. De lightboxen elders houden --overlay.
      --scrim is ook wat de keyframe hieronder aanhoudt. */
   --scrim: var(--overlay-glas);
-  background-color: var(--scrim);
+  /* Hoeveel scrim er nog staat; 1 is de rusttoestand. Tijdens het wegvegen
+     (#1180) zet de sleephook dit lager, zodat de pagina eronder terugkomt
+     terwijl de sheet zakt. Via color-mix en niet via opacity: een element met
+     opacity < 1 is een backdrop root en zou de backdrop-filter van het glazen
+     paneel erin doven — zie de keyframes verderop (#1062). Mengen in srgb
+     houdt de tint gelijk en laat alleen de alpha zakken. */
+  --sheet-scrim: 1;
+  background-color: color-mix(
+    in srgb,
+    var(--scrim) calc(var(--sheet-scrim) * 100%),
+    transparent
+  );
   display: flex;
   align-items: flex-end;
   justify-content: center;
   animation: sheet-fade 0.15s ease-out;
+}
+/* Alleen tijdens terugveren en sluiten: tijdens het slepen zelf moet de scrim
+   de vinger volgen, en dan zit een transition juist in de weg. */
+.sheet-backdrop--veert {
+  transition: background-color 0.2s ease-out;
 }
 .sheet {
   width: 100%;
@@ -479,6 +495,10 @@ textarea {
      zodat de onderkant van de sheet niet achter de browser-chrome valt. */
   max-height: calc(100dvh - 3rem);
   overflow-y: auto;
+  /* Scrollen in de sheet mag niet doorslaan naar de pagina eronder — en op een
+     telefoon al helemaal niet naar pull-to-refresh, want dat is precies het
+     gebaar waarmee je hem nu wegveegt (#1180). */
+  overscroll-behavior: contain;
   /* Materiaal en schaduw komen van .glas .glas--sterk .glas--scrollbaar
      (#1062). Die scrollbaar-variant is er precies voor dit geval: het paneel
      scrollt, en dan zouden de losse rand- en hooglichtlagen met de inhoud
@@ -558,6 +578,24 @@ textarea {
   .sheet,
   .sheet-backdrop {
     animation: none;
+  }
+}
+/* Sleepgreep (#1180). Staat er alleen op een aanraakscherm, want daar bestaat
+   het gebaar: `pointer: coarse` en niet een breedtegrens, zodat een tablet in
+   staande stand — gecentreerde dialoog, maar wél een vinger — hem ook krijgt,
+   en een smal muisvenster niet. Hij ligt strak onder de bovenrand: de sheet
+   heeft --sp-5 padding en dit trekt er --sp-3 vanaf. */
+.sheet__greep {
+  display: none;
+}
+@media (pointer: coarse) {
+  .sheet__greep {
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: calc(var(--sp-3) * -1) auto var(--sp-3);
+    border-radius: 999px;
+    background: var(--line-strong);
   }
 }
 .sheet__head {
