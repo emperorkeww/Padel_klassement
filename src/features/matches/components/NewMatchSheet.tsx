@@ -704,15 +704,20 @@ export function NewMatchSheet({
                   <button
                     key={p.id}
                     type="button"
-                    className={`pick-chip glas glas--interactief glas--pil ${
-                      team ? `pick-chip--${team}` : ""
+                    // Het glasmateriaal komt er pas op als de speler gekozen is
+                    // (#1183). Op twintig pillen tegelijk zegt het niets meer;
+                    // op de ene die je aantikte is het het duidelijkste signaal
+                    // van de lijst. De vorm komt van .pick-chip zelf, zodat de
+                    // pil niet verspringt op het moment dat hij oplicht.
+                    className={`pick-chip ${
+                      team ? `pick-chip--${team} glas glas--interactief` : ""
                     } ${guest ? "pick-chip--guest" : ""} ${
                       !team && full ? "is-dim" : ""
                     }`}
                     aria-pressed={team !== null}
                     onClick={() => toggle(p.id)}
                   >
-                    <Avatar profile={p} size={30} />
+                    <Avatar profile={p} size={32} />
                     <span className="pick-chip__name">{displayName(p)}</span>
                     {guest && (
                       <span className="pick-chip__guest" title="Gastspeler zonder account">
