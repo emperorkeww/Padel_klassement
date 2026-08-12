@@ -34,6 +34,7 @@ const TWEE = [groep("g1", "Vamos!"), groep("g2", "Kantoorpadel", 12)];
 function toon(props: Partial<Parameters<typeof PlanDagSheet>[0]> = {}) {
   const onGroep = vi.fn();
   const onDoor = vi.fn();
+  const onClose = vi.fn();
   render(
     <MemoryRouter>
       <PlanDagSheet
@@ -44,13 +45,13 @@ function toon(props: Partial<Parameters<typeof PlanDagSheet>[0]> = {}) {
         club={CLUB}
         onClub={() => {}}
         vensterEinde="2026-08-13"
-        onClose={() => {}}
+        onClose={onClose}
         onDoor={onDoor}
         {...props}
       />
     </MemoryRouter>,
   );
-  return { onGroep, onDoor };
+  return { onGroep, onDoor, onClose };
 }
 
 describe("<PlanDagSheet />", () => {
@@ -106,5 +107,16 @@ describe("<PlanDagSheet />", () => {
     toon({ datum: "2026-08-26" });
     expect(screen.getAllByText(/woensdag 26 augustus/)[0]).toBeInTheDocument();
     expect(screen.getByText("Plan een speeldag")).toBeInTheDocument();
+  });
+
+  // Tot #1180 had dit sheet geen X: alleen "Terug" onderin en een tik naast
+  // het paneel. Die "Terug" hoort bij de keuze en niet bij het sluiten.
+  it("zet de titel als kop, met een sluitknop ernaast", async () => {
+    const { onClose } = toon();
+    expect(
+      screen.getByRole("heading", { name: "Plan een speeldag" }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Sluiten" }));
+    expect(onClose).toHaveBeenCalledOnce();
   });
 });

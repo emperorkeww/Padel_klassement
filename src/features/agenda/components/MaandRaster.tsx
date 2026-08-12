@@ -1,5 +1,13 @@
 import { useEffect, useRef } from "react";
-import { dagLabel, splitMarkers, toetsStap, type AgendaMarker, type RasterDag } from "../agendaLogic";
+import {
+  dagLabel,
+  splitMarkers,
+  telWedstrijden,
+  toetsStap,
+  type AgendaMarker,
+  type RasterDag,
+  type WedstrijdDag,
+} from "../agendaLogic";
 import { StatusGlyph } from "@/ui/StatusGlyph";
 
 /* ------------------------------------------------------------------ */
@@ -25,6 +33,8 @@ const WEEKDAGEN = ["ma", "di", "wo", "do", "vr", "za", "zo"];
 export function MaandRaster({
   weeks,
   perDag,
+  wedstrijdenPerDag = {},
+  bezig = false,
   vandaag,
   gekozenDag,
   focusDag,
@@ -33,6 +43,12 @@ export function MaandRaster({
 }: {
   weeks: RasterDag[][];
   perDag: Record<string, AgendaMarker[]>;
+  /** Gespeelde wedstrijden per dag (#1182). Een dag kan wedstrijden dragen
+   *  zonder speeldag: loggen kan zonder poll. */
+  wedstrijdenPerDag?: Record<string, WedstrijdDag[]>;
+  /** De maand staat er al, maar de speeldagen zijn nog onderweg (#1182). De
+   *  stippen die je dan ziet horen bij het vorige venster. */
+  bezig?: boolean;
   vandaag: string;
   /** De dag waar het paneel eronder over gaat (#1112). Los van `focusDag`: met
    *  de pijltjes loop je door het raster zonder telkens iets te kiezen. */
@@ -62,7 +78,7 @@ export function MaandRaster({
   }
 
   return (
-    <div className="agenda-raster">
+    <div className="agenda-raster" data-bezig={bezig ? "ja" : undefined}>
       <div className="agenda-raster__koppen" aria-hidden="true">
         {WEEKDAGEN.map((d) => (
           <span key={d} className="agenda-raster__kop">
@@ -75,6 +91,7 @@ export function MaandRaster({
         className="agenda-raster__grid"
         role="grid"
         aria-label="Maandraster met je speeldagen"
+        aria-busy={bezig || undefined}
         onKeyDown={(e) => {
           const naar = toetsStap(focusDag, e.key);
           if (naar == null) return;
@@ -86,7 +103,14 @@ export function MaandRaster({
           <div className="agenda-raster__week" role="row" key={week[0].date}>
             {week.map((dag) => {
               const markers = perDag[dag.date] ?? [];
-              const { shown } = splitMarkers(markers, MAX_STIPPEN);
+              const wedstrijden = wedstrijdenPerDag[dag.date] ?? [];
+              // De ruit van de wedstrijden krijgt zijn eigen plek, dus de
+              // speeldagen leveren er één in: vier glyphs is wat er in een cel
+              // van deze maat nog naast elkaar past.
+              const { shown } = splitMarkers(
+                markers,
+                wedstrijden.length > 0 ? MAX_STIPPEN - 1 : MAX_STIPPEN,
+              );
               const isVandaag = dag.date === vandaag;
               const isGekozen = dag.date === gekozenDag;
               const dagnummer = Number(dag.date.slice(8));
@@ -107,7 +131,12 @@ export function MaandRaster({
                     tabIndex={dag.date === focusDag ? 0 : -1}
                     onFocus={() => onFocusDag(dag.date, false)}
                     onClick={() => onPick(dag.date)}
-                    aria-label={dagLabel(dag.date, markers, dag.date < vandaag)}
+                    aria-label={dagLabel(
+                      dag.date,
+                      markers,
+                      dag.date < vandaag,
+                      telWedstrijden(wedstrijden),
+                    )}
                     aria-current={isVandaag ? "date" : undefined}
                     className={[
                       "agenda-dag",
@@ -131,6 +160,7 @@ export function MaandRaster({
                       {shown.map((m) => (
                         <StatusGlyph key={m.optionId} status={m.status} past={m.past} />
                       ))}
+                      {wedstrijden.length > 0 && <StatusGlyph status="played" />}
                     </span>
                   </button>
                 </div>

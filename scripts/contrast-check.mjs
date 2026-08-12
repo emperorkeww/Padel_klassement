@@ -133,6 +133,13 @@ const PAIRS = [
   ["legende", "legende-soft", 3.0, "legende-tierbadge (groot/UI)"],
   ["lime-deep", "surface", 3.0, "lime-tekstaccent (groot/UI)"],
   ["lime-deep", "lime-soft", 4.5, "serve-chip: 'begint' op lime-vlak (#435)"],
+  // De gekozen spelerspil (#1183). De vulling is dekkend en de blur staat uit,
+  // dus dit paar is te meten op de tokens: er schemert niets doorheen.
+  ["ink", "accent-soft", 4.5, "spelersnaam op de gekozen pil, team A (#1183)"],
+  ["ink", "lime-soft", 4.5, "spelersnaam op de gekozen pil, team B (#1183)"],
+  // Team A's badge is wit op --accent en staat hierboven al als "knoptekst op
+  // accentknop" (4,36 op licht — bekend en geaccepteerd, zie #1074).
+  ["lime-ink", "lime-deep", 4.5, "teambadge B op de gekozen pil (#1183)"],
   ["cat-rank", "surface", 3.0, "feed-categorie klassement (groot/UI)"],
   ["cat-champ", "surface", 3.0, "feed-categorie kampioen (groot/UI)"],
   ["cat-roast", "surface", 3.0, "feed-categorie roast (groot/UI)"],

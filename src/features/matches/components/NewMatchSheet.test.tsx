@@ -515,3 +515,63 @@ describe("<NewMatchSheet /> voorgevuld moment (#1133)", () => {
     expect(screen.getByLabelText(/wanneer/i)).toHaveValue("2030-01-10T19:00");
   });
 });
+
+describe("<NewMatchSheet /> kiezer-flow (#1183)", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("houdt het gastenveld dicht tot je erom vraagt", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    renderSheet("g1");
+    await screen.findByText(/wie speelden er/i);
+
+    // In rust één knop; het invoerveld stond hiervoor altijd open tussen het
+    // rooster en de knop waar je heen wilt.
+    expect(screen.queryByPlaceholderText(/typ zijn naam/i)).toBeNull();
+    await userEvent.click(
+      screen.getByRole("button", { name: /gast zonder account/i }),
+    );
+    expect(screen.getByPlaceholderText(/typ zijn naam/i)).toBeInTheDocument();
+  });
+
+  it("telt de selectie mee in de kop", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    renderSheet("g1");
+    await screen.findByText(/wie speelden er/i);
+
+    const stand = () => document.querySelector(".pick-kop__teller")!.textContent;
+    expect(stand()).toBe("0/4");
+    await userEvent.click(screen.getByRole("button", { name: /alice anders/i }));
+    expect(stand()).toBe("1/4");
+  });
+
+  it("zet de laatst meegenomen spelers bovenaan bij een volgende match", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    renderSheet("g1");
+    await screen.findByText(/wie speelden er/i);
+
+    // Alice is de ingelogde gebruiker en staat dus sowieso bovenaan.
+    const namen = [...document.querySelectorAll(".pick-chip__name")].map(
+      (n) => n.textContent,
+    );
+    expect(namen[0]).toMatch(/alice/i);
+
+    // Eén afgeronde match zet die vier vooraan.
+    for (const naam of [/alice anders/i, /bob boers/i, /carol claes/i, /dave de vos/i]) {
+      await userEvent.click(screen.getByRole("button", { name: naam }));
+    }
+    await userEvent.click(screen.getByRole("button", { name: /naar de score/i }));
+    await userEvent.type(screen.getByRole("spinbutton", { name: /^Score Alice/ }), "6");
+    await userEvent.type(screen.getByRole("spinbutton", { name: /^Score Carol/ }), "4");
+    await userEvent.click(screen.getByRole("button", { name: /match opslaan/i }));
+
+    // Jezelf (Alice, p1) hoort er niet in: je staat toch al bovenaan, en anders
+    // eet je een plek op in een lijst van acht.
+    await waitFor(() =>
+      expect(JSON.parse(localStorage.getItem("vamos:match-mru:g1")!)).toEqual([
+        "p2",
+        "p3",
+        "p4",
+      ]),
+    );
+  });
+});

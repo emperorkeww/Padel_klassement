@@ -1,33 +1,32 @@
-import { Avatar } from "@/ui/Avatar";
-import { courtsLabel, longDay, shortDay } from "@/features/groups/planPollHelpers";
+import { Link } from "react-router-dom";
+import { longDay, shortDay } from "@/features/groups/planPollHelpers";
 import type { Profile } from "@/types";
 import {
-  duurLabel,
+  dagItems,
   metHoofdletter,
-  statusChip,
   statusLabel,
-  volgendeStap,
   type AgendaMarker,
+  type WedstrijdDag,
 } from "../agendaLogic";
 import { StatusGlyph } from "@/ui/StatusGlyph";
+import { SpeeldagKaart } from "./SpeeldagKaart";
+import "../Agenda.css";
 
 /* ------------------------------------------------------------------ */
 /* Het dagpaneel onder het raster (#1112).                             */
 /*                                                                     */
-/* Hier staat wat in het raster niet meer past. De kaart is bewust een  */
-/* *samenvatting* en geen detail: tijd, groep, plek en wie er kan. Wie  */
-/* meer wil — stemmen, banen, toegangscode, .ics — tikt de kaart aan en */
-/* krijgt het dag-sheet dat er altijd al was. Zo blijft er één plek     */
-/* waar je handelt, in plaats van twee die uit elkaar gaan lopen.       */
+/* Hier staat wat in het raster niet meer past: per speeldag een        */
+/* samenvattingskaart (SpeeldagKaart, sinds #1182 gedeeld met de        */
+/* lijstweergave), en onder een lege dag de wegwijzer naar wat er wél   */
+/* aankomt.                                                            */
 /* ------------------------------------------------------------------ */
-
-/** Hoeveel gezichten er in de rij passen voordat de rest een telling wordt. */
-const MAX_AVATARS = 4;
 
 export function DagPaneel({
   datum,
   vandaag,
   markers,
+  wedstrijden = [],
+  groepNamen = {},
   volgende,
   ledenPerGroep,
   profielen,
@@ -39,6 +38,9 @@ export function DagPaneel({
   datum: string;
   vandaag: string;
   markers: AgendaMarker[];
+  /** Wat er die dag gespeeld is, per groep (#1182). */
+  wedstrijden?: WedstrijdDag[];
+  groepNamen?: Record<string, string>;
   /** De eerstvolgende speeldagen ná deze dag. Alleen zichtbaar zolang de dag
    *  zelf leeg is — anders staat er van alles onder elkaar dat over
    *  verschillende dagen gaat. */
@@ -54,6 +56,9 @@ export function DagPaneel({
   onKiesDag: (date: string) => void;
 }) {
   const isVandaag = datum === vandaag;
+  // Per speeldag, niet per moment (#1182): een poll met twee kandidaat-tijden op
+  // deze dag is één kaart met beide tijden erop.
+  const items = dagItems(markers);
   return (
     <section className="dagpaneel" aria-label={`Speeldagen op ${longDay(datum)}`}>
       <header className="dagpaneel__kop">
@@ -69,32 +74,46 @@ export function DagPaneel({
             metHoofdletter(longDay(datum))
           )}
         </h2>
-        {markers.length > 0 && (
+        {items.length > 0 && (
           <p className="dagpaneel__telling">
-            {markers.length} {markers.length === 1 ? "activiteit" : "activiteiten"}
+            {items.length} {items.length === 1 ? "activiteit" : "activiteiten"}
           </p>
         )}
       </header>
 
+      {/* Wat er gespeeld is (#1182). Staat boven de lege staat én boven de
+          speeldagkaarten: op een dag die geweest is is dít het nieuws. */}
+      {wedstrijden.length > 0 && (
+        <ul className="dagpaneel__lijst">
+          {wedstrijden.map((w) => (
+            <li key={w.groupId}>
+              <WedstrijdRij dag={w} groepNaam={groepNamen[w.groupId] ?? "Groep"} />
+            </li>
+          ))}
+        </ul>
+      )}
+
       {markers.length === 0 ? (
         <>
-          <div className="dagpaneel__leeg">
-            <p className="dagpaneel__leeg-titel">Nog niets gepland</p>
-            <p className="dagpaneel__leeg-tekst">
-              {onPlan
-                ? "Zet er een speeldag op en laat je groep stemmen."
-                : "Deze dag is geweest en er stond geen speeldag op."}
-            </p>
-            {onPlan && (
-              <button
-                type="button"
-                className="btn btn--primary dagpaneel__plan"
-                onClick={onPlan}
-              >
-                Speeldag plannen
-              </button>
-            )}
-          </div>
+          {wedstrijden.length === 0 && (
+            <div className="dagpaneel__leeg">
+              <p className="dagpaneel__leeg-titel">Nog niets gepland</p>
+              <p className="dagpaneel__leeg-tekst">
+                {onPlan
+                  ? "Zet er een speeldag op en laat je groep stemmen."
+                  : "Deze dag is geweest en er stond geen speeldag op."}
+              </p>
+              {onPlan && (
+                <button
+                  type="button"
+                  className="btn btn--primary dagpaneel__plan"
+                  onClick={onPlan}
+                >
+                  Speeldag plannen
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Een lege dag is de plek waar de vraag "en wanneer dán wel?" komt.
               Hier staat het antwoord, in plaats van dat je maand voor maand
@@ -105,11 +124,11 @@ export function DagPaneel({
         </>
       ) : (
         <ul className="dagpaneel__lijst">
-          {markers.map((m) => (
-            <li key={m.optionId}>
+          {items.map((item) => (
+            <li key={item.eerste.pollId}>
               <SpeeldagKaart
-                marker={m}
-                leden={ledenPerGroep[m.groupId] ?? 0}
+                item={item}
+                leden={ledenPerGroep[item.eerste.groupId] ?? 0}
                 profielen={profielen}
                 onOpen={onOpen}
               />
@@ -118,6 +137,40 @@ export function DagPaneel({
         </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * Wat er die dag gespeeld is (#1182).
+ *
+ * Eén rij per groep, want dat is de eenheid waarin je erover praat ("drie
+ * wedstrijden bij Vamos!"). Bij precies één wedstrijd gaat de link naar die
+ * wedstrijd; bij meer naar het matchoverzicht van de groep, want een dagfilter
+ * bestaat daar niet.
+ */
+function WedstrijdRij({
+  dag,
+  groepNaam,
+}: {
+  dag: WedstrijdDag;
+  groepNaam: string;
+}) {
+  const n = dag.matchIds.length;
+  const naar =
+    n === 1 ? `/matches/${dag.matchIds[0]}` : `/spelen?groep=${dag.groupId}`;
+  return (
+    <Link className="speeldag speeldag--gespeeld" to={naar}>
+      <span className="speeldag__rail speeldag__rail--past" aria-hidden="true" />
+      <span className="speeldag__body">
+        <span className="speeldag__top">
+          <span className="speeldag__tijd">
+            {n} {n === 1 ? "wedstrijd" : "wedstrijden"}
+          </span>
+          <span className="speeldag__chip speeldag__chip--past">Gespeeld</span>
+        </span>
+        <span className="speeldag__titel">{groepNaam}</span>
+      </span>
+    </Link>
   );
 }
 
@@ -182,81 +235,6 @@ function IconChevron() {
       <path d="M9 5l7 7-7 7" />
     </svg>
   );
-}
-
-function SpeeldagKaart({
-  marker,
-  leden,
-  profielen,
-  onOpen,
-}: {
-  marker: AgendaMarker;
-  leden: number;
-  profielen: Record<string, Profile>;
-  onOpen: () => void;
-}) {
-  const status = marker.past ? "past" : marker.status;
-  const kanners = marker.yesVoterIds;
-  // Waar deze speeldag op wacht (#1121). De Plannen-tab zei dit in een balk
-  // bovenaan, over precies één speeldag; hier hoort het bij de kaart waar het
-  // over gaat — er kunnen er drie tegelijk lopen, elk in een andere fase.
-  const stap = volgendeStap(marker);
-  const opJou = marker.status === "open" && !marker.past && marker.myVote == null;
-  return (
-    <button type="button" className="speeldag" onClick={onOpen}>
-      {/* Het staafje links draagt dezelfde status als de stip in het raster —
-          zo herken je de dag terug die je net aantikte. */}
-      <span className={`speeldag__rail speeldag__rail--${status}`} aria-hidden="true" />
-      <span className="speeldag__body">
-        <span className="speeldag__top">
-          <span className="speeldag__tijd">{marker.startTime}</span>
-          <span className="speeldag__duur">{duurLabel(marker.duration)}</span>
-          <span className={`speeldag__chip speeldag__chip--${status}`}>
-            {statusChip(marker.status, marker.past)}
-          </span>
-        </span>
-        <span className="speeldag__titel">{marker.groupName}</span>
-        <span className="speeldag__plek">{plek(marker)}</span>
-        {kanners.length > 0 && (
-          <span className="speeldag__spelers">
-            <span className="speeldag__avatars" aria-hidden="true">
-              {kanners.slice(0, MAX_AVATARS).map((id) => (
-                <Avatar key={id} profile={profielen[id]} size={24} short />
-              ))}
-            </span>
-            <span className="speeldag__telling">{spelersLabel(marker, leden)}</span>
-          </span>
-        )}
-        {stap && (
-          <span
-            className={`speeldag__stap${opJou ? " is-jij" : ""}`}
-          >
-            {stap}
-          </span>
-        )}
-      </span>
-    </button>
-  );
-}
-
-/** Waar er gespeeld wordt. Zolang de baan niet geboekt is valt daar nog niets
- *  over te zeggen, en dat is precies wat er dan hoort te staan. */
-function plek(m: AgendaMarker): string {
-  if (m.status === "booked" && m.courts) return `${m.clubName} · ${courtsLabel(m.courts)}`;
-  if (m.status === "open") return `${m.clubName} · baan nog te kiezen`;
-  return m.clubName;
-}
-
-/**
- * Wie er meedoet. Bij een open poll is dat een tússenstand — "2 van 4 kunnen" —
- * en bij een vastgelegde of geboekte dag zijn het gewoon de spelers.
- */
-function spelersLabel(m: AgendaMarker, leden: number): string {
-  const n = m.yesVoterIds.length;
-  if (m.status === "open" && !m.past) {
-    return leden > 0 ? `${n} van ${leden} kunnen` : `${n} kunnen`;
-  }
-  return `${n} ${n === 1 ? "speler" : "spelers"}`;
 }
 
 export default DagPaneel;

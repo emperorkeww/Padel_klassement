@@ -111,6 +111,48 @@ export function getTeamsByIds(ids: string[]): Promise<Record<string, Team>> {
   });
 }
 
+/** Wanneer er gespeeld is: alleen wat de agenda nodig heeft om een dag te
+ *  markeren (#1182). */
+export type MatchDag = {
+  id: string;
+  group_id: string | null;
+  played_at: string | null;
+};
+
+/**
+ * Afgeronde matches van een aantal groepen binnen een tijdvenster (#1182).
+ *
+ * De agenda kende tot nu toe alleen speeldagen, dus een dag waarop wél gepadeld
+ * is maar zonder poll meldde "er stond geen speeldag op". Dit haalt precies drie
+ * kolommen op — meer heeft een markering niet nodig, en een maandvenster kan
+ * honderden matches dragen.
+ *
+ * De sleutel begint met "matches", dus `CACHE_PREFIXES.matches` maakt hem al
+ * leeg zodra er een uitslag verandert; daar hoeft niets bij.
+ */
+export function getMatchDaysInWindow(
+  groupIds: string[],
+  fromIso: string,
+  toIso: string,
+): Promise<MatchDag[]> {
+  if (groupIds.length === 0) return Promise.resolve([]);
+  const sleutel = `matches:agenda:${[...groupIds].sort().join(",")}:${fromIso}:${toIso}`;
+  return cached(sleutel, async () => {
+    return fetchAllPages<MatchDag>((from, to) =>
+      supabase
+        .from("matches")
+        .select("id, group_id, played_at")
+        .eq("status", "completed")
+        .in("group_id", groupIds)
+        .gte("played_at", fromIso)
+        .lte("played_at", toIso)
+        .order("played_at")
+        .order("id")
+        .range(from, to),
+    );
+  });
+}
+
 export function getGroupMatches(groupId: string): Promise<Match[]> {
   return cached(`matches:group:${groupId}`, async () => {
     // De stand van een groep telt élke match mee, dus deze lijst mag niet

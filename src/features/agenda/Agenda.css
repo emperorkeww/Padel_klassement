@@ -61,7 +61,9 @@
 .agenda-kop__stap {
   display: grid;
   place-items: center;
-  height: 34px;
+  /* 44px: de maandnavigatie is de meest aangetikte bediening van deze pagina
+     en stond op 34px, terwijl de rest van dit blad 44 aanhoudt (#1182). */
+  height: 44px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
   background: var(--surface);
@@ -85,9 +87,66 @@
   color: var(--accent);
 }
 
+/* Je kijkt al naar vandaag: de knop blijft staan (weghalen laat de kop springen
+   en haalt het ankerpunt weg na het rondlopen met de pijltjes), maar hij ziet
+   eruit als een stand en niet als een uitweg. */
+.agenda-kop__vandaag[aria-current] {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+
 .agenda-kop__stap {
-  width: 34px;
+  width: 44px;
   color: var(--ink);
+}
+
+/* ---- Wat op jou wacht (#1182) ---- */
+
+/* Eén regel plus één knop. Bewust geen kaart met kop en icoon: dit staat boven
+   het raster en elke pixel hoogte hier duwt de laatste week onder de vouw. */
+.actiestrook {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1.5px solid var(--accent-line);
+  border-radius: 14px;
+  background: var(--accent-soft);
+}
+
+.actiestrook__tekst {
+  margin: 0;
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.actiestrook__knop {
+  flex: none;
+}
+
+/* ---- Lijstweergave (#1182) ---- */
+
+.agenda-lijst {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.agenda-lijst__maand {
+  margin: 0 0 var(--sp-1);
+  font-family: var(--font-rounded);
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.agenda-lijst__laadt {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
 }
 
 /* ---- Groepsfilter (#1121) ---- */
@@ -174,6 +233,24 @@
 .agenda-raster__grid {
   display: grid;
   gap: 2px;
+}
+
+/* Bladeren naar een andere maand: de stippen die er nog staan horen bij het
+   vorige venster (#1182). Ze dimmen zegt "dit is nog niet de nieuwe stand"
+   zonder het raster te laten flitsen. De dagnummers blijven vol, want die
+   kloppen al. */
+.agenda-raster[data-bezig="ja"] .agenda-dag__stippen {
+  opacity: 0.3;
+}
+
+.agenda-dag__stippen {
+  transition: opacity 140ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agenda-dag__stippen {
+    transition: none;
+  }
 }
 
 .agenda-raster__week {
@@ -487,6 +564,20 @@
   background: var(--poll);
 }
 
+/* Gespeelde wedstrijden (#1182). Het staafje is dat van een dag die geweest is;
+   de rij zelf is een link naar de wedstrijd of naar het overzicht van de groep,
+   en hoeft dus niet als kaart om aandacht te vragen. */
+.speeldag__rail--past {
+  background: var(--line-strong);
+}
+.speeldag--gespeeld {
+  box-shadow: none;
+  background: var(--surface-2);
+}
+.speeldag--gespeeld:hover {
+  box-shadow: var(--shadow-sm);
+}
+
 .speeldag__body {
   display: grid;
   gap: 2px;
@@ -597,6 +688,56 @@
   justify-items: start;
 }
 
+/* De groepskeuze van de suggesties (#1182): hoekiger en met een label ervoor,
+   zodat hij niet te verwarren is met de ronde filterchips boven het raster.
+   Daar zet je groepen aan en uit, hier kies je er één. */
+.agenda-suggesties__keuze {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  width: 100%;
+}
+
+.agenda-suggesties__label {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.agenda-keuze {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agenda-keuze__chip {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.agenda-keuze__chip:hover {
+  border-color: var(--accent-line);
+}
+.agenda-keuze__chip:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+/* De gekozen groep draagt de accentrand en het accentvlak, maar houdt de gewone
+   inktkleur: accent op zacht accent haalt als tekstkleur de AA-drempel niet. */
+.agenda-keuze__chip[aria-pressed="true"] {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
 .agenda-suggesties__kies {
   margin: 0;
   font-size: var(--fs-sm);
@@ -635,19 +776,6 @@
   color: var(--ink-soft);
 }
 
-.dagsheet__titel {
-  margin: 0;
-  font-family: var(--font-rounded);
-  font-size: 1.375rem;
-  font-weight: 900;
-}
-
-.dagsheet__leeg {
-  margin: 0;
-  font-size: var(--fs-sm);
-  color: var(--ink-soft-strong);
-}
-
 .dagsheet__speeldag {
   display: grid;
   gap: var(--sp-3);
@@ -659,6 +787,23 @@
   border-top: 0;
 }
 
+/* Twee groepen die los van elkaar op dezelfde dag plannen (#1180): met
+   stemrijen, tegels en twee knoppen per blok liepen ze met alleen een streepje
+   ertussen in elkaar over. Elk blok krijgt dan een eigen vlak — dezelfde vorm
+   als een tegel. Bij één speeldag blijft het rustig en randloos: daar valt
+   niets te scheiden. */
+.dagsheet--meerdere .dagsheet__speeldag {
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.dagsheet--meerdere .dagsheet__speeldag:first-of-type {
+  padding: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+
 .dagsheet__kop {
   display: flex;
   align-items: center;
@@ -666,11 +811,15 @@
   gap: var(--sp-3);
 }
 
+/* Kleiner dan de 1,375rem/900 die hier stond (#1180). De datum is sinds die
+   issue de kop van het sheet; met twee speeldagen op één dag stonden er anders
+   twee even zware koppen onder elkaar, en geen ervan was de titel. Dit is nu de
+   kop van zijn eigen blok. */
 .dagsheet__tijd {
   margin: 0;
   font-family: var(--font-rounded);
-  font-size: 1.375rem;
-  font-weight: 900;
+  font-size: var(--fs-lg);
+  font-weight: 800;
 }
 
 .dagsheet__badge {
@@ -770,6 +919,22 @@
   margin: 0;
   font-size: var(--fs-sm);
   color: var(--ink-soft-strong);
+}
+
+/* De rest van een lange namenlijst (#1180). Ziet eruit als tekst, want dat is
+   het ook: een woord in de zin dat je kunt aantikken. Erft bewust de kleur van
+   de rij en gebruikt geen accentkleur: --accent haalt als tekst geen AA
+   (4,36:1 op wit) en --accent-strong valt op donker terug naar 3,2:1 tegen het
+   sheet-vlak. Streep en gewicht dragen dat het een knop is. */
+.dagsheet__meer {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .dagsheet__stemmers {

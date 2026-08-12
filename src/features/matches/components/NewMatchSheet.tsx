@@ -34,7 +34,16 @@ import {
   type MatchDraft,
 } from "@/features/matches/matchDraft";
 import { useSmoesPrompt } from "@/features/matches/SmoesPromptProvider";
+import {
+  leesRecent,
+  onthoudRecent,
+  sorteerSpelers,
+} from "@/features/matches/spelerVolgorde";
 import type { CourtType, MatchFormat, Profile, RoastIntensiteit } from "@/types";
+// Het sheet brengt zijn eigen stijlen mee (#1183). Stonden ze elders, dan
+// laadde de route die dit sheet opent ze niet per se mee — zie de kop van
+// NewMatchSheet.css.
+import "./NewMatchSheet.css";
 
 export type NewMatchMode = "score" | "plan";
 
@@ -120,6 +129,10 @@ export function NewMatchSheet({
   const [extraGuests, setExtraGuests] = useState<Profile[]>([]);
   const [guestName, setGuestName] = useState("");
   const [addingGuest, setAddingGuest] = useState(false);
+  // Staat het gastenveld open? Dicht is de ruststand: een gast is de
+  // uitzondering, en uitgeklapt stond het blok tussen het rooster en de knop
+  // waar je heen wilt (#1183).
+  const [gastOpen, setGastOpen] = useState(false);
   // Toont de "concept hervat"-strook als er bij het openen een bewaarde,
   // onafgemaakte invoer uit localStorage is teruggehaald (#462).
   const [resumed, setResumed] = useState(false);
@@ -214,6 +227,7 @@ export function NewMatchSheet({
     setExtraGuests([]);
     setGuestName("");
     setAddingGuest(false);
+    setGastOpen(false);
     // Bewust op de prop `mode` en niet op `modus`: wisselt de gebruiker zélf
     // van loggen naar plannen (#1123), dan mag dit effect niet opnieuw draaien
     // — het zou het concept van de ándere modus inlezen en de zojuist gekozen
@@ -293,13 +307,20 @@ export function NewMatchSheet({
   const teamOf = (id: string): "a" | "b" | null =>
     teamA.includes(id) ? "a" : teamB.includes(id) ? "b" : null;
 
-  // Bij een lange spelerslijst is zoeken sneller dan scrollen.
-  const searchable = allPlayers.length > 8;
+  // Bij een lange spelerslijst is zoeken sneller dan scrollen. De drempel zakte
+  // in #1183 van 8 naar 6: met de pillen onder elkaar past er minder in beeld,
+  // dus begint het scrollen eerder.
+  const searchable = allPlayers.length > 6;
+  // Jij eerst, dan wie je het laatst meenam, dan alfabetisch, gasten onderaan.
+  const gesorteerd = sorteerSpelers(allPlayers, {
+    myId,
+    recent: leesRecent(effectiveGroupId),
+  });
   const visiblePlayers = searchable
-    ? allPlayers.filter((p) =>
+    ? gesorteerd.filter((p) =>
         displayName(p).toLowerCase().includes(query.trim().toLowerCase()),
       )
-    : allPlayers;
+    : gesorteerd;
 
   /** Voegt een gast toe (naam-only) en selecteert hem meteen in een team. */
   async function addGuest() {
@@ -325,6 +346,9 @@ export function NewMatchSheet({
       if (teamA.length < teamSize) setTeamA((a) => [...a, id]);
       else if (teamB.length < teamSize) setTeamB((b) => [...b, id]);
       setGuestName("");
+      // Weer dicht: de gast staat nu in de lijst, en het veld openhouden
+      // suggereert dat er nog een tweede moet komen.
+      setGastOpen(false);
       tap();
       onGuestCreated?.();
     } catch (err) {
@@ -460,6 +484,8 @@ export function NewMatchSheet({
         );
       }
       clearDraft(modus, groupId ?? null);
+      // Wie er meespeelde staat de volgende keer bovenaan in de kiezer (#1183).
+      onthoudRecent(effectiveGroupId, [...teamA, ...teamB], myId);
       onCreated();
       onClose();
     } catch (err) {
@@ -530,6 +556,8 @@ export function NewMatchSheet({
         }
       }
       clearDraft(modus, groupId ?? null);
+      // Wie er meespeelde staat de volgende keer bovenaan in de kiezer (#1183).
+      onthoudRecent(effectiveGroupId, [...teamA, ...teamB], myId);
       onCreated();
       onClose();
     } catch (err) {
@@ -543,6 +571,10 @@ export function NewMatchSheet({
     <Sheet
       open
       onClose={onClose}
+      // Eigen klasse omdat de voetbalk hier plakt (#1183): dat vraagt de
+      // onderpadding van het sheet zelf, en die afspraak geldt niet voor elk
+      // sheet in de app. Zelfde constructie als .sheet--wizard bij de poll.
+      className="sheet--match"
       ariaLabel={modus === "plan" ? "Match plannen" : "Match loggen"}
     >
         <header className="sheet__head">
@@ -675,93 +707,12 @@ export function NewMatchSheet({
                 </select>
               </label>
             )}
-            {searchable && (
-              <input
-                className="input pick-search"
-                type="search"
-                placeholder="Zoek een speler…"
-                aria-label="Zoek een speler"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            )}
-            {visiblePlayers.length === 0 && (
-              <p className="empty empty--bare">
-                {query.trim()
-                  ? `Geen speler gevonden voor "${query.trim()}".`
-                  : "Nog geen spelers — voeg een vriend of een gast toe."}
-              </p>
-            )}
-            <div className="pick-grid">
-              {visiblePlayers.map((p) => {
-                const team = teamOf(p.id);
-                const guest = isGuest(p);
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    className={`pick-chip glas glas--interactief glas--pil ${
-                      team ? `pick-chip--${team}` : ""
-                    } ${guest ? "pick-chip--guest" : ""} ${
-                      !team && full ? "is-dim" : ""
-                    }`}
-                    aria-pressed={team !== null}
-                    onClick={() => toggle(p.id)}
-                  >
-                    <Avatar profile={p} size={30} />
-                    <span className="pick-chip__name">{displayName(p)}</span>
-                    {guest && (
-                      <span className="pick-chip__guest" title="Gastspeler zonder account">
-                        gast
-                      </span>
-                    )}
-                    {team && (
-                      <span className="pick-chip__team">{team.toUpperCase()}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Gast toevoegen: iemand zonder app-account, gewoon met een naam. */}
-            <div className="guest-add">
-              {/* De uitleg zat in de placeholder en verdween zodra je typte
-                  (#924); ze staat nu boven het veld als label. */}
-              <label className="label guest-add__veld">
-                Speelt iemand zonder account mee?
-                <input
-                  className="input guest-add__input"
-                  type="text"
-                  placeholder="Typ zijn naam"
-                  value={guestName}
-                  maxLength={40}
-                  disabled={full || addingGuest}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void addGuest();
-                    }
-                  }}
-                />
-              </label>
-              <button
-                type="button"
-                className="btn btn--sm"
-                onClick={() => void addGuest()}
-                disabled={!guestName.trim() || full || addingGuest}
-              >
-                {addingGuest ? "Bezig…" : "+ Gast"}
-              </button>
-            </div>
-
-            <p className="sheet__hint">
-              {full
-                ? "Tik op een speler om die weer los te laten, of wissel iemand van team met de pijl."
-                : `Tik de spelers aan: ze vullen eerst team A, dan team B (${picked}/${teamSize * 2}).`}
-            </p>
-
-            {picked > 0 && (
+            {/* Het doel boven de invoer (#1183). De teamvakken en de teller
+                stonden ónder het rooster, en met twintig spelers zag je bij het
+                aantikken dus niet wat je aan het vullen was. Ze plakken nu
+                bovenaan, samen met het zoekveld — één blok dat zegt waar je
+                staat en waarmee je de lijst korter maakt. */}
+            <div className="pick-kop glas glas--sterk glas--balk">
               <div className="pick-teams">
                 <TeamZone
                   label="Team A"
@@ -774,7 +725,7 @@ export function NewMatchSheet({
                 />
                 <button
                   type="button"
-                  className="btn btn--sm"
+                  className="btn btn--sm pick-teams__swap"
                   onClick={swapTeams}
                   disabled={!full}
                   title="Wissel team A en B"
@@ -792,9 +743,116 @@ export function NewMatchSheet({
                   onSwitch={switchTeam}
                 />
               </div>
+              <p className="pick-kop__stand" role="status">
+                <span className="pick-kop__teller">
+                  {picked}/{teamSize * 2}
+                </span>{" "}
+                {full
+                  ? "compleet — tik iemand aan om die los te laten"
+                  : "gekozen; ze vullen eerst team A, dan team B"}
+              </p>
+              {searchable && (
+                <input
+                  className="input pick-search"
+                  type="search"
+                  placeholder="Zoek een speler…"
+                  aria-label="Zoek een speler"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              )}
+            </div>
+            {visiblePlayers.length === 0 && (
+              <p className="empty empty--bare">
+                {query.trim()
+                  ? `Geen speler gevonden voor "${query.trim()}".`
+                  : "Nog geen spelers — voeg een vriend of een gast toe."}
+              </p>
+            )}
+            <div className="pick-grid">
+              {visiblePlayers.map((p) => {
+                const team = teamOf(p.id);
+                const guest = isGuest(p);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    // Het glasmateriaal komt er pas op als de speler gekozen is
+                    // (#1183). Op twintig pillen tegelijk zegt het niets meer;
+                    // op de ene die je aantikte is het het duidelijkste signaal
+                    // van de lijst. De vorm komt van .pick-chip zelf, zodat de
+                    // pil niet verspringt op het moment dat hij oplicht.
+                    className={`pick-chip ${
+                      team ? `pick-chip--${team} glas glas--interactief` : ""
+                    } ${guest ? "pick-chip--guest" : ""} ${
+                      !team && full ? "is-dim" : ""
+                    }`}
+                    aria-pressed={team !== null}
+                    onClick={() => toggle(p.id)}
+                  >
+                    <Avatar profile={p} size={32} />
+                    <span className="pick-chip__name">{displayName(p)}</span>
+                    {guest && (
+                      <span className="pick-chip__guest" title="Gastspeler zonder account">
+                        gast
+                      </span>
+                    )}
+                    {team && (
+                      <span className="pick-chip__team">{team.toUpperCase()}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Gast toevoegen: iemand zonder app-account, gewoon met een naam.
+                Sinds #1183 achter een knop: dit is de uitzondering, en als
+                volwaardig invoerblok stond het tussen het rooster en de knop
+                waar je heen wilt. */}
+            {gastOpen ? (
+              <div className="guest-add">
+                {/* De uitleg zat in de placeholder en verdween zodra je typte
+                    (#924); ze staat nu boven het veld als label. */}
+                <label className="label guest-add__veld">
+                  Speelt iemand zonder account mee?
+                  <input
+                    className="input guest-add__input"
+                    type="text"
+                    placeholder="Typ zijn naam"
+                    value={guestName}
+                    maxLength={40}
+                    disabled={full || addingGuest}
+                    autoFocus
+                    onChange={(e) => setGuestName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void addGuest();
+                      }
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn btn--sm"
+                  onClick={() => void addGuest()}
+                  disabled={!guestName.trim() || full || addingGuest}
+                >
+                  {addingGuest ? "Bezig…" : "Toevoegen"}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="btn btn--sm guest-add__opener"
+                onClick={() => setGastOpen(true)}
+                disabled={full}
+              >
+                + Gast zonder account
+              </button>
             )}
 
-            <footer className="sheet__foot">
+            <footer className="sheet__foot glas glas--sterk glas--balk">
               <button className="btn" onClick={onClose}>
                 Annuleren
               </button>
@@ -896,7 +954,7 @@ export function NewMatchSheet({
               />
             )}
 
-            <footer className="sheet__foot">
+            <footer className="sheet__foot glas glas--sterk glas--balk">
               <button className="btn" onClick={() => setStep(1)} disabled={busy}>
                 ← Spelers
               </button>
@@ -951,7 +1009,7 @@ export function NewMatchSheet({
 
             <CourtPicker value={courtType} onChange={setCourtType} />
 
-            <footer className="sheet__foot">
+            <footer className="sheet__foot glas glas--sterk glas--balk">
               <button className="btn" onClick={() => setStep(1)} disabled={busy}>
                 ← Spelers
               </button>

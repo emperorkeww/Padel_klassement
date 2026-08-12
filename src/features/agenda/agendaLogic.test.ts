@@ -3,9 +3,12 @@ import {
   buildMarkers,
   filterOpGroepen,
   leesGroepKeuze,
+  dagItems,
   dagLabel,
   daysInMonth,
   duurLabel,
+  kannersOpDag,
+  komendeItems,
   maandLabel,
   maandVan,
   markersByDay,
@@ -15,11 +18,16 @@ import {
   schuifMaand,
   splitMarkers,
   statusChip,
+  perMaand,
   telInMaand,
+  telWedstrijden,
+  tijdenLabel,
   tijdvak,
   toetsStap,
   volgendeSpeeldagen,
   volgendeStap,
+  wachtOpJou,
+  wedstrijdDagen,
   windowFor,
   zelfdeDagAndereMaand,
   zelfdeMaand,
@@ -257,11 +265,23 @@ describe("labels van het dagpaneel (#1112)", () => {
 });
 
 describe("telInMaand", () => {
-  const inAug = (date: string) => ({ date }) as never;
+  const inAug = (date: string, pollId = date) => ({ date, pollId }) as never;
 
   it("telt de speeldagen van de zichtbare maand", () => {
-    const markers = [inAug("2026-08-03"), inAug("2026-08-08"), inAug("2026-08-08")];
+    const markers = [inAug("2026-08-03"), inAug("2026-08-08"), inAug("2026-08-11")];
     expect(telInMaand(markers, { jaar: 2026, maand: 8 })).toBe(3);
+  });
+
+  it("telt een poll met meerdere voorstellen als één activiteit", () => {
+    // Drie kandidaat-momenten van dezelfde poll is één vraag om te spelen; het
+    // raster toont ze los, de telling niet (#1182).
+    const markers = [
+      inAug("2026-08-03", "poll-1"),
+      inAug("2026-08-05", "poll-1"),
+      inAug("2026-08-08", "poll-1"),
+      inAug("2026-08-11", "poll-2"),
+    ];
+    expect(telInMaand(markers, { jaar: 2026, maand: 8 })).toBe(2);
   });
 
   it("telt de randdagen van de buurmaanden niet mee", () => {
@@ -273,6 +293,165 @@ describe("telInMaand", () => {
 
   it("verwart een maand niet met dezelfde maand in een ander jaar", () => {
     expect(telInMaand([inAug("2025-08-08")], { jaar: 2026, maand: 8 })).toBe(0);
+  });
+});
+
+describe("wedstrijdDagen (#1182)", () => {
+  const rij = (id: string, played_at: string | null, group_id = "g1") => ({
+    id,
+    group_id,
+    played_at,
+  });
+
+  it("groepeert per dag en per groep", () => {
+    const uit = wedstrijdDagen(
+      [
+        rij("m1", "2026-08-08T18:00:00Z"),
+        rij("m2", "2026-08-08T19:00:00Z"),
+        rij("m3", "2026-08-08T19:00:00Z", "g2"),
+        rij("m4", "2026-08-09T10:00:00Z"),
+      ],
+      "Europe/Brussels",
+    );
+    expect(Object.keys(uit).sort()).toEqual(["2026-08-08", "2026-08-09"]);
+    expect(uit["2026-08-08"]).toHaveLength(2);
+    expect(uit["2026-08-08"][0].matchIds).toEqual(["m1", "m2"]);
+    expect(telWedstrijden(uit["2026-08-08"])).toBe(3);
+  });
+
+  it("rekent de dag in clubtijd, niet in UTC", () => {
+    // 22:30 UTC is in Brussel al de volgende dag — dezelfde les als #783.
+    const uit = wedstrijdDagen([rij("m1", "2026-08-08T22:30:00Z")], "Europe/Brussels");
+    expect(Object.keys(uit)).toEqual(["2026-08-09"]);
+  });
+
+  it("laat rijen zonder dag of groep vallen", () => {
+    const uit = wedstrijdDagen(
+      [rij("m1", null), { id: "m2", group_id: null, played_at: "2026-08-08T18:00:00Z" }],
+      "Europe/Brussels",
+    );
+    expect(uit).toEqual({});
+  });
+
+  it("zet de wedstrijden in de naam van de dagknop", () => {
+    // De ruit in de cel is decoratief; wat hij betekent hoort in de naam.
+    expect(dagLabel("2026-08-08", [], true, 3)).toBe(
+      "zaterdag 8 augustus, 3 wedstrijden gespeeld",
+    );
+    expect(dagLabel("2026-08-08", [], true, 0)).toBe(
+      "zaterdag 8 augustus, niets gespeeld",
+    );
+  });
+});
+
+describe("komendeItems en wachtOpJou", () => {
+  const komend = (overrides: Partial<AgendaMarker> = {}) =>
+    ({
+      pollId: "poll-1",
+      optionId: `opt-${overrides.date ?? ""}-${overrides.startTime ?? ""}`,
+      date: "2026-08-13",
+      startTime: "20:00",
+      duration: 90,
+      status: "open",
+      past: false,
+      iVoted: false,
+      myVote: null,
+      groupName: "Vamos!",
+      yesVoterIds: [],
+      ...overrides,
+    }) as AgendaMarker;
+
+  it("zet de komende speeldagen op volgorde en houdt vandaag erbij", () => {
+    const items = komendeItems(
+      [
+        komend({ date: "2026-09-01", pollId: "p3" }),
+        komend({ date: "2026-08-07", pollId: "p1" }),
+        komend({ date: "2026-08-20", pollId: "p2" }),
+        // Geweest: hoort niet in een vooruitblik.
+        komend({ date: "2026-08-05", pollId: "p0", past: true }),
+      ],
+      "2026-08-07",
+    );
+    expect(items.map((i) => i.eerste.date)).toEqual([
+      "2026-08-07",
+      "2026-08-20",
+      "2026-09-01",
+    ]);
+  });
+
+  it("groepeert per maand in de volgorde van de lijst", () => {
+    const groepen = perMaand(
+      komendeItems(
+        [
+          komend({ date: "2026-08-13", pollId: "p1" }),
+          komend({ date: "2026-08-20", pollId: "p2" }),
+          komend({ date: "2026-09-01", pollId: "p3" }),
+        ],
+        "2026-08-01",
+      ),
+    );
+    expect(groepen).toHaveLength(2);
+    expect(groepen[0].maand).toEqual({ jaar: 2026, maand: 8 });
+    expect(groepen[0].items).toHaveLength(2);
+    expect(groepen[1].maand).toEqual({ jaar: 2026, maand: 9 });
+  });
+
+  it("meldt alleen open polls waarop jij nog niets zei", () => {
+    const vragen = wachtOpJou(
+      [
+        // Twee momenten van dezelfde onbeantwoorde poll: één vraag, en de
+        // vroegste dag is waar je heen springt.
+        komend({ pollId: "p1", date: "2026-08-20" }),
+        komend({ pollId: "p1", date: "2026-08-13" }),
+        // Beantwoord (poll-breed), dus geen vraag meer.
+        komend({ pollId: "p2", date: "2026-08-14", iVoted: true }),
+        // Al vastgelegd: daar valt niet meer op te stemmen.
+        komend({ pollId: "p3", date: "2026-08-15", status: "booked" }),
+      ],
+      "2026-08-07",
+    );
+    expect(vragen).toEqual([
+      { pollId: "p1", date: "2026-08-13", groupName: "Vamos!" },
+    ]);
+  });
+});
+
+describe("dagItems", () => {
+  const moment = (pollId: string, startTime: string, extra = {}) =>
+    ({ pollId, startTime, yesVoterIds: [], duration: 90, ...extra }) as never;
+
+  it("bundelt de momenten van dezelfde poll tot één speeldag", () => {
+    const items = dagItems([
+      moment("poll-1", "20:00"),
+      moment("poll-1", "21:30"),
+      moment("poll-2", "10:00"),
+    ]);
+    expect(items).toHaveLength(2);
+    expect(items[0].momenten).toHaveLength(2);
+    expect(items[0].eerste.startTime).toBe("20:00");
+    expect(items[1].eerste.startTime).toBe("10:00");
+  });
+
+  it("noemt de tijden als keuzes", () => {
+    expect(tijdenLabel([moment("poll-1", "20:00")])).toBe("20:00");
+    expect(
+      tijdenLabel([moment("poll-1", "20:00"), moment("poll-1", "21:30")]),
+    ).toBe("20:00 of 21:30");
+    expect(
+      tijdenLabel([
+        moment("poll-1", "18:00"),
+        moment("poll-1", "20:00"),
+        moment("poll-1", "21:30"),
+      ]),
+    ).toBe("18:00, 20:00 of 21:30");
+  });
+
+  it("telt iedereen die op minstens één moment kan, en niemand dubbel", () => {
+    const momenten = [
+      moment("poll-1", "20:00", { yesVoterIds: ["a", "b"] }),
+      moment("poll-1", "21:30", { yesVoterIds: ["b", "c"] }),
+    ];
+    expect(kannersOpDag(momenten)).toEqual(["a", "b", "c"]);
   });
 });
 

@@ -3,13 +3,14 @@
  * hier zelfstandig gedefinieerd: dit blad hoort generiek te blijven en niet
  * terug te grijpen op een feature (zie docs/architecture.md §1).
  */
-export type GlyphStatus = "booked" | "locked" | "open";
+export type GlyphStatus = "booked" | "locked" | "open" | "played";
 
 /**
  * De statusglyph van een speeldag (#1091, hervormd in #1112).
  *
  * Vorm draagt de status, niet kleur (WCAG 1.4.1): volle stip = geboekt, ring =
- * vastgelegd maar nog te boeken, blokje = open poll, gedempte stip = gespeeld.
+ * vastgelegd maar nog te boeken, blokje = open poll, gedempte stip = gespeelde
+ * speeldag, ruit = er zijn wedstrijden gelogd (#1182).
  * De status staat daarnaast voluit in de toegankelijke naam van de dagknop, dus
  * deze glyph is puur decoratief.
  *
