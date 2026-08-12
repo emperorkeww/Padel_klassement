@@ -1,12 +1,17 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { DagKop } from "./DagKop";
 import { DayStats } from "./DayStats";
 import { MakeTeams } from "./MakeTeams";
 import { VolgendeRonde } from "./VolgendeRonde";
 import { RondeBlok } from "./RondeBlok";
 import { ShareEvening } from "./ShareEvening";
+import { SpeeldagVerwijzing } from "./SpeeldagVerwijzing";
 import { VendettaCard } from "./VendettaCard";
 import { LossePartij } from "./LossePartij";
+import {
+  matchesVoorSpeeldag,
+  momentenOpDag,
+} from "@/features/groups/speeldagMatches";
 import type { ZwartePiet } from "@/features/groups/zwartePiet";
 import type { PlayPoll, PollOption } from "@/features/groups/pollsApi";
 import type { Upset } from "@/features/matches/upset";
@@ -41,6 +46,13 @@ import type {
 // verhuisde vroeger van onder de generator naar ín de inklapper "Nog een ronde
 // maken" — een paneel dat het tegenovergestelde belooft van wat je komt doen.
 // Het staat nu vast bovenaan, in beide dagstaten.
+//
+// Sinds #1209 gelden die twee staten alleen nog op een dag zónder vastgelegd
+// moment. Ligt er wel een speeldag, dan beheert /speeldag/:id hem — daar staan
+// dezelfde blokken, maar met het moment als vertrekpunt in plaats van "nu". De
+// tab vat die dag dan samen en wijst ernaar (SpeeldagVerwijzing): één eigenaar
+// per taak, zoals #1121 dat voor het plannen deed. De spontane avond houdt zijn
+// generator, want die heeft geen eigen adres.
 // Puur presentatie: alle data en de reload-cascade komen uit GroupDetail.
 
 interface VandaagTabProps {
@@ -121,6 +133,15 @@ export function VandaagTab({
   // Staat 1: er staat vandaag nog niets klaar, dus teams maken is dé actie.
   const dayStarted = rounds.length > 0;
 
+  // De vastgelegde momenten van vandaag (#1209). Meestal nul (spontane dag) of
+  // één; twee is de ochtend- plus avondsessie van #1146, en die krijgen elk hun
+  // eigen kaart — ze hebben ook elk hun eigen speeldagpagina.
+  const momenten = useMemo(
+    () => momentenOpDag(polls, pollOptions, today),
+    [polls, pollOptions, today],
+  );
+  const heeftSpeeldag = momenten.length > 0;
+
   // Verschijnt zodra er vanavond een uitslag is: poster voor de groepschat.
   const share = (
     <ShareEvening
@@ -179,15 +200,30 @@ export function VandaagTab({
         timezone={timezone}
         dayDone={dayDone}
         share={share}
+        verwijstNaarSpeeldag={heeftSpeeldag}
         onShowStand={onShowStand}
       />
 
+      {/* Er ligt een moment vast: deze avond hoort op /speeldag/:id, want daar
+          rekent de indeling met het geboekte uur en niet met "nu" (#1209). De
+          tab vat hem hier samen en houdt op bij de knop. */}
+      {momenten.map((moment) => (
+        <SpeeldagVerwijzing
+          key={moment.option.id}
+          moment={moment}
+          matches={matchesVoorSpeeldag(matches, moment, momenten)}
+          teams={teams}
+        />
+      ))}
+
       {/* Vaste plek bovenaan (#722), los van de dagstaat: compact genoeg om
-          niets weg te drukken, zichtbaar genoeg om gevonden te worden. */}
-      {losseMatch}
+          niets weg te drukken, zichtbaar genoeg om gevonden te worden. Op een
+          speeldag staat hij op de speeldagpagina, mét het uur van die avond
+          voorgevuld (#1133). */}
+      {!heeftSpeeldag && losseMatch}
 
       {/* Staat 2 en 3: de wedstrijden van vandaag met de uitslagen. */}
-      {dayStarted && (
+      {!heeftSpeeldag && dayStarted && (
         <section className="card">
           <div className="card__head">
             <h2 className="card__title card__title--tight">Wedstrijden</h2>
@@ -227,8 +263,10 @@ export function VandaagTab({
       )}
 
       {/* Staat 1: de teamgenerator is de inhoud van de tab. Zodra de dag
-          loopt verhuist hij naar de sheet achter "+ Volgende ronde". */}
-      {!dayStarted && <MakeTeams {...generatorProps} />}
+          loopt verhuist hij naar de sheet achter "+ Volgende ronde". Alleen op
+          een dag zonder vastgelegd moment: de spontane avond is sinds #1209 de
+          enige die de tab zelf indeelt. */}
+      {!heeftSpeeldag && !dayStarted && <MakeTeams {...generatorProps} />}
 
       {/* Vendetta's horen bij het spelen/de onderlinge duels (#524), niet bij
           de Stand — daar drukten ze de eigenlijke ranglijst weg. */}

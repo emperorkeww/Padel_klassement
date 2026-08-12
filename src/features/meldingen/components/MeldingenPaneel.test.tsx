@@ -134,6 +134,24 @@ describe("<MeldingenPaneel /> (#1090)", () => {
     ).not.toBeInTheDocument();
   });
 
+  // #1217: het moment waarop je denkt "hier wil ik minder van" is precies het
+  // moment waarop je naar je meldingen kijkt.
+  it("wijst naar de meldingsvoorkeuren en sluit daarbij het paneel", async () => {
+    const { onClose } = toon([melding()]);
+    const link = screen.getByRole("link", { name: /meldingsvoorkeuren/i });
+    expect(link).toHaveAttribute("href", "/profiel?tab=privacy");
+    await userEvent.click(link);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("houdt die ingang ook op een leeg paneel", () => {
+    // Juist dan wil je misschien iets áánzetten in plaats van uit.
+    toon([]);
+    expect(
+      screen.getByRole("link", { name: /meldingsvoorkeuren/i }),
+    ).toBeInTheDocument();
+  });
+
   it("markeert ongelezen items ook voor wie geen kleur ziet", () => {
     const { container } = render(
       <MemoryRouter>

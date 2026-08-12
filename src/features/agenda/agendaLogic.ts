@@ -1,5 +1,12 @@
-import { addDays, dayInZone, fromMinutes, toMinutes } from "@/lib/utils/time";
+import {
+  addDays,
+  clubEpoch,
+  dayInZone,
+  fromMinutes,
+  toMinutes,
+} from "@/lib/utils/time";
 import { longDay } from "@/features/groups/planPollHelpers";
+import { hoortBijMoment } from "@/features/groups/speeldagMatches";
 import type {
   PlayPoll,
   PollOption,
@@ -329,11 +336,16 @@ export function volgendeSpeeldagen(
 /* wedstrijden erop meldde doodleuk "er stond geen speeldag op".        */
 /* ------------------------------------------------------------------ */
 
+/** Eén gespeelde wedstrijd: meer heeft de agenda er niet van nodig. Het
+ *  tijdstip is er sinds #1221 bij, om hem aan een speeldagmoment te kunnen
+ *  hangen. */
+export type GespeeldeWedstrijd = { id: string; atMs: number };
+
 /** De wedstrijden van één groep op één kalenderdag. */
 export type WedstrijdDag = {
   date: string;
   groupId: string;
-  matchIds: string[];
+  matches: GespeeldeWedstrijd[];
 };
 
 /**
@@ -354,13 +366,14 @@ export function wedstrijdDagen(
     if (rij.played_at == null || rij.group_id == null) continue;
     const date = dayInZone(rij.played_at, timeZone);
     const sleutel = `${date}|${rij.group_id}`;
+    const match = { id: rij.id, atMs: new Date(rij.played_at).getTime() };
     const bestaand = perDagGroep.get(sleutel);
-    if (bestaand) bestaand.matchIds.push(rij.id);
+    if (bestaand) bestaand.matches.push(match);
     else
       perDagGroep.set(sleutel, {
         date,
         groupId: rij.group_id,
-        matchIds: [rij.id],
+        matches: [match],
       });
   }
 
@@ -371,7 +384,82 @@ export function wedstrijdDagen(
 
 /** Hoeveel wedstrijden er op een dag staan, over de groepen heen. */
 export function telWedstrijden(dagen: WedstrijdDag[]): number {
-  return dagen.reduce((n, d) => n + d.matchIds.length, 0);
+  return dagen.reduce((n, d) => n + d.matches.length, 0);
+}
+
+/* ------------------------------------------------------------------ */
+/* Wat bij een speeldag hoort, en wat los is (#1221).                  */
+/*                                                                     */
+/* Tot nu toe stond een gespeelde avond twee keer in de agenda: als     */
+/* speeldagkaart én als rij "6 wedstrijden". Eén avond, twee            */
+/* registraties — en de telling in de dagkop was het met geen van       */
+/* beide eens.                                                          */
+/* ------------------------------------------------------------------ */
+
+export type WedstrijdIndeling = {
+  /** Aantal gespeelde wedstrijden per poll — de teller op de speeldagkaart. */
+  perPoll: Record<string, number>;
+  /** Wat bij geen enkele speeldag hoort: losse partijen, per dag. */
+  losPerDag: Record<string, WedstrijdDag[]>;
+};
+
+/**
+ * Verdeelt de gespeelde wedstrijden over de speeldagen die er die dag lagen.
+ *
+ * Welke wedstrijd bij welk moment hoort is niet aan deze functie: dat is
+ * `hoortBijMoment` uit speeldagMatches, dezelfde regel die de speeldagpagina
+ * sinds #1133/#1146 gebruikt. Een match heeft geen `poll_id` — die koppeling
+ * bestaat niet in het datamodel — dus als de twee pagina's het verschillend
+ * afleiden, spreken ze elkaar tegen.
+ *
+ * Alleen een vastgelegde of geboekte speeldag telt als speeldag. Een open poll
+ * is een vraag, geen avond; wedstrijden op zo'n dag zijn los gelogd.
+ *
+ * `hoortBijMoment` is voor twee momenten tegelijk waar als een wedstrijd er
+ * precies tussenin ligt. Op de speeldagpagina mag hij dan twee keer verschijnen;
+ * in een telling niet, dus hier wint het vroegste moment.
+ */
+export function verdeelWedstrijden(
+  perDag: Record<string, AgendaMarker[]>,
+  wedstrijdenPerDag: Record<string, WedstrijdDag[]>,
+): WedstrijdIndeling {
+  const perPoll: Record<string, number> = {};
+  const losPerDag: Record<string, WedstrijdDag[]> = {};
+
+  for (const [datum, dagen] of Object.entries(wedstrijdenPerDag)) {
+    const markers = perDag[datum] ?? [];
+    for (const dag of dagen) {
+      // Per poll één moment: een vastgelegde speeldag levert er precies één,
+      // en twee sessies op één dag zijn twee polls.
+      const momenten = markers
+        .filter(
+          (m) =>
+            m.groupId === dag.groupId &&
+            (m.status === "locked" || m.status === "booked"),
+        )
+        .map((m) => ({
+          pollId: m.pollId,
+          startMs: clubEpoch(m.date, m.startTime, m.clubTimezone),
+        }))
+        .sort((a, b) => a.startMs - b.startMs);
+
+      const los: GespeeldeWedstrijd[] = [];
+      for (const match of dag.matches) {
+        const bij = momenten.find((moment) =>
+          hoortBijMoment(
+            match.atMs,
+            moment.startMs,
+            momenten.filter((a) => a !== moment).map((a) => a.startMs),
+          ),
+        );
+        if (bij) perPoll[bij.pollId] = (perPoll[bij.pollId] ?? 0) + 1;
+        else los.push(match);
+      }
+      if (los.length > 0) (losPerDag[datum] ??= []).push({ ...dag, matches: los });
+    }
+  }
+
+  return { perPoll, losPerDag };
 }
 
 /**

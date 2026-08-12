@@ -32,6 +32,7 @@ export function SpeeldagKaart({
   item,
   leden,
   profielen,
+  wedstrijden = 0,
   metDag = false,
   onOpen,
 }: {
@@ -39,6 +40,9 @@ export function SpeeldagKaart({
   /** Aantal leden van de groep — de noemer van "2 van 4 kunnen". */
   leden: number;
   profielen: Record<string, Profile>;
+  /** Hoeveel er op deze speeldag gespeeld is (#1221). Stond tot dan als eigen
+   *  rij naast deze kaart, over dezelfde avond. */
+  wedstrijden?: number;
   /** Zet de dag voor de tijd ("za 16 aug · 20:00"). In het dagpaneel weet je
    *  welke dag het is; in een lijst over meerdere weken niet. */
   metDag?: boolean;
@@ -74,8 +78,22 @@ export function SpeeldagKaart({
           {gelijkeDuur && (
             <span className="speeldag__duur">{duurLabel(marker.duration)}</span>
           )}
+          {/* De chip vertelt hoeveel er gespeeld is zodra dat er is (#1221);
+              tot dan is dat de status zelf. Het statuswoord mag daarbij niet
+              uit de naam van de kaart verdwijnen — de vormtaal van dit blad
+              draagt de status nergens in kleur alleen (WCAG 1.4.1) — dus het
+              blijft er onhoorbaar-zichtbaar bij staan. */}
           <span className={`speeldag__chip speeldag__chip--${status}`}>
-            {statusChip(marker.status, marker.past)}
+            {wedstrijden > 0 ? (
+              <>
+                <span className="sr-only">
+                  {statusChip(marker.status, marker.past)},{" "}
+                </span>
+                {wedstrijden} {wedstrijden === 1 ? "wedstrijd" : "wedstrijden"}
+              </>
+            ) : (
+              statusChip(marker.status, marker.past)
+            )}
           </span>
         </span>
         <span className="speeldag__titel">{marker.groupName}</span>

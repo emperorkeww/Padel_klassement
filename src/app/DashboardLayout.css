@@ -419,6 +419,11 @@
     width: 24px;
     height: 24px;
   }
+  /* De stip hangt aan het icoon, niet aan de hele tab: hij hoort bij het merk
+     van dat tabblad en niet ergens los in de balk (#1214). */
+  .tabbar__icon {
+    position: relative;
+  }
   .tabbar__label {
     /* 11px i.p.v. 10px voor leesbaarheid (#374). Op ≤359px terug naar 10px:
        daar kapt "Klassement" anders af; ellipsis blijft het vangnet. */
@@ -554,4 +559,34 @@
   to {
     background-position: -50% 0;
   }
+}
+
+/* ---------- Attentiestip (#1214) ---------- */
+
+/* Eén korrel: er wácht iets, zonder te zeggen hoeveel — de bel draagt de
+   getelde variant. De betekenis zit in de toegankelijke naam van de link
+   (#924); dit vlekje is de zichtbare helft van hetzelfde signaal.
+
+   Dezelfde kleur als de teller van de bel (--accent-strong), met een ring in
+   de kleur van de balk eronder zodat hij ook op een icoonlijn leesbaar blijft
+   — die ring is vorm, niet kleur, en werkt dus ook op het glas. */
+.nav-stip {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent-strong);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* In de zijbalk staat hij achteraan de rij, op de plek van de teller. */
+.sidebar__link .nav-stip {
+  margin-left: auto;
+  flex: none;
+}
+
+/* Op de onderbalk rechtsboven het icoon, zoals een badge op een app-icoon. */
+.tabbar__icon .nav-stip {
+  position: absolute;
+  top: -1px;
+  right: 2px;
 }

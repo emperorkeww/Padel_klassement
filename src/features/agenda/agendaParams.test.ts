@@ -21,6 +21,7 @@ const stand = (o: Partial<AgendaStand> = {}): AgendaStand => ({
   dag: VANDAAG,
   open: null,
   weergave: "maand",
+  plan: false,
   ...o,
 });
 
@@ -74,6 +75,7 @@ describe("agendaParams", () => {
       maand: { jaar: 2026, maand: 8 },
       open: "2026-08-13",
       weergave: "lijst",
+      plan: false,
     });
   });
 
@@ -86,6 +88,7 @@ describe("agendaParams", () => {
       maand: { jaar: 2026, maand: 8 },
       open: null,
       weergave: "maand",
+      plan: false,
     });
   });
 
@@ -103,5 +106,17 @@ describe("agendaParams", () => {
     expect(schrijf(stand({ dag: "2026-08-13" }), "utm=push")).toBe(
       "utm=push&dag=2026-08-13",
     );
+  });
+  // #1213: de instap vanaf Banen. Eén sleutel erbij, met dezelfde afspraak als
+  // de rest — hij staat er alleen in als hij aanstaat.
+  it("leest en schrijft de plan-instap", () => {
+    expect(paramsNaarStand(params("dag=2026-08-14&plan=1"), VANDAAG)).toMatchObject({
+      dag: "2026-08-14",
+      plan: true,
+    });
+    expect(paramsNaarStand(params(""), VANDAAG).plan).toBe(false);
+    expect(schrijf(stand({ plan: true }))).toBe("plan=1");
+    // En hij wist zichzelf zodra de agenda hem verwerkt heeft.
+    expect(schrijf(stand({ plan: false }), "plan=1")).toBe("");
   });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
@@ -28,6 +28,7 @@ import {
   schuifMaand,
   statusChip,
   telInMaand,
+  verdeelWedstrijden,
   volgendeSpeeldagen,
   wachtOpJou,
   wedstrijdDagen,
@@ -110,6 +111,17 @@ export function Agenda() {
   // linken of op terug te komen.
   const [aboOpen, setAboOpen] = useState(false);
 
+  // Instap vanaf Banen (#1213): "?dag=…&plan=1" opent het plan-sheet meteen op
+  // die dag. Eén keer lezen en dan de vlag wissen, zoals "?log=1" op het
+  // matchoverzicht — anders opent hij opnieuw bij elke refresh en bij het
+  // sluiten van het sheet. Een dag die geweest is valt niet te plannen; die
+  // laat gewoon de agenda zien.
+  useEffect(() => {
+    if (!stand.plan) return;
+    if (stand.dag >= vandaag) setPlanDag(stand.dag);
+    zet({ plan: false });
+  }, [stand.plan, stand.dag, vandaag, zet]);
+
   const groepen = useAsync(getMyGroups, []);
   const profielen = useAsync(getProfilesMap, []);
   const lijst = useMemo(() => groepen.data ?? [], [groepen.data]);
@@ -188,6 +200,13 @@ export function Agenda() {
     [alleMarkers, groepFilter],
   );
   const perDag = useMemo(() => markersByDay(markers), [markers]);
+  // Wat er gespeeld is hoort bij de speeldag waarop het gespeeld is (#1221).
+  // Alleen wat bij geen enkele speeldag hoort — los gelogd, zonder poll — blijft
+  // een eigen rij; de rest is een teller op de speeldagkaart.
+  const indeling = useMemo(
+    () => verdeelWedstrijden(perDag, wedstrijdenPerDag),
+    [perDag, wedstrijdenPerDag],
+  );
   // Dezelfde bewerking op het vooruitblik-venster: dat voedt de lijst, de
   // actiestrook, én het dag-sheet als je vanuit de lijst iets opent.
   const lijstMarkers = useMemo(
@@ -277,12 +296,14 @@ export function Agenda() {
     return (["booked", "locked", "open"] as const).filter((s) => aanwezig.has(s));
   }, [markers, raster.from, raster.to]);
 
+  // De ruit staat sinds #1221 alleen nog voor losse partijen: wat bij een
+  // speeldag hoort draagt de stip van die speeldag al.
   const wedstrijdenInBeeld = useMemo(
     () =>
-      Object.keys(wedstrijdenPerDag).some(
+      Object.keys(indeling.losPerDag).some(
         (d) => d >= raster.from && d <= raster.to,
       ),
-    [wedstrijdenPerDag, raster.from, raster.to],
+    [indeling.losPerDag, raster.from, raster.to],
   );
 
   /**
@@ -531,6 +552,7 @@ export function Agenda() {
                   weeks={weeks}
                   perDag={perDag}
                   wedstrijdenPerDag={wedstrijdenPerDag}
+                  losPerDag={indeling.losPerDag}
                   bezig={verversen}
                   vandaag={vandaag}
                   gekozenDag={gekozenDag}
@@ -567,7 +589,8 @@ export function Agenda() {
                   datum={gekozenDag}
                   vandaag={vandaag}
                   markers={perDag[gekozenDag] ?? []}
-                  wedstrijden={wedstrijdenPerDag[gekozenDag] ?? []}
+                  wedstrijden={indeling.losPerDag[gekozenDag] ?? []}
+                  wedstrijdenPerPoll={indeling.perPoll}
                   groepNamen={groepNamen}
                   volgende={volgende}
                   ledenPerGroep={ledenPerGroep}

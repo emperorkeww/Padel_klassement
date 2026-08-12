@@ -297,6 +297,22 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
     );
   });
 
+  // #1213: de terugweg vanaf Banen. Daar staat per dag "Plan een speeldag";
+  // die link landt hier en opent meteen dezelfde keten als een lege dag.
+  it("opent het plan-sheet uit een ?plan=1-link", async () => {
+    toon("/agenda?dag=2026-08-20&plan=1");
+    expect(await screen.findByText("Plan een speeldag")).toBeInTheDocument();
+    expect(
+      screen.getByText(/donderdag 20 augustus/i, { selector: ".dagsheet__datum" }),
+    ).toBeInTheDocument();
+  });
+
+  it("plant niet op een dag die geweest is", async () => {
+    toon("/agenda?dag=2026-08-01&plan=1");
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.queryByText("Plan een speeldag")).not.toBeInTheDocument();
+  });
+
   it("laat het sheet weer los zonder de dag kwijt te raken", async () => {
     // Openen duwt een history-entry, sluiten gaat er weer vanaf. Wat blijft
     // staan is de dag zelf — je was daar aan het kijken.

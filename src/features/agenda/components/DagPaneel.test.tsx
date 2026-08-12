@@ -36,6 +36,10 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
   };
 }
 
+/** Losse partijen: het tijdstip doet er in dit paneel niet toe — die verdeling
+ *  is al gemaakt voordat DagPaneel iets te zien krijgt (#1221). */
+const wed = (...ids: string[]) => ids.map((id) => ({ id, atMs: 0 }));
+
 function toon(props: Partial<Parameters<typeof DagPaneel>[0]> = {}) {
   const onOpen = vi.fn();
   const onPlan = vi.fn();
@@ -161,7 +165,7 @@ describe("<DagPaneel />", () => {
       datum: "2026-08-01",
       onPlan: undefined,
       wedstrijden: [
-        { date: "2026-08-01", groupId: "g1", matchIds: ["m1", "m2", "m3"] },
+        { date: "2026-08-01", groupId: "g1", matches: wed("m1", "m2", "m3") },
       ],
       groepNamen: { g1: "Vrijdagavond Padel" },
     });
@@ -180,12 +184,63 @@ describe("<DagPaneel />", () => {
       markers: [],
       datum: "2026-08-01",
       onPlan: undefined,
-      wedstrijden: [{ date: "2026-08-01", groupId: "g1", matchIds: ["m1"] }],
+      wedstrijden: [{ date: "2026-08-01", groupId: "g1", matches: wed("m1") }],
     });
     expect(screen.getByRole("link", { name: /1 wedstrijd/ })).toHaveAttribute(
       "href",
       "/matches/m1",
     );
+  });
+
+  it("geeft de gespeeld-rij dezelfde schil als een speeldagkaart (#1207)", () => {
+    // De rij had een eigen, vlakkere variant. Naast de kaarten eronder las dat
+    // als iets uit een andere app, en de Gespeeld-chip verdween erin: die staat
+    // zelf op --surface-2, net als het vlak waar hij op lag.
+    toon({
+      markers: [],
+      datum: "2026-08-01",
+      onPlan: undefined,
+      wedstrijden: [{ date: "2026-08-01", groupId: "g1", matches: wed("m1") }],
+    });
+    const rij = screen.getByRole("link", { name: /1 wedstrijd/ });
+    expect(rij).toHaveClass("speeldag");
+    expect(rij.className).not.toMatch(/speeldag--/);
+    // Het staafje draagt het statusverschil, zoals bij elke andere status.
+    expect(rij.querySelector(".speeldag__rail--past")).toBeInTheDocument();
+  });
+
+  it("zet de wedstrijden van een speeldag op die kaart (#1221)", () => {
+    // Eén avond hoort één kaart te zijn. De rij ernaast ging over dezelfde
+    // wedstrijden, en dan stond dezelfde avond er twee keer.
+    toon({
+      markers: [marker({ past: true })],
+      wedstrijden: [],
+      wedstrijdenPerPoll: { "poll-1": 6 },
+    });
+    expect(screen.getByText("6 wedstrijden")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /wedstrijden/ })).toBeNull();
+    // Het statuswoord blijft in de naam van de kaart staan, ook al staat er nu
+    // een telling in de chip (WCAG 1.4.1).
+    expect(
+      screen.getByRole("button", { name: /Gespeeld,\s*6 wedstrijden/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("telt losse partijen mee in de dagkop (#1221)", () => {
+    // Stond op "1 activiteit" boven een speeldag én een losse rij.
+    toon({
+      markers: [marker({ past: true })],
+      wedstrijden: [
+        { date: "2026-08-08", groupId: "g2", matches: wed("m1") },
+      ],
+      groepNamen: { g2: "Kantoorpadel" },
+    });
+    expect(screen.getByText("2 activiteiten")).toBeInTheDocument();
+  });
+
+  it("houdt de statuschip zonder wedstrijden zoals hij was", () => {
+    toon({ markers: [marker({ past: true })] });
+    expect(screen.getByText("Gespeeld")).toBeInTheDocument();
   });
 
   it("biedt op een lege dag die geweest is niets aan", () => {
@@ -196,5 +251,20 @@ describe("<DagPaneel />", () => {
       screen.queryByRole("button", { name: "Speeldag plannen" }),
     ).not.toBeInTheDocument();
     expect(screen.getByText(/deze dag is geweest/i)).toBeInTheDocument();
+  });
+  // #1213: Banen leest ?datum= al uit de URL, maar niets in de plan-flow wees
+  // erheen — "is er die dag een baan vrij" moest je elders opnieuw intikken.
+  it("wijst naar de vrije banen van deze dag", () => {
+    toon();
+    expect(
+      screen.getByRole("link", { name: /vrije banen op deze dag/i }),
+    ).toHaveAttribute("href", "/banen?datum=2026-08-08");
+  });
+
+  it("laat die wegwijzer weg op een dag die geweest is", () => {
+    toon({ datum: "2026-08-01", markers: [], onPlan: undefined });
+    expect(
+      screen.queryByRole("link", { name: /vrije banen/i }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -302,6 +302,14 @@
   font-size: var(--fs-sm);
   color: var(--ink-soft);
 }
+/* De invulknop staat ónder de paring (#1210) en niet in de kop: hij is de reden
+   dat deze kaart bestaat, en in de kop zou hij naast de secundaire link belanden
+   die naar het matchdetail wijst. */
+.next-match__acties {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--sp-3);
+}
 /* Namen wrappen hier in plaats van af te kappen: op deze kaart zijn ze de
    inhoud, niet een detail bij een uitslag (#940). */
 .next-match .match-card__names span {

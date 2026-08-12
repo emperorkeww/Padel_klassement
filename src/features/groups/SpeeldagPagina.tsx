@@ -284,12 +284,28 @@ export function SpeeldagPagina() {
           <button className="btn btn--sm" onClick={terug}>
             ← Terug
           </button>
-          {/* De groepsnaam is hier geen sier: op de groepspagina wist je in
-              welke groep je zat, op een gedeelde link niet. Meteen ook de
-              weg naar die groep. */}
-          <Link className="btn btn--sm" to={`/groepen/${groupId}`}>
-            {groep.name}
-          </Link>
+          <div className="btn-row">
+            {/* Banen is volledig adresseerbaar (?datum=, ?club=), maar niets in
+                de plan-flow gebruikte dat (#1213). De dag staat hier al vast en
+                de poll draagt zijn eigen club (#322-snapshot), dus die twee
+                gaan gewoon mee. Bewust een link en geen live baancheck: de
+                keuze van #1196 om beschikbaarheid niet in de kaart te trekken
+                blijft staan. */}
+            {moment && (
+              <Link
+                className="btn btn--sm"
+                to={`/banen?datum=${moment.dag}&club=${encodeURIComponent(speeldag.club_id)}`}
+              >
+                Vrije banen →
+              </Link>
+            )}
+            {/* De groepsnaam is hier geen sier: op de groepspagina wist je in
+                welke groep je zat, op een gedeelde link niet. Meteen ook de
+                weg naar die groep. */}
+            <Link className="btn btn--sm" to={`/groepen/${groupId}`}>
+              {groep.name}
+            </Link>
+          </div>
         </div>
       </header>
 

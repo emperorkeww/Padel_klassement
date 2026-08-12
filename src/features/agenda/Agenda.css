@@ -450,6 +450,30 @@
   color: var(--ink-soft);
 }
 
+/* Telling en de banen-link staan onder elkaar rechts in de kop (#1213): naast
+   elkaar duwen ze op telefoonbreedte de datum weg, en dat is de kop van dit
+   paneel. */
+.dagpaneel__kop-rechts {
+  display: grid;
+  justify-items: end;
+  gap: var(--sp-1);
+  flex: none;
+}
+
+/* Een wegwijzer, geen actie: gedempt als de telling erboven, met een vaste
+   onderstreping zodat hij toch als link leest. Bewust niet in --accent zoals
+   .profile-link: dat paar haalt op klein zetsel geen 4,5:1 op wit. */
+.dagpaneel__banen {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.dagpaneel__banen:hover {
+  color: var(--ink);
+}
+
 .dagpaneel__lijst {
   display: grid;
   gap: var(--sp-2);
@@ -558,6 +582,13 @@
 
 /* ---- Speeldagkaart ---- */
 
+/* Kleur en onderstreping staan hier omdat deze schil ook een <Link> kan zijn:
+   de gespeelde-wedstrijdrij is er een (#1182). Het vangnet in index.css slaat
+   over zodra een <a> een klasse draagt — die stuurt zichzelf — en dat deed deze
+   niet, dus stond er paars onderstreepte browsertekst midden in de agenda
+   (#1207). Op .speeldag en niet op die ene variant, zodat elke volgende
+   link-variant meteen goed staat; hetzelfde recept als .match-card en
+   .groep-kaart. */
 .speeldag {
   display: flex;
   gap: 13px;
@@ -567,7 +598,9 @@
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
+  color: inherit;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   transition: box-shadow 120ms ease;
 }
@@ -598,17 +631,16 @@
 }
 
 /* Gespeelde wedstrijden (#1182). Het staafje is dat van een dag die geweest is;
-   de rij zelf is een link naar de wedstrijd of naar het overzicht van de groep,
-   en hoeft dus niet als kaart om aandacht te vragen. */
+   de rij zelf is een link naar de wedstrijd of naar het overzicht van de groep.
+
+   Die rij had een eigen, vlakkere vorm — geen schaduw en een --surface-2-vlak —
+   om minder aandacht te vragen dan een speeldagkaart. Dat pakte twee kanten
+   verkeerd uit (#1207): de Gespeeld-chip staat zelf óók op --surface-2 en was
+   daarmee onzichtbaar, en naast de kaarten eronder las de rij als iets uit een
+   andere app. Hij deelt nu gewoon de vorm van .speeldag; het staafje draagt het
+   verschil, zoals bij elke andere status. */
 .speeldag__rail--past {
   background: var(--line-strong);
-}
-.speeldag--gespeeld {
-  box-shadow: none;
-  background: var(--surface-2);
-}
-.speeldag--gespeeld:hover {
-  box-shadow: var(--shadow-sm);
 }
 
 .speeldag__body {
@@ -812,29 +844,34 @@
 .dagsheet__speeldag {
   display: grid;
   gap: var(--sp-3);
-  padding-top: var(--sp-3);
-  border-top: 1px solid var(--divider);
-}
-.dagsheet__speeldag:first-of-type {
-  padding-top: 0;
-  border-top: 0;
 }
 
 /* Twee groepen die los van elkaar op dezelfde dag plannen (#1180): met
    stemrijen, tegels en twee knoppen per blok liepen ze met alleen een streepje
-   ertussen in elkaar over. Elk blok krijgt dan een eigen vlak — dezelfde vorm
-   als een tegel. Bij één speeldag blijft het rustig en randloos: daar valt
-   niets te scheiden. */
+   ertussen in elkaar over. Elk blok krijgt dan een eigen vlak; bij één speeldag
+   blijft het rustig en randloos, want daar valt niets te scheiden.
+
+   Dat vlak was een dekkende --surface, en dit sheet is glas (#1207): twee witte
+   kaarten drukten het materiaal dood, terwijl dezelfde dag met één poll gewoon
+   als glas las. Rand en vulling komen daarom van .glas — hetzelfde recept als
+   de keuzebanen in het match-sheet, waar een dekkende --surface-2 als een
+   grijze plaat las (#1083). Alleen padding en afronding blijven hier staan; een
+   vormklasse zou --radius-lg opdringen en dit blok is een tegel, geen paneel.
+
+   Twee bijstellingen, allebei omdat dit glas ín glas ligt en niet op de pagina:
+
+   - `subtiel` brengt van zichzelf méér materiaal mee dan het sheet eronder
+     (0,90 tegen 0,69), en dan is het blok gewoon weer een witte kaart — nu met
+     een zachte rand. Het hoort een dichter stuk van dezelfde plaat te zijn, dus
+     staat de dekking hier lager dan de basis. Mag op het element: dat is wat
+     .sheet.glas ook doet, en de variant bepaalt alleen de verhoudingen.
+   - Het randlicht van .glas is wit, en wit op het lichte thema is geen rand.
+     Dezelfde terugval als de wizard-voet: de scheiding komt van --glas-diep. */
 .dagsheet--meerdere .dagsheet__speeldag {
   padding: var(--sp-3);
-  border: 1px solid var(--line);
-  border-top: 1px solid var(--line);
   border-radius: 12px;
-  background: var(--surface);
-}
-.dagsheet--meerdere .dagsheet__speeldag:first-of-type {
-  padding: var(--sp-3);
-  border-top: 1px solid var(--line);
+  --glas-dekking: calc(var(--glas-dekking-basis) * 0.42);
+  border-color: rgb(var(--glas-diep) / 0.08);
 }
 
 .dagsheet__kop {

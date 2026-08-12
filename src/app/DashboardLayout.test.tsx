@@ -42,6 +42,8 @@ vi.mock("@/features/meldingen/api", async (importOriginal) => ({
 }));
 
 import DashboardLayout from "@/app/DashboardLayout";
+import { invalidateAll } from "@/lib/supabase/queryCache";
+import { PLAY_POLL_VOTES, TABLES } from "@/test/fixtures";
 import { supabase } from "@/lib/supabase/client";
 import { getRatingHistory, getPlayerRatings } from "@/features/standings/ratingsApi";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
@@ -89,6 +91,9 @@ function renderShell(pad = "/") {
               <Route path="/" element={<div>pagina-inhoud</div>} />
               <Route path="/groepen/:id" element={<div>pagina-inhoud</div>} />
               <Route path="/matches/:id" element={<div>pagina-inhoud</div>} />
+              {/* #1211: de landing van "Ik" en de instellingen ernaast. */}
+              <Route path="/spelers/:id" element={<div>pagina-inhoud</div>} />
+              <Route path="/profiel" element={<div>pagina-inhoud</div>} />
             </Route>
           </Routes>
         </ToastProvider>
@@ -162,6 +167,39 @@ describe("<DashboardLayout />", () => {
     await screen.findByText("pagina-inhoud");
     for (const link of screen.getAllByRole("link", { name: /^spelen$/i })) {
       expect(link).toHaveAttribute("aria-current", "page");
+    }
+  });
+
+  // #1211: "Ik" beloofde identiteit en leverde een wachtwoordveld. De tab en
+  // de avatars landen nu op de eigen spelerskaart; de instellingen blijven
+  // dezelfde sectie, maar zijn niet meer de landing.
+  it("laat 'Ik' en de avatars op het eigen spelersprofiel landen", async () => {
+    renderShell();
+    await screen.findByText("pagina-inhoud");
+
+    for (const link of screen.getAllByRole("link", { name: /^ik$/i })) {
+      expect(link).toHaveAttribute("href", "/spelers/p1");
+    }
+    expect(
+      screen.getByRole("link", { name: /naar mijn profiel/i }),
+    ).toHaveAttribute("href", "/spelers/p1");
+    // De zijbalkvoet (naam + e-mail) wijst naar dezelfde plek.
+    expect(
+      screen.getByText("alice@example.com").closest("a"),
+    ).toHaveAttribute("href", "/spelers/p1");
+  });
+
+  it("houdt 'Ik' actief op de instellingenpagina", async () => {
+    renderShell("/profiel");
+    for (const link of await screen.findAllByRole("link", { name: /^ik$/i })) {
+      expect(link).toHaveAttribute("aria-current", "page");
+    }
+  });
+
+  it("markeert 'Ik' niet op het profiel van iemand anders", async () => {
+    renderShell("/spelers/p2");
+    for (const link of await screen.findAllByRole("link", { name: /^ik$/i })) {
+      expect(link).not.toHaveAttribute("aria-current");
     }
   });
 
@@ -522,5 +560,73 @@ describe("zeldzame badge (#615)", () => {
     expect(
       screen.getByRole("button", { name: "Open het pack" }),
     ).toBeInTheDocument();
+  });
+});
+
+describe("attentiestippen op de balk (#1214)", () => {
+  // De bel telde meldingen, de balk zelf was stil: wie de app opende op
+  // Klassement zag niet dat er een stem of een uitslag op hem wachtte.
+
+  it("houdt de balk stil als er niets op je wacht", async () => {
+    renderShell();
+    await screen.findByText("pagina-inhoud");
+    // Alice stemde al op de enige lopende poll en heeft geen openstaande
+    // uitslag (getPlayerMatches is hier leeg).
+    for (const naam of [/^agenda$/i, /^spelen$/i]) {
+      for (const link of screen.getAllByRole("link", { name: naam })) {
+        expect(link.querySelector(".nav-stip")).toBeNull();
+      }
+    }
+  });
+
+  it("zet een stip op Agenda zolang jouw stem uitstaat", async () => {
+    TABLES.play_poll_votes = PLAY_POLL_VOTES.filter((v) => v.player_id !== "p1");
+    invalidateAll();
+    try {
+      renderShell();
+      // De naam draagt de betekenis; de stip is er de zichtbare helft van.
+      const links = await screen.findAllByRole("link", {
+        name: /agenda — er wacht een speeldag op je/i,
+      });
+      expect(links.length).toBeGreaterThan(0);
+      expect(links[0].querySelector(".nav-stip")).not.toBeNull();
+      // Spelen blijft stil: dat is een ander signaal.
+      expect(
+        screen.queryAllByRole("link", { name: /spelen —/i }),
+      ).toHaveLength(0);
+    } finally {
+      TABLES.play_poll_votes = PLAY_POLL_VOTES;
+      invalidateAll();
+    }
+  });
+
+  it("zet een stip op Spelen zodra een uitslag op je wacht", async () => {
+    vi.mocked(getPlayerMatches).mockResolvedValue([
+      {
+        id: "m-oud",
+        team_a_id: "t-ab",
+        team_b_id: "t-cd",
+        status: "scheduled",
+        winner_team_id: null,
+        score_a: null,
+        score_b: null,
+        played_at: "2020-01-01T19:00:00.000Z",
+        created_at: "2020-01-01T10:00:00.000Z",
+        created_by: "p1",
+        group_id: "g1",
+        round_number: 1,
+        format: "2v2",
+      } as unknown as Match,
+    ]);
+    invalidateAll();
+    try {
+      renderShell();
+      const links = await screen.findAllByRole("link", {
+        name: /spelen — er wacht een uitslag op je/i,
+      });
+      expect(links[0].querySelector(".nav-stip")).not.toBeNull();
+    } finally {
+      invalidateAll();
+    }
   });
 });

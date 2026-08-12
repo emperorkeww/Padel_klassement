@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { deriveEvening, heroCrestTekst, pickPollBanner } from "./dashboardHelpers";
+import {
+  deriveEvening,
+  heroCrestTekst,
+  openstaandeUitslagen,
+  pickPollBanner,
+  wachtOpUitslag,
+} from "./dashboardHelpers";
 import { clubEpoch, dateInZone } from "@/lib/utils/time";
 import type { GroupSummary } from "@/features/groups/api";
 import type { PlayPoll, PollOption, PollVote } from "@/features/groups/pollsApi";
@@ -319,5 +325,88 @@ describe("heroCrestTekst (#760)", () => {
   it("laat geen lege chip achter bij een regel zonder ruimte", () => {
     expect(heroCrestTekst("🏆")).toEqual({ emoji: "🏆", label: "🏆" });
     expect(heroCrestTekst("")).toEqual({ emoji: "", label: "" });
+  });
+});
+
+describe("openstaandeUitslagen (#1210)", () => {
+  const NU = Date.parse("2026-07-08T20:00:00.000Z");
+  const m = (over: Partial<Match>): Match =>
+    ({
+      id: "m",
+      team_a_id: "t-ab",
+      team_b_id: "t-cd",
+      status: "scheduled",
+      winner_team_id: null,
+      score_a: null,
+      score_b: null,
+      played_at: null,
+      created_at: "2026-07-01T10:00:00.000Z",
+      created_by: "p1",
+      group_id: "g1",
+      round_number: null,
+      format: "2v2",
+      ...over,
+    }) as Match;
+
+  it("zet de langst wachtende uitslag vooraan", () => {
+    const gisteren = m({ id: "gisteren", played_at: "2026-07-07T18:00:00.000Z" });
+    const vanochtend = m({ id: "vanochtend", played_at: "2026-07-08T09:00:00.000Z" });
+    const morgen = m({ id: "morgen", played_at: "2026-07-09T19:00:00.000Z" });
+
+    expect(
+      openstaandeUitslagen([morgen, vanochtend, gisteren], NU).map((x) => x.id),
+    ).toEqual(["gisteren", "vanochtend", "morgen"]);
+  });
+
+  it("houdt komende matches op rondenummer, achter de wachtende", () => {
+    const ronde1 = m({ id: "r1", round_number: 1 });
+    const ronde2 = m({ id: "r2", round_number: 2 });
+    const verstreken = m({ id: "oud", played_at: "2026-07-06T18:00:00.000Z" });
+
+    expect(
+      openstaandeUitslagen([ronde2, ronde1, verstreken], NU).map((x) => x.id),
+    ).toEqual(["oud", "r1", "r2"]);
+  });
+
+  it("laat afgeronde matches weg", () => {
+    const klaar = m({ id: "klaar", status: "completed", score_a: 6, score_b: 3 });
+    expect(openstaandeUitslagen([klaar], NU)).toEqual([]);
+  });
+});
+
+describe("wachtOpUitslag (#1210)", () => {
+  const NU = Date.parse("2026-07-08T20:00:00.000Z");
+  const basis = {
+    id: "m",
+    team_a_id: "t-ab",
+    team_b_id: "t-cd",
+    status: "scheduled",
+    winner_team_id: null,
+    score_a: null,
+    score_b: null,
+    created_at: "2026-07-01T10:00:00.000Z",
+    created_by: "p1",
+    group_id: "g1",
+    round_number: 1,
+    format: "2v2",
+  };
+
+  it("wacht zodra het uur voorbij is", () => {
+    expect(
+      wachtOpUitslag(
+        { ...basis, played_at: "2026-07-08T19:00:00.000Z" } as Match,
+        NU,
+      ),
+    ).toBe(true);
+  });
+
+  it("wacht niet op een match die nog moet komen of geen uur heeft", () => {
+    expect(
+      wachtOpUitslag(
+        { ...basis, played_at: "2026-07-09T19:00:00.000Z" } as Match,
+        NU,
+      ),
+    ).toBe(false);
+    expect(wachtOpUitslag({ ...basis, played_at: null } as Match, NU)).toBe(false);
   });
 });

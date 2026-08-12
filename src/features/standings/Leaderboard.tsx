@@ -106,21 +106,27 @@ import { RaceLeaderboard } from "./components/RaceLeaderboard";
 import type { Match, PlayerStanding, Profile, RatingPoint, TeamStanding } from "@/types";
 import "./Leaderboard.css";
 
-type Tab = "player" | "team" | "divisies" | "kaarten";
-type RankingView = "table" | "race";
+type Tab = "player" | "team" | "kaarten";
+/** Drie gezichten van dezelfde spelerslijst (#1215). */
+type RankingView = "table" | "race" | "divisies";
 
 // Eén gedeelde tabbalk voor de hele app (#910): PageTabs levert tablist-
 // semantiek en pijltjesnavigatie die de losse buttons hier niet hadden.
 const KLASSEMENT_TABS: { id: Tab; label: string }[] = [
   { id: "player", label: "Spelers" },
   { id: "team", label: "Teams" },
-  { id: "divisies", label: "Divisies" },
   { id: "kaarten", label: "🃏 Kaarten" },
 ];
 
+// Divisies stond hierboven als vierde tab, naast Spelers — terwijl het dezelfde
+// spelerslijst is, gegroepeerd op tier. Tabel en Race, óók presentaties van die
+// lijst, zaten een niveau lager. Twee gelijksoortige keuzes op twee niveaus:
+// sinds #1215 staan ze naast elkaar (les van #1112). Kaarten blijft wél een
+// tab — die wand heeft een eigen doel en eigen bediening (legenda, preview).
 const RANKING_VIEWS: { id: RankingView; label: string }[] = [
   { id: "table", label: "Tabel" },
   { id: "race", label: "Race" },
+  { id: "divisies", label: "Divisies" },
 ];
 
 // Rotatieteller voor Coach Rudy's knieval onder de troon (#535): elke nieuwe
@@ -176,14 +182,19 @@ export function Leaderboard() {
   // Tweede gezicht van het spelersklassement: deelbaar, refresh-bestendig en
   // met browser back/forward. Een ontbrekende of ongeldige waarde blijft de
   // bestaande tabel tonen.
-  const rankingView: RankingView = params.get("view") === "race" ? "race" : "table";
+  const viewParam = params.get("view");
+  const rankingView: RankingView =
+    viewParam === "race" || viewParam === "divisies" ? viewParam : "table";
   const setRankingView = (view: RankingView) => {
     const next = new URLSearchParams(params);
-    if (view === "race") next.set("view", "race");
-    else next.delete("view");
+    // De tabel is de standaard en die schrijven we niet op — zelfde afspraak
+    // als bij de agenda- en matchparameters.
+    if (view === "table") next.delete("view");
+    else next.set("view", view);
     setParams(next);
   };
   const isRaceView = tab === "player" && rankingView === "race";
+  const isDivisieView = tab === "player" && rankingView === "divisies";
   // Seizoen en "stand op datum" sluiten elkaar uit; tot #913 wisten we de
   // andere param stil, waardoor je keuze zonder uitleg verdween. Deze melding
   // staat als regel onder de filterchips en verdwijnt bij de volgende wissel.
@@ -602,7 +613,8 @@ export function Leaderboard() {
   // De Kaarten-tab (#497) is een tweede gezicht van het spelersklassement:
   // podium, troon en coach gedragen zich er hetzelfde als op de Spelers-tab.
   const spelerTab = tab === "player" || tab === "kaarten";
-  const showPodium = spelerTab && !isRaceView && !loading && !error && rows.length >= 3;
+  const showPodium =
+    spelerTab && !isRaceView && !isDivisieView && !loading && !error && rows.length >= 3;
 
   // Kampioensbanner: de nummer 1 van een volledig afgesloten kwartaal.
   const champion =
@@ -701,7 +713,7 @@ export function Leaderboard() {
   // Naam-filter (#282): de echte rang blijft op elke rij staan, zodat filteren
   // de nummers niet hernummert. Alleen op de speler-/teamlijst (niet divisies).
   const nq = q.trim().toLowerCase();
-  const searchable = tab !== "divisies";
+  const searchable = !isDivisieView;
   // De Troon (#528 + #530): op het spelerklassement (buiten zoeken/laden) staat
   // altijd een troon bovenaan. Kwalificeert de #1 als dictator (rating 1600+,
   // #527), dan wordt hij losgekoppeld — van podium én ranglijst — en op de troon
@@ -712,6 +724,7 @@ export function Leaderboard() {
   const canThrone =
     spelerTab &&
     !isRaceView &&
+    !isDivisieView &&
     !nq &&
     !loading &&
     !error &&
@@ -787,7 +800,7 @@ export function Leaderboard() {
     [usingScope, hmap],
   );
   const iconKey =
-    !usingScope && spelerTab && !throneRow && rankedRows[0]?.rating != null
+    !usingScope && spelerTab && !isDivisieView && !throneRow && rankedRows[0]?.rating != null
       ? rankedRows[0].key
       : null;
   // Eén editie-context (#625) voor raster én preview — dezelfde opbouw als
@@ -810,10 +823,18 @@ export function Leaderboard() {
   // geen "deze week".
   const schandpaal = useMemo(
     () =>
-      usingScope || !spelerTab || isRaceView
+      usingScope || !spelerTab || isRaceView || isDivisieView
         ? null
         : schandpaalUit(globalePias.data ?? [], profilesMap.data ?? {}, myId),
-    [usingScope, spelerTab, isRaceView, globalePias.data, profilesMap.data, myId],
+    [
+      usingScope,
+      spelerTab,
+      isRaceView,
+      isDivisieView,
+      globalePias.data,
+      profilesMap.data,
+      myId,
+    ],
   );
 
   // AI pias-portret (#682): vangnet voor het geval de server-trigger op
@@ -877,7 +898,11 @@ export function Leaderboard() {
             : tab === "player"
               ? isRaceView
                 ? "Zie meteen wie voorop ligt, wie in je buurt rijdt en waar de volgende divisie wacht."
-                : "Wie is de koning en wie is het slofje? Puur gesorteerd op rating."
+                : isDivisieView
+                  ? // Stond er tot #1215 niet: als vierde tab viel Divisies in
+                    // de else-tak en kreeg het de zin over vaste duo's.
+                    "Dezelfde spelers, op divisie gegroepeerd — zie in één blik wie in welke klasse speelt."
+                  : "Wie is de koning en wie is het slofje? Puur gesorteerd op rating."
               : "Vaste duo's gesorteerd op pure puntenheerschappij."}
         </p>
       </header>
@@ -959,7 +984,7 @@ export function Leaderboard() {
           De vindbare spelers buiten de ranglijst tellen mee: die staan er als
           zoekresultaat óók. */}
       <Aankondiging
-        sleutel={`${tab}|${nq}|${season}|${groupId}|${asof ?? ""}|${minMatches}`}
+        sleutel={`${tab}|${rankingView}|${nq}|${season}|${groupId}|${asof ?? ""}|${minMatches}`}
         bericht={`${aantalTekst(
           visibleRows.length + extraProfiles.length,
           tab === "team" ? "team" : "speler",
@@ -1074,7 +1099,7 @@ export function Leaderboard() {
         />
       )}
 
-      {tab === "divisies" && (
+      {isDivisieView && (
         <>
           <TierProgressBanner rating={rmap[myId]?.rating ?? null} />
           {groupPias && (
@@ -1128,7 +1153,7 @@ export function Leaderboard() {
               Zodra de eerste wedstrijdscore binnenrolt, barst de strijd om de topposities los!
             </EmptyState>
           )
-        ) : tab === "divisies" ? (
+        ) : isDivisieView ? (
           <TierDivisions rows={displayRows} meRef={meDivisieRef} />
         ) : visibleRows.length === 0 ? (
           <p className="empty">

@@ -26,6 +26,7 @@ export function DagPaneel({
   vandaag,
   markers,
   wedstrijden = [],
+  wedstrijdenPerPoll = {},
   groepNamen = {},
   volgende,
   ledenPerGroep,
@@ -38,8 +39,11 @@ export function DagPaneel({
   datum: string;
   vandaag: string;
   markers: AgendaMarker[];
-  /** Wat er die dag gespeeld is, per groep (#1182). */
+  /** Los gelogde partijen, per groep (#1182). Sinds #1221 alléén wat bij geen
+   *  enkele speeldag hoort: de rest staat op de speeldagkaart zelf. */
   wedstrijden?: WedstrijdDag[];
+  /** Aantal gespeelde wedstrijden per poll (#1221) — de teller op de kaart. */
+  wedstrijdenPerPoll?: Record<string, number>;
   groepNamen?: Record<string, string>;
   /** De eerstvolgende speeldagen ná deze dag. Alleen zichtbaar zolang de dag
    *  zelf leeg is — anders staat er van alles onder elkaar dat over
@@ -59,6 +63,10 @@ export function DagPaneel({
   // Per speeldag, niet per moment (#1182): een poll met twee kandidaat-tijden op
   // deze dag is één kaart met beide tijden erop.
   const items = dagItems(markers);
+  // De telling moet kloppen met wat eronder staat (#1221): een losse partij is
+  // ook een activiteit. Tot nu toe telde alleen de speeldagen, en een dag met
+  // één speeldag en één losse rij meldde doodleuk "1 activiteit".
+  const aantal = items.length + wedstrijden.length;
   return (
     <section className="dagpaneel" aria-label={`Speeldagen op ${longDay(datum)}`}>
       <header className="dagpaneel__kop">
@@ -74,14 +82,27 @@ export function DagPaneel({
             metHoofdletter(longDay(datum))
           )}
         </h2>
-        {items.length > 0 && (
-          <p className="dagpaneel__telling">
-            {items.length} {items.length === 1 ? "activiteit" : "activiteiten"}
-          </p>
-        )}
+        <div className="dagpaneel__kop-rechts">
+          {aantal > 0 && (
+            <p className="dagpaneel__telling">
+              {aantal} {aantal === 1 ? "activiteit" : "activiteiten"}
+            </p>
+          )}
+          {/* "Is er die dag eigenlijk een baan vrij?" was tot #1213 een vraag
+              die je elders opnieuw moest intikken: Banen leest ?datum= al uit
+              de URL, maar niets in de plan-flow wees erheen. Alleen vooruit —
+              vrije banen op een dag die geweest is zeggen niets. Zonder
+              ?club=: dit paneel gaat over meerdere groepen, dus de eigen
+              clubkeuze is hier de juiste. */}
+          {datum >= vandaag && (
+            <Link className="dagpaneel__banen" to={`/banen?datum=${datum}`}>
+              Vrije banen op deze dag →
+            </Link>
+          )}
+        </div>
       </header>
 
-      {/* Wat er gespeeld is (#1182). Staat boven de lege staat én boven de
+      {/* Wat er los gespeeld is (#1182). Staat boven de lege staat én boven de
           speeldagkaarten: op een dag die geweest is is dít het nieuws. */}
       {wedstrijden.length > 0 && (
         <ul className="dagpaneel__lijst">
@@ -130,6 +151,7 @@ export function DagPaneel({
                 item={item}
                 leden={ledenPerGroep[item.eerste.groupId] ?? 0}
                 profielen={profielen}
+                wedstrijden={wedstrijdenPerPoll[item.eerste.pollId] ?? 0}
                 onOpen={onOpen}
               />
             </li>
@@ -141,12 +163,19 @@ export function DagPaneel({
 }
 
 /**
- * Wat er die dag gespeeld is (#1182).
+ * Wat er die dag los gespeeld is (#1182).
  *
  * Eén rij per groep, want dat is de eenheid waarin je erover praat ("drie
  * wedstrijden bij Vamos!"). Bij precies één wedstrijd gaat de link naar die
  * wedstrijd; bij meer naar het matchoverzicht van de groep, want een dagfilter
  * bestaat daar niet.
+ *
+ * Alleen voor wedstrijden zónder speeldag eromheen (#1221). Wat bij een
+ * speeldag hoort staat op die kaart; anders stond dezelfde avond er twee keer.
+ *
+ * Draagt precies dezelfde schil als een speeldagkaart (#1207). De eigen,
+ * vlakkere variant die hier stond las naast die kaarten als iets uit een andere
+ * app; het staafje links zegt al dat deze dag geweest is.
  */
 function WedstrijdRij({
   dag,
@@ -155,11 +184,11 @@ function WedstrijdRij({
   dag: WedstrijdDag;
   groepNaam: string;
 }) {
-  const n = dag.matchIds.length;
+  const n = dag.matches.length;
   const naar =
-    n === 1 ? `/matches/${dag.matchIds[0]}` : `/spelen?groep=${dag.groupId}`;
+    n === 1 ? `/matches/${dag.matches[0].id}` : `/spelen?groep=${dag.groupId}`;
   return (
-    <Link className="speeldag speeldag--gespeeld" to={naar}>
+    <Link className="speeldag" to={naar}>
       <span className="speeldag__rail speeldag__rail--past" aria-hidden="true" />
       <span className="speeldag__body">
         <span className="speeldag__top">

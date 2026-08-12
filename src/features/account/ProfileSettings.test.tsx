@@ -62,8 +62,8 @@ describe("<ProfileSettings />", () => {
     expect(screen.getByDisplayValue("Alice Anders")).toBeInTheDocument();
   });
 
-  // De "Ik"-tab en de topbalk-avatar landen hier; zonder deze link is je eigen
-  // profielweergave vanaf de instellingen onbereikbaar (#706).
+  // Was de reparatie van een verkeerde landing (#706); sinds #1211 landt "Ik"
+  // op de spelerskaart en is dit de weg terug daarheen.
   it("linkt vanuit de kop naar de eigen profielweergave", async () => {
     renderPage();
     const link = await screen.findByRole("link", { name: /mijn profiel/i });

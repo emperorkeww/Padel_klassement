@@ -214,6 +214,7 @@ export function DagSheet({
                 onStem={stem}
                 baanInfo={baanInfo}
                 nu={nu}
+                eigenVlak={markers.length > 1}
               />
             ))
           )}
@@ -299,6 +300,7 @@ function Speeldag({
   onStem,
   baanInfo,
   nu,
+  eigenVlak,
 }: {
   marker: AgendaMarker;
   /** De overige momenten van dezelfde poll die nog te spelen zijn. */
@@ -310,6 +312,10 @@ function Speeldag({
   /** Vrije banen en prijs van een moment; null zolang er niets binnen is. */
   baanInfo: (m: AgendaMarker) => { vrij: number | null; prijs: string | null };
   nu: number;
+  /** Staat er nog een speeldag naast op deze dag? Dan draagt dit blok zijn eigen
+   *  vlak, en op een glazen sheet is dat glas (#1207). Als enige blok blijft het
+   *  randloos: er valt dan niets te scheiden. */
+  eigenVlak: boolean;
 }) {
   const geboekt = marker.status === "booked" && !marker.past;
   const toonBoeking = geboekt && (marker.courts || marker.accessCode);
@@ -321,7 +327,9 @@ function Speeldag({
   const naam = (id: string) => displayName(profielen[id]);
   const { vrij, prijs } = baanInfo(marker);
   return (
-    <article className="dagsheet__speeldag">
+    <article
+      className={`dagsheet__speeldag${eigenVlak ? " glas glas--subtiel" : ""}`}
+    >
       <header className="dagsheet__kop">
         <p className="dagsheet__tijd">{tijdvak(marker.startTime, marker.duration)}</p>
         <span className={`dagsheet__badge dagsheet__badge--${marker.past ? "past" : marker.status}`}>

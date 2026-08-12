@@ -24,7 +24,8 @@ import {
 import { getProfilesMap } from "@/features/profiles/api";
 import { getZwartePiet } from "./zwartePietApi";
 import { getMyFriendships, categorize, otherId } from "@/features/friends/api";
-import { MatchHistory } from "@/features/matches/components/MatchHistory";
+import { MatchesSectie } from "@/features/matches/MatchesSectie";
+import { useSpeelParams } from "@/features/matches/speelParams";
 import { buildMatchRatings } from "@/features/groups/maandpias";
 import { VandaagTab } from "@/features/groups/components/VandaagTab";
 import { computePlayerStandings, matchesInSeason } from "@/features/rating/standings";
@@ -52,7 +53,7 @@ import { EregalerijTab } from "@/features/seizoen/components/EregalerijTab";
 import type { PlayerStanding } from "@/types";
 import "./GroupDetail.css";
 
-type View = "vandaag" | "matches" | "stand" | "eregalerij" | "leden";
+type View = "vandaag" | "matches" | "stand" | "leden";
 
 /** URL-key → tab. De keys "spelen" (de oude Teams-tab) en "rondes" staan in
  *  pushberichten en edge functions die al de deur uit zijn; sinds #674 wijzen
@@ -60,15 +61,13 @@ type View = "vandaag" | "matches" | "stand" | "eregalerij" | "leden";
  *  #1121 ook bij: die tab bestaat niet meer (zie GroupDetail hieronder, dat
  *  een gedeelde poll eerst naar de speeldagpagina stuurt). */
 function viewFromParam(raw: string | null): View | null {
-  if (
-    raw === "matches" ||
-    raw === "stand" ||
-    raw === "eregalerij" ||
-    raw === "leden"
-  )
-    return raw;
+  if (raw === "matches" || raw === "stand" || raw === "leden") return raw;
   if (raw === "spelen" || raw === "rondes" || raw === "plannen")
     return "vandaag";
+  // De Eregalerij was een eigen tab tot #1216; die inhoud staat nu ónder de
+  // stand van een afgesloten seizoen. Oude links landen dus op Stand — welk
+  // seizoen daarbij hoort, kiest de pagina zelf (zie eregalerijSeizoen).
+  if (raw === "eregalerij") return "stand";
   return null;
 }
 
@@ -192,6 +191,10 @@ function GroepPagina() {
   useRealtime("match_predictions", onPredictions, `group_id=eq.${id}`);
 
   const toast = useToast();
+  // Periodefilter van de Historie-tab (#1212). Dezelfde hook als de Spelen-hub,
+  // zodat er één schrijver op de querystring blijft: hij patcht `?periode=`
+  // bovenop wat er staat en laat `?tab=` en `?seizoen=` ongemoeid.
+  const speel = useSpeelParams();
   const [busy, setBusy] = useState(false);
   const setView = (v: View) => {
     const next = new URLSearchParams(params);
@@ -252,12 +255,17 @@ function GroepPagina() {
     return min === null || d < min ? d : min;
   }, null);
   const seasons = firstMatchDate ? listSeasons(new Date(firstMatchDate)) : [];
-  // Teller op de Eregalerij-tab (#711): het aantal afgesloten kwartalen waarin
-  // gespeeld is. Bewust niet via eregalerij() — die rekent per kwartaal de
-  // volledige stand én de pias uit, en dat hoort achter het openen van de tab.
-  const eregalerijCount = seasons.filter(
-    (s) => isSeasonClosed(s) && matchesInSeason(completedMatches, s).length > 0,
-  ).length;
+  // Het jongste afgesloten kwartaal waarin gespeeld is (listSeasons geeft
+  // nieuwste eerst). Bewust niet via eregalerij() — die rekent per kwartaal de
+  // volledige stand én de pias uit, en dat hoort pas als je zo'n seizoen kiest.
+  const laatsteAfgesloten =
+    seasons.find(
+      (s) => isSeasonClosed(s) && matchesInSeason(completedMatches, s).length > 0,
+    ) ?? null;
+  // De eregalerij hoort bij een afgesloten seizoen: kies je het lopende
+  // kwartaal of "Alle tijden", dan is er geen kampioen om te vieren (#1216).
+  const eregalerijSeizoen =
+    season && isSeasonClosed(season) ? season : null;
   const seasonStandings: PlayerStanding[] | null = season
     ? computePlayerStandings(
         matchesInSeason(completedMatches, season),
@@ -332,6 +340,29 @@ function GroepPagina() {
   // zijn: wie een uitslag komt invullen ziet de pagina meteen.
   const view: View = urlView ?? "vandaag";
 
+  /**
+   * Oude links naar de Eregalerij-tab (#1216).
+   *
+   * Die tab bestaat niet meer: de galerij staat onder de stand van een
+   * afgesloten seizoen. `viewFromParam` stuurt zo'n link al naar Stand; hier
+   * kiezen we het seizoen erbij, want anders belooft de link een eregalerij en
+   * krijg je de stand van vandaag. Eén schrijfbeurt voor beide sleutels — twee
+   * losse setParams in dezelfde tick overschrijven elkaar.
+   *
+   * Pas zodra de matches binnen zijn: daarvóór is er geen seizoen om te kiezen.
+   */
+  const eregalerijLink = params.get("tab") === "eregalerij";
+  const laatsteAfgeslotenId = laatsteAfgesloten?.id ?? null;
+  useEffect(() => {
+    if (!eregalerijLink || matches.loading) return;
+    const next = new URLSearchParams(params);
+    next.set("tab", "stand");
+    if (laatsteAfgeslotenId && !next.get("seizoen"))
+      next.set("seizoen", laatsteAfgeslotenId);
+    setParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eregalerijLink, matches.loading, laatsteAfgeslotenId]);
+
   // Eenrichtingsschakelaar: vanaf het eerste bezoek aan Stand blijft de zware
   // klassement-data laden, ook als je later weer wegklikt (#674 C2).
   useEffect(() => {
@@ -350,14 +381,6 @@ function GroepPagina() {
       count: completedMatches.length || undefined,
     },
     { id: "stand", label: "Stand" },
-    // Eregalerij (#711) staat ná de stand: eerst het heden, dan de
-    // geschiedenis. De teller is het aantal afgesloten seizoenen met een
-    // kampioen — nul betekent geen teller (en een uitnodigende leegstand).
-    {
-      id: "eregalerij",
-      label: "Eregalerij",
-      count: eregalerijCount || undefined,
-    },
     { id: "leden", label: "Leden", count: memberList.length || undefined },
   ];
 
@@ -522,24 +545,25 @@ function GroepPagina() {
           />
         )}
 
+        {/* Eén matchlijst per groep (#1212). Deze tab monteerde MatchHistory
+            rechtstreeks, zonder periodefilter en zonder "Te spelen" — een
+            armere kopie van wat /spelen?groep=<id> al toont. #1123 hief de
+            losse Matches-tab op om precies die verdubbeling weg te nemen;
+            hier stond ze nog. De sectie is er sinds #1123 op gebouwd: hij
+            bezit zijn data, de pagina bezit de URL.
+
+            De groepskeuze-rij blijft weg (vaste groep, `groepen` leeg) en de
+            zwevende +Match-knop ook: loggen is binnen de groep de taak van de
+            Vandaag-tab. */}
         {view === "matches" && (
-          <MatchHistory
-            title="Gespeelde matches"
-            matches={completedMatches}
-            teams={tmap}
-            profiles={pmap}
-            myId={myId}
-            upsets={upsets}
-            canManage={isOwner}
-            onChanged={onMatches}
-            loading={matches.loading}
-            error={matches.error}
-            emptyAll={
-              <p className="empty">
-                Nog geen gespeelde matches in deze groep — log er een op de
-                Vandaag-tab.
-              </p>
-            }
+          <MatchesSectie
+            groepId={id}
+            onGroep={() => {}}
+            periode={speel.periode}
+            onPeriode={speel.zetPeriode}
+            onWisFilters={speel.wisFilters}
+            titel="Gespeelde matches"
+            zonderNieuweMatch
           />
         )}
 
@@ -575,7 +599,13 @@ function GroepPagina() {
           />
         )}
 
-        {view === "eregalerij" && (
+        {/* De eregalerij ís de stand, alleen die van vroeger (#1216). Ze stond
+            als vijfde tab naast Stand, terwijl de seizoenskiezer daar al
+            belooft dat je door de tijd kunt bladeren. Nu houdt hij die belofte:
+            kies een afgesloten kwartaal en de kampioen, de awards en het
+            recordboek staan onder de eindstand. Het lopende seizoen en "Alle
+            tijden" tonen niets extra's — en rekenen dus ook niets uit. */}
+        {view === "stand" && eregalerijSeizoen && (
           <EregalerijTab
             matches={matches.data ?? []}
             teams={tmap}
@@ -584,6 +614,7 @@ function GroepPagina() {
             histories={hmap}
             groepsnaam={group.data!.name}
             myId={myId}
+            seizoenId={eregalerijSeizoen.id}
           />
         )}
 

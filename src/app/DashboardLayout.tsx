@@ -23,6 +23,7 @@ import { MeldingenPaneel } from "@/features/meldingen/components/MeldingenPaneel
 import { belLabel, tellerTekst } from "@/features/meldingen/bel";
 import { useMeldingen } from "@/features/meldingen/useMeldingen";
 import { useIsAdmin } from "@/features/admin/useIsAdmin";
+import { useAttentie } from "./useAttentie";
 import { OfflineBanner } from "@/ui/OfflineBanner";
 import { useGlasScrollLicht } from "@/lib/hooks/useGlasScrollLicht";
 import "@/ui/ui.css";
@@ -64,7 +65,26 @@ const OVERZICHT: NavItem = { to: "/", label: "Overzicht", end: true, icon: <Ball
 const SPELEN: NavItem = { to: "/spelen", label: "Spelen", icon: <IconRacket />, matchPaths: ["/groepen", "/matches"] };
 const FEED: NavItem = { to: "/clubblad", label: "Clubblad", icon: <IconFeed /> };
 const KLASSEMENT: NavItem = { to: "/klassement", label: "Klassement", icon: <IconTrophy /> };
-const IK: NavItem = { to: "/profiel", label: "Ik", icon: <IconUser /> };
+/**
+ * "Ik" landt op je spelersprofiel, niet op je instellingen (#1211).
+ *
+ * De tab beloofde identiteit en leverde een wachtwoordveld: /profiel is
+ * ProfileSettings, terwijl je kaart, badges, statistieken en matches op
+ * /spelers/:id staan — waar de hero, de rating-kaart en de badge-strip ook al
+ * heen wijzen. #706 plakte er een "Mijn profiel →"-link op; dit draait de
+ * richting om.
+ *
+ * `matchPaths` houdt de tab actief op de instellingenpagina: die hoort nog
+ * steeds bij deze sectie, hij is alleen niet meer de landing. Zonder sessie is
+ * er geen eigen id en blijft /profiel de bestemming — dat scherm regelt zijn
+ * eigen lege staat.
+ */
+const ikItem = (myId: string): NavItem => ({
+  to: myId ? `/spelers/${myId}` : "/profiel",
+  label: "Ik",
+  icon: <IconUser />,
+  matchPaths: ["/profiel"],
+});
 // Agenda (#1091): alle speeldagen in de tijd, over je groepen heen. Zat mobiel
 // als knop in de topbalk omdat de onderbalk vol was; met het verdwijnen van de
 // Matches-tab (#1123) is daar een vaste plek vrijgekomen.
@@ -80,11 +100,12 @@ const UITLEG: NavItem = { to: "/uitleg", label: "Hoe werkt het?", icon: <IconHel
 // beveiliging — de route en de edge function weigeren zelfstandig.
 const BEHEER: NavItem = { to: "/admin", label: "Beheer", icon: <IconShield /> };
 
-// Desktop: gegroepeerde zijbalk, met de secundaire routes erbij.
-const SIDEBAR_GROUPS: { title: string; items: NavItem[] }[] = [
+// Desktop: gegroepeerde zijbalk, met de secundaire routes erbij. "Ik" hangt aan
+// de sessie (#1211), dus de groepen worden per gebruiker opgebouwd.
+const sidebarGroups = (myId: string): { title: string; items: NavItem[] }[] => [
   { title: "Spelen", items: [OVERZICHT, FEED, SPELEN, AGENDA, BANEN] },
   { title: "Competitie", items: [KLASSEMENT] },
-  { title: "Ik", items: [VRIENDEN, IK, UITLEG] },
+  { title: "Ik", items: [VRIENDEN, ikItem(myId), UITLEG] },
 ];
 
 // Mobiel: vijf tabs, symmetrisch rond de uitstekende padelbal in het midden
@@ -108,26 +129,40 @@ export function DashboardLayout() {
     [myId],
   );
   const me = profile.data ?? null;
+  // Eén bestemming voor "dit ben ik" (#1211): de tab, de avatar in de topbalk
+  // en die in de zijbalkvoet wijzen allemaal hierheen.
+  const mijnProfiel = myId ? `/spelers/${myId}` : "/profiel";
   // Beheer-ingang (#1036). Eén whoami per sessie (gecachet in ./admin/api),
   // niet-blokkerend: zolang het antwoord uitblijft is `isAdmin` null en staat
   // het item er gewoon niet. Deze layout mount één keer per sessie, dus dit is
   // de enige plek in de app die het vraagt.
   const isAdmin = useIsAdmin();
+  // Attentiestippen (#1214): de bel telt meldingen, maar de balk zelf was stil
+  // — wie de app opende op Klassement of Clubblad zag niet dat er een stem of
+  // een uitslag op hem wachtte. Deelt zijn bronnen met het overzicht en de hub.
+  const attentie = useAttentie(myId);
+  /** Verdient dit tabblad een stip, en wat hoort de screenreader dan? */
+  function stipVoor(item: NavItem): string | null {
+    if (item.to === AGENDA.to && attentie.agenda)
+      return "er wacht een speeldag op je";
+    if (item.to === SPELEN.to && attentie.spelen)
+      return "er wacht een uitslag op je";
+    return null;
+  }
   // Hooglicht op de vaste balken (#1083). Het aanwijzer-hooglicht bestaat op
   // een telefoon niet — geen muis, geen hover — terwijl dit een mobile-first
   // app is. Deze twee balken staan altijd in beeld en de pagina schuift
   // eronderdoor, dus daar is de scrollpositie een eerlijke lichtbron.
   const topbarRef = useGlasScrollLicht<HTMLElement>();
   const tabbarRef = useGlasScrollLicht<HTMLElement>();
-  const sidebarGroepen = useMemo(
-    () =>
-      isAdmin
-        ? SIDEBAR_GROUPS.map((g) =>
-            g.title === "Ik" ? { ...g, items: [...g.items, BEHEER] } : g,
-          )
-        : SIDEBAR_GROUPS,
-    [isAdmin],
-  );
+  const sidebarGroepen = useMemo(() => {
+    const groepen = sidebarGroups(myId);
+    return isAdmin
+      ? groepen.map((g) =>
+          g.title === "Ik" ? { ...g, items: [...g.items, BEHEER] } : g,
+        )
+      : groepen;
+  }, [isAdmin, myId]);
   // Tier-promotie/degradatie (#127): één app-brede melding zodra een uitslag
   // je rating over een divisiegrens tilt. Een promotie komt sinds #500 als
   // pack-opening (overlay onderaan deze layout); degradatie blijft een toast.
@@ -189,7 +224,12 @@ export function DashboardLayout() {
             onOpen={() => setMeldingenOpen(true)}
           />
           <HelpKnop />
-          <Link to="/profiel" className="topbar__profile" aria-label="Naar profiel">
+          {/* Naar je eigen kaart, niet naar je wachtwoordveld (#1211). */}
+          <Link
+            to={mijnProfiel}
+            className="topbar__profile"
+            aria-label="Naar mijn profiel"
+          >
             <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={32} />
           </Link>
         </div>
@@ -234,16 +274,22 @@ export function DashboardLayout() {
               )}
               {group.items.map((item) => {
                 const actief = isSectionActive(item, pathname);
+                const stip = stipVoor(item);
                 return (
                   <Link
                     key={item.to}
                     to={item.to}
                     viewTransition
                     aria-current={actief ? "page" : undefined}
+                    // De stip is kleur; de naam draagt de betekenis (#924).
+                    aria-label={stip ? `${item.label} — ${stip}` : undefined}
                     className={`sidebar__link ${actief ? "is-active" : ""}`}
                   >
                     <span className="sidebar__icon">{item.icon}</span>
                     <span className="sidebar__label">{item.label}</span>
+                    {stip && (
+                      <span className="nav-stip" aria-hidden="true" />
+                    )}
                   </Link>
                 );
               })}
@@ -256,7 +302,7 @@ export function DashboardLayout() {
               kennis wordt — net als de ?-knop, die hierboven in de navigatie
               staat. */}
           <JokerKnop myId={myId || null} className="sidebar__joker" />
-          <Link to="/profiel" className="sidebar__user">
+          <Link to={mijnProfiel} className="sidebar__user">
             <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={36} />
             {/* Zolang het profiel nog laadt is de naam het e-mailadres, en
                 dan stond datzelfde adres er twee keer (#949). De tweede regel
@@ -326,16 +372,20 @@ export function DashboardLayout() {
       >
         {TABBAR.map((item) => {
           const actief = isSectionActive(item, pathname);
+          const stip = stipVoor(item);
           return (
             <Link
               key={item.to}
               to={item.to}
               viewTransition
-              aria-label={item.label}
+              aria-label={stip ? `${item.label} — ${stip}` : item.label}
               aria-current={actief ? "page" : undefined}
               className={`tabbar__link ${item.end ? "tabbar__link--home" : ""} ${actief ? "is-active" : ""}`}
             >
-              <span className="tabbar__icon">{item.icon}</span>
+              <span className="tabbar__icon">
+                {item.icon}
+                {stip && <span className="nav-stip" aria-hidden="true" />}
+              </span>
               <span className="tabbar__label">{item.label}</span>
             </Link>
           );

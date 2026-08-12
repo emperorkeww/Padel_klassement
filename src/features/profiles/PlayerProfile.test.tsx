@@ -453,4 +453,24 @@ describe("<PlayerProfile />", () => {
     expect(voortgang.length).toBeGreaterThan(0);
     expect(voortgang[0].textContent).toMatch(/^\d+\/\d+$/);
   });
+  // #1211: "Ik" landt hier, dus dit is de kop waar je instellingen vandaan
+  // bereikt worden — de spiegel van de "Mijn profiel →"-link die #706 op de
+  // instellingenpagina zette.
+  it("geeft je eigen profiel een ingang naar de instellingen", async () => {
+    setTables("p1");
+    renderProfile("p1");
+    await screen.findByRole("heading", { name: /alice anders/i, level: 1 });
+    expect(
+      screen.getByRole("link", { name: /instellingen/i }),
+    ).toHaveAttribute("href", "/profiel");
+  });
+
+  it("zet die ingang niet op het profiel van iemand anders", async () => {
+    setTables("p2");
+    renderProfile("p2");
+    await screen.findByRole("heading", { name: /bob boers/i, level: 1 });
+    expect(
+      screen.queryByRole("link", { name: /instellingen/i }),
+    ).not.toBeInTheDocument();
+  });
 });
