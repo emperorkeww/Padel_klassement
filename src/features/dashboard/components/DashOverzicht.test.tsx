@@ -179,33 +179,17 @@ describe("<DashExtras /> — leesbare omschrijvingen (#940)", () => {
 
 describe("Overzicht — ritme en kaartranden (#940)", () => {
   it("laat de pagina één tussenruimte bepalen", () => {
-    // De afstanden kwamen van `.card + .card`, en dat werkt niet tussen een
-    // kaart en het cijfer-blok (een <details>): daar raakten de randen elkaar.
+    // De afstanden kwamen van `.card + .card`, en dat werkt alleen tussen twee
+    // kaarten: de container geeft nu de afstand, de blokken geven hun eigen
+    // marges op.
     expect(DASH_CSS).toMatch(/\.dashboard\s*\{[^}]*display:\s*grid/);
     expect(DASH_CSS).toMatch(/\.dashboard\s*\{[^}]*gap:\s*var\(--sp-5\)/);
     expect(DASH_CSS).toMatch(/\.dashboard > \*\s*\{\s*margin-bottom:\s*0/);
   });
 
-  it("geeft het cijfer-blok geen tweede kaartrand om zijn kaarten", () => {
-    // Alleen de inklapbalk draagt nog rand en achtergrond; de kaarten erin
-    // stonden anders in een kaart, met twee niveaus binnenmarge op 390px.
-    const blok = DASH_CSS.slice(
-      DASH_CSS.indexOf(".dash-cijfers {"),
-      DASH_CSS.indexOf(".dash-cijfers__summary::-webkit-details-marker"),
-    );
-    expect(blok).toMatch(/\.dash-cijfers\s*\{[^}]*display:\s*grid/);
-    expect(blok).not.toMatch(/\.dash-cijfers\s*\{[^}]*border:/);
-    expect(blok).toMatch(/\.dash-cijfers__summary\s*\{[^}]*border:\s*1px/);
-  });
-
-  it("stapelt titel en hint van de inklapkop in één kolom", () => {
-    // Als flexrij wrapten titel én hint op 390px en werd de kop drie regels.
-    expect(DASH_CSS).toMatch(
-      /\.dash-cijfers__summary\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto/,
-    );
-    for (const deel of ["\\.dash-cijfers__title", "\\.dash-cijfers__hint"])
-      expect(DASH_CSS, deel).toMatch(
-        new RegExp(`${deel}\\s*\\{[^}]*grid-column:\\s*1`),
-      );
+  it("laat geen inklapper-CSS achter nu het cijfer-blok een zone is (#1242)", () => {
+    // De <details> en zijn balk zijn weg; hun regels mogen niet stil blijven
+    // hangen als dood gewicht in de stylesheet.
+    expect(DASH_CSS).not.toMatch(/dash-cijfers/);
   });
 });

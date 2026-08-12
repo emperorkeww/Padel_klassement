@@ -1,5 +1,5 @@
 // Dev-showcase (#940): de kaartenrij ónder de hero — volgende match, het
-// cijfer-blok achter zijn inklapper, en de baanteaser — met synthetische props.
+// cijfer-blok in zijn zone (#1242), en de baanteaser — met synthetische props.
 //
 // Zelfde reden als /dev/hero: deze kaarten hangen aan ingelogde seed-data
 // (matches van vandaag, een badge met voortgang, een rivaal met genoeg duels),
@@ -16,7 +16,6 @@ import type { Badge } from "@/features/profiles/badges";
 import type { Match, Profile, RatingPoint, Team } from "@/types";
 import type { Rival } from "../dashboardHelpers";
 import { CourtTeaser } from "./CourtTeaser";
-import { DashCijfers } from "./DashCijfers";
 import { DashExtras } from "./DashExtras";
 import { NextMatchCard } from "./NextMatchCard";
 import { RatingCard } from "./RatingCard";
@@ -164,42 +163,41 @@ export function OverzichtShowcase() {
               profiles={PROFIELEN}
               myId="p1"
             />
+            <CourtTeaser
+              availability={{
+                data: BANEN,
+                loading: false,
+                error: null,
+                reload: () => {},
+              }}
+              timezone="Europe/Brussels"
+            />
           </div>
         </section>
 
-        <DashCijfers>
-          <StatsRow
-            loading={false}
-            rank={6}
-            winrate={0.58}
-            played={64}
-          />
-          <RatingCard
-            loading={false}
-            rating={1201}
-            dayDelta={12}
-            history={HISTORIE}
-          />
-          <DashExtras
-            myId={MIJ}
-            matches={[]}
-            teams={TEAMS}
-            profiles={PROFIELEN}
-            badges={BADGES}
-            nextBadge={VOLGENDE_BADGE}
-            rival={RIVAAL}
-          />
-        </DashCijfers>
-
-        <CourtTeaser
-          availability={{
-            data: BANEN,
-            loading: false,
-            error: null,
-            reload: () => {},
-          }}
-          timezone="Europe/Brussels"
-        />
+        <section className="dash-zone" aria-labelledby="showcase-cijfers">
+          <h2 className="dash-zone__titel" id="showcase-cijfers">
+            Jouw cijfers
+          </h2>
+          <div className="dash-zone__body">
+            <StatsRow loading={false} rank={6} winrate={0.58} played={64} />
+            <RatingCard
+              loading={false}
+              rating={1201}
+              dayDelta={12}
+              history={HISTORIE}
+            />
+            <DashExtras
+              myId={MIJ}
+              matches={[]}
+              teams={TEAMS}
+              profiles={PROFIELEN}
+              badges={BADGES}
+              nextBadge={VOLGENDE_BADGE}
+              rival={RIVAAL}
+            />
+          </div>
+        </section>
       </div>
     </div>
   );

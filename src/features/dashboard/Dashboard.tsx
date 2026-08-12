@@ -18,22 +18,18 @@ import {
   pickRival,
   heroCrestTekst,
   openstaandeUitslagen,
-  pickPollBanner,
 } from "./dashboardHelpers";
 import { heroOverlay, heroPermanent } from "./heroThema";
 import { DashboardPrompts } from "./components/DashboardPrompts";
 import { EveningCard } from "./components/EveningCard";
 import { PollBanner } from "./components/PollBanner";
 import { StemKaart } from "./components/StemKaart";
-import { kiesStemMomenten } from "./stemMomenten";
 import { VarStemKaart } from "./components/VarStemKaart";
-import { VENSTER_UREN } from "@/features/matches/appeal";
 import { NextMatchCard } from "./components/NextMatchCard";
 import { StatsRow } from "./components/StatsRow";
 import { CourtTeaser } from "./components/CourtTeaser";
 import { RatingCard } from "./components/RatingCard";
 import { DashExtras } from "./components/DashExtras";
-import { DashCijfers } from "./components/DashCijfers";
 import { VandaagSkeleton } from "./components/VandaagSkeleton";
 import { EmptyState } from "@/ui/EmptyState";
 import { DashboardHero } from "./components/DashboardHero";
@@ -68,6 +64,7 @@ export function Dashboard() {
     kampioen,
     availability,
     openPolls,
+    varZaken,
     completed,
     evening,
     onMatches,
@@ -191,16 +188,6 @@ export function Dashboard() {
   }, [myProfile, myId]);
 
   const myGames = myMatches.data ?? [];
-  // Rudy's VAR (#1025): een zaak kan alleen bestaan op een match die je zélf
-  // speelde en die minder dan 24 uur oud is — dat is het venster dat
-  // point_appeals_guard afdwingt. Is er zo'n match niet, dan hoeft het overzicht
-  // die query helemaal niet af te vuren en blijft de meetlat uit #736 staan.
-  const varVenster = myGames.some(
-    (g) =>
-      g.status === "completed" &&
-      g.played_at != null &&
-      Date.now() - new Date(g.played_at).getTime() < VENSTER_UREN * 3600_000,
-  );
   const form = recentForm(myGames, tmap, myId);
   const streak = winStreak(myGames, tmap, myId);
   // Verliesreeks (alleen relevant zonder lopende winstreak) voor een
@@ -245,13 +232,6 @@ export function Dashboard() {
   // zelf opent, is de match van gisteren dringender dan die van volgende week.
   const planned = openstaandeUitslagen(myGames);
   const nextMatch = planned[0] ?? null;
-  // Heeft de "Vandaag"-zone iets te melden? Zo niet, dan blijft ook de kop weg:
-  // een lege zone met alleen een label is erger dan geen zone (#911). Voor de
-  // speeldagen gebruiken we dezelfde twee keuze-functies als de kaarten zelf,
-  // zodat kop en inhoud niet uit elkaar kunnen lopen.
-  const heeftPoll =
-    pickPollBanner(openPolls.data ?? [], myId, Date.now()) != null ||
-    kiesStemMomenten(openPolls.data ?? [], myId, Date.now()) != null;
   const nextMatchGroupName = nextMatch?.group_id
     ? ((groups.data ?? []).find((g) => g.id === nextMatch.group_id)?.name ?? null)
     : null;
@@ -319,13 +299,9 @@ export function Dashboard() {
         briefing={coachBriefingTekst}
       />
 
-      {/* Hier stond tot #1232 een pillenstrook (#911, #1210). Beide pillen
-          wezen naar iets dat inmiddels dichterbij ligt: de matchkaart in de
-          Vandaag-zone opent de score-sheet zelf en Spelen draagt sinds #1227
-          de attentiestip voor de rest, en een vriendschapsverzoek komt via de
-          meldingen-inbox (#1090) binnen. De hero sluit nu direct aan op de
-          eerstvolgende kaart. */}
-
+      {/* De onboardkaart staat bewust bóven de zones: een setup-checklist
+          voor wie nog niets heeft, geen dagelijkse inhoud. Zodra de stappen af
+          zijn geeft de kaart zelf null terug. */}
       <OnboardCard
         myId={myId}
         profile={myProfile}
@@ -335,65 +311,153 @@ export function Dashboard() {
         loading={coreLoading}
       />
 
-      {/* Rudy's VAR (#1025): een zaak die op jóuw stem wacht. Bewust bóven de
-          Vandaag-zone en niet erin: het stemvenster loopt maar 12 uur, en die
-          zone verschijnt alleen als er ook een poll, match of avond is. De
-          kaart geeft null terug zodra er niets op je stem wacht. */}
-      <VarStemKaart myId={myId} enabled={varVenster} />
+      {/* Zone 1 — wat er vandaag speelt (#911, uitgebreid in #1242). Eerst wat
+          op jóu wacht (VAR-stem, pias-alarm, speeldag-stem), dan wat vastligt
+          (volgende match, avondkaart), en als vaste hekkensluiter de vrije
+          banen. Die baanteaser geeft de zone altijd inhoud, dus de kop kan
+          zonder zichtbaarheidsvraag blijven staan; het skelet dekt alleen de
+          bronnen die de kaarten erboven voeden.
 
-      {/* Wat vandaag speelt, als één zone (#911). Poll, volgende match en
-          avondkaart komen elk uit een eigen bron en vielen daardoor gespreid
-          binnen — telkens bovenin, terwijl je verderop al las. Nu wisselt de
-          zone in één keer van skeleton naar kaarten. */}
-      {(vandaagLoading || heeftPoll || nextMatch || evening) && (
-        <section className="dash-zone" aria-labelledby="dash-vandaag">
-          <h2 className="dash-zone__titel" id="dash-vandaag">
-            Vandaag
-          </h2>
-          <div className="dash-zone__body">
-            {vandaagLoading ? (
-              <VandaagSkeleton />
-            ) : (
-              <>
-                {/* Eerst de vraag, dan de reminder: wat op jóu wacht staat
-                    boven wat al vastligt (#1196). */}
-                <StemKaart
-                  bundles={openPolls.data ?? []}
+          De VAR-kaart en het pias-alarm doen bewust níét mee aan dat skelet:
+          hun bronnen (beroepszaken, pias_of_week) komen later of alleen soms
+          binnen, en de zone vasthouden op de traagste bron zou het skelet
+          terugbrengen precies wanneer iemand al leest (#1196). Ze schuiven
+          erin zodra ze er zijn — zoals ze dat vóór #1242 boven de zone deden. */}
+      <section className="dash-zone" aria-labelledby="dash-vandaag">
+        <h2 className="dash-zone__titel" id="dash-vandaag">
+          Vandaag
+        </h2>
+        <div className="dash-zone__body">
+          {/* Een zaak die op jóuw stem wacht (#1025): het stemvenster loopt
+              maar 12 uur, dus vóór alles. */}
+          <VarStemKaart myId={myId} zaken={varZaken} />
+
+          {/* Pias-alarm (#276): verschijnt alléén als jíj deze week de pias
+              bent — tijdgevoelig, dus bij "vandaag". Sinds #643 uit de
+              serverbron (pias_of_week), zodat het alarm dezelfde persoon roept
+              als banner, feed en FUT-kaart. */}
+          {mijnWeekPias && (
+            <PiasCard
+              matches={[]}
+              teams={tmap}
+              profiles={pmap}
+              scope="week"
+              restrictTo={myId}
+              selfId={myId}
+              pias={{
+                playerId: mijnWeekPias.playerId,
+                reden: mijnWeekPias.reden,
+                detail: piasDetail(mijnWeekPias.reden, mijnWeekPias.waarde),
+                ernst: mijnWeekPias.ernst,
+                waarde: mijnWeekPias.waarde,
+              }}
+            />
+          )}
+
+          {vandaagLoading ? (
+            <VandaagSkeleton />
+          ) : (
+            <>
+              {/* Eerst de vraag, dan de reminder: wat op jóu wacht staat
+                  boven wat al vastligt (#1196). */}
+              <StemKaart
+                bundles={openPolls.data ?? []}
+                myId={myId}
+                onGestemd={openPolls.reload}
+              />
+
+              <PollBanner bundles={openPolls.data ?? []} myId={myId} />
+
+              {nextMatch && (
+                <NextMatchCard
+                  match={nextMatch}
+                  groupName={nextMatchGroupName}
+                  teams={tmap}
+                  profiles={pmap}
                   myId={myId}
-                  onGestemd={openPolls.reload}
+                  onSaved={onMatches}
                 />
+              )}
 
-                <PollBanner bundles={openPolls.data ?? []} myId={myId} />
+              {evening && (
+                <EveningCard
+                  evening={evening}
+                  groups={groups.data ?? []}
+                  completed={completed}
+                  teams={tmap}
+                  profiles={pmap}
+                  histories={histories.data ?? undefined}
+                  intensiteit={myProfile?.roast_intensiteit ?? "radioactief"}
+                  timezone={club.timezone}
+                />
+              )}
+            </>
+          )}
 
-                {nextMatch && (
-                  <NextMatchCard
-                    match={nextMatch}
-                    groupName={nextMatchGroupName}
-                    teams={tmap}
-                    profiles={pmap}
-                    myId={myId}
-                    onSaved={onMatches}
-                  />
-                )}
+          <CourtTeaser availability={availability} timezone={club.timezone} />
+        </div>
+      </section>
 
-                {evening && (
-                  <EveningCard
-                    evening={evening}
-                    groups={groups.data ?? []}
-                    completed={completed}
-                    teams={tmap}
-                    profiles={pmap}
-                    histories={histories.data ?? undefined}
-                    intensiteit={myProfile?.roast_intensiteit ?? "radioactief"}
-                    timezone={club.timezone}
-                  />
-                )}
-              </>
-            )}
-          </div>
-        </section>
-      )}
+      {/* Zone 2 — hoe je ervoor staat. Tot #1242 een <details>-inklapper
+          (#276/#911): één klik verborg vijf ongelijksoortige blokken, en de
+          samenvatting noemde niet eens alles. Nu dezelfde benoemde zone als
+          Vandaag — de hiërarchie zit in de koppen, niet in een deksel. Wie nog
+          niet gespeeld heeft krijgt geen rij nullen maar één lege staat. */}
+      <section className="dash-zone" aria-labelledby="dash-cijfers">
+        <h2 className="dash-zone__titel" id="dash-cijfers">
+          Jouw cijfers
+        </h2>
+        <div className="dash-zone__body">
+          {toonCijfers ? (
+            <>
+              <StatsRow
+                loading={standings.loading}
+                rank={rank}
+                winrate={rate}
+                played={me?.played ?? 0}
+              />
 
+              <RatingCard
+                loading={ratings.loading}
+                rating={myRating}
+                dayDelta={dayDelta}
+                history={rhist}
+              />
+
+              <DashExtras
+                myId={myId}
+                matches={myMatches.data}
+                teams={teams.data}
+                profiles={pmap}
+                badges={allBadges}
+                nextBadge={nextBadge}
+                rival={rival}
+              />
+            </>
+          ) : (
+            <section className="card">
+              <EmptyState
+                icon="📈"
+                title="Je cijfers beginnen bij je eerste match."
+                action={
+                  <Link className="btn btn--primary" to="/spelen?log=1">
+                    Uitslag invullen
+                  </Link>
+                }
+              >
+                Rating, klassementspositie, weekmissies en badges verschijnen
+                hier zodra er een uitslag staat. Tot die tijd valt er weinig te
+                meten.
+              </EmptyState>
+            </section>
+          )}
+        </div>
+      </section>
+
+      {/* De Wrapped-banners blijven buiten een zone: seizoensgebonden
+          aankondigingen die een paar weken per jaar bestaan, geen vaste
+          inhoudscategorie. Ná de cijfers — een terugblik is nooit dringender
+          dan vandaag of je stand. */}
       <WrappedBanners
         myId={myId}
         myName={myName}
@@ -403,78 +467,6 @@ export function Dashboard() {
         ratingHistory={rhist}
         rating={myRating}
       />
-
-      {/* Pias-alarm blijft bewust búiten de inklapper (#276): deze kaart
-          verschijnt alléén als jíj deze week de pias bent — een tijdgevoelige
-          waarschuwing, geen kaart om weg te vouwen. Sinds #643 uit de
-          serverbron (pias_of_week), zodat het alarm dezelfde persoon roept als
-          banner, feed en FUT-kaart. */}
-      {mijnWeekPias && (
-        <PiasCard
-          matches={[]}
-          teams={tmap}
-          profiles={pmap}
-          scope="week"
-          restrictTo={myId}
-          selfId={myId}
-          pias={{
-            playerId: mijnWeekPias.playerId,
-            reden: mijnWeekPias.reden,
-            detail: piasDetail(mijnWeekPias.reden, mijnWeekPias.waarde),
-            ernst: mijnWeekPias.ernst,
-            waarde: mijnWeekPias.waarde,
-          }}
-        />
-      )}
-
-      {/* Het hele "hoe sta ik ervoor"-blok achter één inklapper (#911): eerder
-          hingen statsrij en rating los boven de gamification-inklapper (#276),
-          waardoor de pagina één rij gelijkwaardige kaarten was. Wie nog niet
-          gespeeld heeft krijgt geen rij nullen maar één lege staat. */}
-      {toonCijfers ? (
-        <DashCijfers>
-          <StatsRow
-            loading={standings.loading}
-            rank={rank}
-            winrate={rate}
-            played={me?.played ?? 0}
-          />
-
-          <RatingCard
-            loading={ratings.loading}
-            rating={myRating}
-            dayDelta={dayDelta}
-            history={rhist}
-          />
-
-          <DashExtras
-            myId={myId}
-            matches={myMatches.data}
-            teams={teams.data}
-            profiles={pmap}
-            badges={allBadges}
-            nextBadge={nextBadge}
-            rival={rival}
-          />
-        </DashCijfers>
-      ) : (
-        <section className="card">
-          <EmptyState
-            icon="📈"
-            title="Je cijfers beginnen bij je eerste match."
-            action={
-              <Link className="btn btn--primary" to="/spelen?log=1">
-                Uitslag invullen
-              </Link>
-            }
-          >
-            Rating, klassementspositie, weekmissies en badges verschijnen hier
-            zodra er een uitslag staat. Tot die tijd valt er weinig te meten.
-          </EmptyState>
-        </section>
-      )}
-
-      <CourtTeaser availability={availability} timezone={club.timezone} />
 
       {/* Hooguit één onderbreking per bezoek (#911); de gate kiest welke. */}
       <DashboardPrompts userId={myId} />

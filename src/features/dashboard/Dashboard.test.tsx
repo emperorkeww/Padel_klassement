@@ -229,28 +229,36 @@ describe("<Dashboard />", () => {
   // #276 vouwde de gamification-extra's op; #911 trok statsrij en rating erbij,
   // zodat het hele "hoe sta ik ervoor"-blok in dezelfde inklapper zit in plaats
   // van als losse kaarten met de rest te concurreren.
-  it("bundelt het hele cijfer-blok achter één inklapper (#276/#911)", async () => {
+  it("bundelt het hele cijfer-blok in één benoemde zone (#276/#911/#1242)", async () => {
     const { container } = renderPage();
-    const titel = await screen.findByText(/jouw cijfers/i);
-    const details = titel.closest("details");
-    expect(details).not.toBeNull();
-    // Wachten, niet meteen kijken: de kop staat er zodra de inklapper rendert,
+    const titel = await screen.findByRole("heading", { name: /jouw cijfers/i });
+    const zone = titel.closest(".dash-zone");
+    expect(zone).not.toBeNull();
+    // Geen inklapper meer (#1242): de hiërarchie zit in de zone-koppen, niet
+    // in een deksel dat vijf ongelijksoortige blokken tegelijk verbergt.
+    expect(container.querySelector("details")).toBeNull();
+    // Wachten, niet meteen kijken: de kop staat er zodra de zone rendert,
     // maar missies, statsrij en rating hangen elk aan hun eigen bron. Zonder
     // deze waitFor is de test een race die alleen wint zolang die bronnen
     // toevallig vóór de kop binnen zijn.
     for (const sel of [".week-missions", ".stats", ".rating-card"]) {
-      await waitFor(() => expect(details!.querySelector(sel)).not.toBeNull());
+      await waitFor(() => expect(zone!.querySelector(sel)).not.toBeNull());
     }
-    // En er is er maar één; geen inklapper-in-een-inklapper.
-    expect(container.querySelectorAll("details.dash-cijfers")).toHaveLength(1);
   });
 
-  it("houdt het pias-alarm búiten de inklapper (#276)", async () => {
-    // Tijdgevoelige waarschuwing: die mag je niet kunnen wegvouwen.
+  it("zet het pias-alarm in de Vandaag-zone (#276/#1242)", async () => {
+    // Tijdgevoelige waarschuwing: bij wat vandaag speelt, niet tussen de
+    // cijfers — en per constructie niet weg te vouwen, want er ís geen
+    // inklapper meer.
     const { container } = renderPage();
-    await screen.findByText(/jouw cijfers/i);
+    await screen.findByRole("heading", { name: /jouw cijfers/i });
     const alarm = container.querySelector(".pias-card");
-    if (alarm) expect(alarm.closest("details.dash-cijfers")).toBeNull();
+    if (alarm) {
+      const zone = alarm.closest(".dash-zone");
+      expect(zone?.querySelector(".dash-zone__titel")?.textContent).toBe(
+        "Vandaag",
+      );
+    }
   });
 
   it("zet geen pillenstrook meer onder de hero (#1232)", async () => {
@@ -328,8 +336,9 @@ describe("<Dashboard />", () => {
       expect(
         screen.getByRole("link", { name: /uitslag invullen/i }),
       ).toHaveAttribute("href", "/spelen?log=1");
-      // Geen inklapper met lege kaarten eronder.
-      expect(container.querySelector("details.dash-cijfers")).toBeNull();
+      // Geen rij lege kaarten onder de lege staat.
+      expect(container.querySelector(".stats")).toBeNull();
+      expect(container.querySelector(".rating-card")).toBeNull();
     } finally {
       fromMock.mockImplementation(orig);
       invalidateAll();
