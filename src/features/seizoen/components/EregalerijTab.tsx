@@ -52,6 +52,7 @@ export function EregalerijTab({
   groepsnaam,
   myId,
   now,
+  seizoenId,
 }: {
   /** Alle matches van de groep (ruwe lijst; niet-afgeronde vallen zelf weg). */
   matches: Match[];
@@ -66,10 +67,26 @@ export function EregalerijTab({
   myId: string;
   /** Injecteerbaar voor tests; anders de klok. */
   now?: Date;
+  /**
+   * Eén seizoen tonen in plaats van de hele galerij (#1216).
+   *
+   * Sinds de eregalerij op de Stand-tab woont, hoort wat eronder staat bij de
+   * stand die je gekozen hebt: zeven seizoenskaarten onder één eindstand zou
+   * over iets anders gaan dan de tabel erboven. Zonder deze prop blijft het de
+   * volledige galerij — dezelfde component, twee plekken.
+   */
+  seizoenId?: string;
 }) {
-  const seizoenen = useMemo(
+  const alleSeizoenen = useMemo(
     () => eregalerij({ matches, teams, profiles, ratingsByMatch, histories, now }),
     [matches, teams, profiles, ratingsByMatch, histories, now],
+  );
+  const seizoenen = useMemo(
+    () =>
+      seizoenId
+        ? alleSeizoenen.filter((s) => s.season.id === seizoenId)
+        : alleSeizoenen,
+    [alleSeizoenen, seizoenId],
   );
   const records = useMemo(
     () => groepsRecords(matches, teams, profiles),
@@ -89,8 +106,9 @@ export function EregalerijTab({
         <section className="card">
           <h2 className="card__title">🏆 Eregalerij</h2>
           <p className="empty">
-            Nog geen afgesloten seizoen. Zodra het kwartaal om is, komt de
-            kampioen hier voor altijd te staan.
+            {seizoenId
+              ? "In dit seizoen is er niet gespeeld, dus er valt niets te vieren."
+              : "Nog geen afgesloten seizoen. Zodra het kwartaal om is, komt de kampioen hier voor altijd te staan."}
           </p>
         </section>
       ) : (

@@ -14,11 +14,12 @@ export function Seizoen() {
         volgende kwartaal op zijn spelerskaart.
       </p>
       <p>
-        In de <strong>Eregalerij</strong> van je groep staat de geschiedenis:
-        per afgesloten kwartaal de kampioen, het podium en de pias van dat
-        seizoen. Daar komen ook de <strong>awards</strong> bij — ludieke prijzen
-        voor wie eruit sprong. Je doet mee vanaf {MIN_MATCHES} gespeelde
-        matches; met minder valt er weinig te concluderen.
+        Kies op de <strong>Stand</strong> van je groep een afgesloten kwartaal
+        en de geschiedenis staat eronder: de kampioen, het podium en de pias van
+        dat seizoen — de <strong>Eregalerij</strong>. Daar komen ook de{" "}
+        <strong>awards</strong> bij — ludieke prijzen voor wie eruit sprong. Je
+        doet mee vanaf {MIN_MATCHES} gespeelde matches; met minder valt er weinig
+        te concluderen.
       </p>
       <p>
         <strong>Wrapped</strong> is je eigen jaar- of kwartaaloverzicht: je
