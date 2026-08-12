@@ -242,6 +242,69 @@ describe("<RaceLeaderboard />", () => {
     }
   });
 
+  it("pauzeert zodra het tabblad naar de achtergrond gaat", () => {
+    vi.useFakeTimers();
+    const origHidden = Object.getOwnPropertyDescriptor(Document.prototype, "hidden");
+    try {
+      render(film(filmRows()));
+      fireEvent.click(screen.getByRole("button", { name: /speel af/i }));
+      expect(screen.getByRole("button", { name: /pauzeer/i })).toBeInTheDocument();
+
+      Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+      act(() => {
+        document.dispatchEvent(new Event("visibilitychange"));
+      });
+
+      expect(screen.getByRole("button", { name: /speel af/i })).toBeInTheDocument();
+      // En hij loopt ook niet stiekem door op de achtergrond.
+      const stand = screen.getByRole("slider").getAttribute("value");
+      act(() => {
+        vi.advanceTimersByTime(1800);
+      });
+      expect(screen.getByRole("slider")).toHaveAttribute("value", stand!);
+    } finally {
+      delete (document as unknown as { hidden?: boolean }).hidden;
+      if (origHidden) Object.defineProperty(Document.prototype, "hidden", origHidden);
+      vi.useRealTimers();
+    }
+  });
+
+  it("pauzeert zodra de baan helemaal uit beeld is gescrold", () => {
+    const waarnemers: ((entries: { isIntersecting: boolean }[]) => void)[] = [];
+    class FakeIO {
+      constructor(cb: (entries: { isIntersecting: boolean }[]) => void) {
+        waarnemers.push(cb);
+      }
+      observe() {}
+      disconnect() {}
+    }
+    vi.stubGlobal("IntersectionObserver", FakeIO);
+    try {
+      render(film(filmRows()));
+      fireEvent.click(screen.getByRole("button", { name: /speel af/i }));
+      expect(waarnemers).toHaveLength(1);
+
+      act(() => {
+        waarnemers[0]([{ isIntersecting: false }]);
+      });
+      expect(screen.getByRole("button", { name: /speel af/i })).toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("laat een schermlezer niet elke 900ms in de rede vallen", () => {
+    const { container } = render(film(filmRows()));
+    const status = () => container.querySelector(".race-tijdlijn__status")!;
+    expect(status()).toHaveAttribute("aria-live", "polite");
+
+    fireEvent.click(screen.getByRole("button", { name: /speel af/i }));
+    expect(status()).toHaveAttribute("aria-live", "off");
+
+    fireEvent.click(screen.getByRole("button", { name: /pauzeer/i }));
+    expect(status()).toHaveAttribute("aria-live", "polite");
+  });
+
   it("biedt geen tijdlijn zonder aantoonbare wijziging", () => {
     renderRace([row("p1", 1000), row("p2", 990)]);
     expect(screen.queryByRole("button", { name: /speel af/i })).toBeNull();
@@ -284,5 +347,21 @@ describe("<RaceLeaderboard />", () => {
     expect(css).toMatch(/\.race-board\s*\{[^}]*min-width:\s*0/);
     expect(css).toMatch(/\.race-board__course\s*\{[^}]*overflow:\s*clip/);
     expect(css).toMatch(/@media \(prefers-reduced-motion: no-preference\)/);
+  });
+
+  it("houdt de bediening in beeld, met de as en de poorten eronder", () => {
+    const { container } = render(film(filmRows()));
+    // Alleen als directe zoon van de baan blijft de balk over de volle hoogte
+    // plakken; in de kop stopte hij bij de eerste veeg (#1254).
+    expect(
+      container.querySelector(".race-board > .race-tijdlijn"),
+    ).not.toBeNull();
+
+    const css = readFileSync("src/features/standings/components/RaceLeaderboard.css", "utf8");
+    expect(css).toMatch(/\.race-tijdlijn\s*\{[^}]*position:\s*sticky/);
+    const mobile = css.slice(css.indexOf("@media (max-width: 720px)"));
+    // De as mag niet ónder de balk verdwijnen: zijn offset telt de gemeten
+    // hoogte van de balk mee.
+    expect(mobile).toMatch(/--race-tijdlijn-h/);
   });
 });
