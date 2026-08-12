@@ -179,6 +179,10 @@ const PAIRS = [
   ["lime", "paneel-om", 4.5, "aanbevolen-badge op het omgekeerde paneel"],
   ["lime-ink", "lime", 4.5, "knoptekst op de lime CTA"],
   ["lime-ink", "lime-hover", 4.5, "knoptekst op de lime CTA onder de aanwijzer"],
+  // Segmentbalk (#1255): .tabs en .login-tabs staan op het track-paar.
+  ["ink-soft", "track", 4.5, "inactieve tab op de segmentbalk (#1255)"],
+  ["ink", "track-actief", 4.5, "actieve tab, segment-variant (#1255)"],
+  ["accent", "track-actief", 4.5, "actieve tab, pill-variant (#1255)"],
 ];
 
 // Licht is de bestaande huisstijl: tekorten daar zijn bekend en rapporteren we
@@ -246,6 +250,42 @@ for (const [name, tokens, strict] of [
     if (!ok && strict) darkFailures++;
     console.log(
       `${ok ? "  ok  " : strict ? "  FAIL" : "  let-op"} ${d.toFixed(1).padStart(5)} L* ≥ ${min}  ${hi} boven ${lo} (${label})`,
+    );
+  }
+}
+
+// ---- Richtingsregel (#1255) ----
+// Sommige tokenparen drukken een hiërarchie uit die in béíde thema's dezelfde
+// kant op moet wijzen. Dat is precies wat de ladder hierboven níet vangt: die
+// meet per thema tegen een vast referentievlak, en ziet het dus niet als twee
+// tokens tussen licht en donker stilletjes van volgorde wisselen. Zo werd het
+// actieve segment op de segmentbalk een gat: --surface lag op licht bóven
+// --surface-2 en op donker erónder. Deze regel is in beide thema's hard —
+// een omkering is per definitie een bug, geen bekende licht-schuld.
+// [lichter, donkerder, minimale stap in L*, omschrijving]
+const RICHTING = [
+  ["track-actief", "track", 3, "actief segment ligt op de track"],
+];
+
+let richtingFailures = 0;
+console.log("\n— Richtingsregel: zelfde hiërarchie in beide thema's —");
+for (const [hi, lo, min, label] of RICHTING) {
+  for (const [name, tokens] of [
+    ["licht", light],
+    ["donker", dark],
+  ]) {
+    const a = tokens[hi];
+    const b = tokens[lo];
+    if (!a || !b || !parseColor(a) || !parseColor(b)) {
+      console.error(`  FAIL ${hi} of ${lo} ontbreekt in thema ${name}`);
+      richtingFailures++;
+      continue;
+    }
+    const d = lightness(a) - lightness(b);
+    const ok = d >= min;
+    if (!ok) richtingFailures++;
+    console.log(
+      `  ${ok ? "ok  " : "FAIL"} ${d.toFixed(1).padStart(5)} L* ≥ ${min}  ${hi} boven ${lo}, thema ${name} (${label})`,
     );
   }
 }
@@ -529,12 +569,15 @@ for (const [naam, tokens] of [
 
 if (
   darkFailures > 0 ||
+  richtingFailures > 0 ||
   islandFailures > 0 ||
   divisieFailures > 0 ||
   swirlFailures > 0
 ) {
   if (darkFailures > 0)
     console.error(`\n${darkFailures} donkere contrastpa(a)r(en) onder de drempel.`);
+  if (richtingFailures > 0)
+    console.error(`${richtingFailures} richtingspa(a)r(en) omgekeerd of te vlak.`);
   if (islandFailures > 0)
     console.error(`${islandFailures} kaart-eiland-pa(a)r(en) onder de drempel.`);
   if (divisieFailures > 0)
