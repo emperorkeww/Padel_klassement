@@ -157,3 +157,37 @@ describe("sticky selectiebalk van de poll-wizard (#1083)", () => {
     expect(inSheet).toMatch(/border-top:\s*1px solid rgb\(var\(--glas-diep\)/);
   });
 });
+
+describe("speeldagblok in het dag-sheet (#1207)", () => {
+  const tsx = lees("src/features/agenda/components/DagSheet.tsx");
+  const css = lees("src/features/agenda/Agenda.css");
+  const blok = css.match(
+    /\n\.dagsheet--meerdere \.dagsheet__speeldag \{([\s\S]*?)\n\}/,
+  )![1];
+
+  it("draagt het materiaal alleen als er meer dan één speeldag staat", () => {
+    // Aan `eigenVlak` en niet los in de markup: het enige blok op een dag blijft
+    // bewust randloos, en dan hoort er ook geen tweede ruitje op het sheet te
+    // liggen. Zelfde afweging als bij .pick-chip, waar alleen de gekozen pil het
+    // materiaal draagt.
+    expect(tsx).toMatch(
+      /dagsheet__speeldag\$\{eigenVlak \? " glas glas--subtiel" : ""\}/,
+    );
+    expect(tsx).toMatch(/eigenVlak=\{markers\.length > 1\}/);
+  });
+
+  it("heeft geen dekkende vulling en geen eigen rand meer", () => {
+    // Dit is de bug uit #1207, en dezelfde als op de wizard-voet in #1083: op
+    // een glazen sheet werden twee `background: --surface`-blokken witte kaarten
+    // die het materiaal doodgedrukten. Rand en vulling komen van .glas.
+    expect(blok).not.toMatch(/^\s*background:/m);
+    expect(blok).not.toMatch(/^\s*border(-top)?:/m);
+  });
+
+  it("houdt zijn eigen afronding", () => {
+    // Geen vormklasse: .glas--paneel zou --radius-lg opdringen, en dit blok is
+    // een tegel binnen het sheet en geen paneel eromheen.
+    expect(blok).toMatch(/border-radius:\s*12px/);
+    expect(tsx).not.toMatch(/dagsheet__speeldag[^`]*glas--(paneel|pil|cirkel)/);
+  });
+});

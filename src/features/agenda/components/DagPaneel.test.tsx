@@ -188,6 +188,23 @@ describe("<DagPaneel />", () => {
     );
   });
 
+  it("geeft de gespeeld-rij dezelfde schil als een speeldagkaart (#1207)", () => {
+    // De rij had een eigen, vlakkere variant. Naast de kaarten eronder las dat
+    // als iets uit een andere app, en de Gespeeld-chip verdween erin: die staat
+    // zelf op --surface-2, net als het vlak waar hij op lag.
+    toon({
+      markers: [],
+      datum: "2026-08-01",
+      onPlan: undefined,
+      wedstrijden: [{ date: "2026-08-01", groupId: "g1", matchIds: ["m1"] }],
+    });
+    const rij = screen.getByRole("link", { name: /1 wedstrijd/ });
+    expect(rij).toHaveClass("speeldag");
+    expect(rij.className).not.toMatch(/speeldag--/);
+    // Het staafje draagt het statusverschil, zoals bij elke andere status.
+    expect(rij.querySelector(".speeldag__rail--past")).toBeInTheDocument();
+  });
+
   it("biedt op een lege dag die geweest is niets aan", () => {
     // `onPlan` ontbreekt: Agenda geeft hem niet door voor een dag in het
     // verleden. Daar valt niets meer te plannen, dus ook geen knop.
