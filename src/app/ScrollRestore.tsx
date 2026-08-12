@@ -11,6 +11,20 @@ import { useLocation, useNavigationType } from "react-router-dom";
  *
  * De pagina scrollt op `window` (`.content` heeft geen eigen overflow), dus we
  * bewaren simpelweg `window.scrollY` per history-entry (`location.key`).
+ *
+ * Wat er wanneer gebeurt (#1195):
+ *
+ * - POP (terug/vooruit) → de bewaarde positie van díe entry terugzetten.
+ * - Een ánder pad → naar boven; je begint een nieuwe pagina.
+ * - Hetzelfde pad → niets doen.
+ *
+ * Die laatste regel is er bijgekomen. Dit hing alleen aan `location.key`, en
+ * een `replace` mint óók een nieuwe key (met navigatietype REPLACE, niet POP).
+ * Elke pagina die zijn stand in de querystring bijhoudt — de agenda sinds
+ * #1182, de Spelen-hub via speelParams, het klassement, de feed — schoot
+ * daardoor bij élke filterklik naar de bovenkant. Gemeten op de agenda: een dag
+ * aantikken bracht je van scrollpositie 450 naar 0, zonder dat er iets aan de
+ * lay-out veranderde.
  */
 
 const PREFIX = "scroll:";
@@ -41,8 +55,12 @@ function lees(sleutel: string): number {
 }
 
 export function ScrollRestore() {
-  const { key, hash } = useLocation();
+  const { key, hash, pathname } = useLocation();
   const navigatie = useNavigationType();
+  // Het pad van de vorige entry. Nodig omdat `key` ook verandert als je op
+  // dezelfde pagina blijft en alleen de querystring verzet; zonder dit is een
+  // filterklik niet te onderscheiden van een paginawissel.
+  const vorigPad = useRef<string | null>(null);
   // Laatst waargenomen scrollpositie. Bij het verlaten van de pagina is
   // `window.scrollY` alweer door de browser bijgesteld op de nieuwe (kortere)
   // inhoud, dus die kunnen we op dat moment niet meer vertrouwen.
@@ -80,8 +98,16 @@ export function ScrollRestore() {
 
   // Positie zetten na een routewissel.
   useEffect(() => {
+    const zelfdePagina = vorigPad.current === pathname;
+    vorigPad.current = pathname;
+
     // Een anker wint: daar wil de gebruiker expliciet heen.
     if (hash) return;
+
+    // Blijf je op dezelfde pagina en ging je niet terug, dan verzette je alleen
+    // de stand (een filter, een tab, een gekozen dag). Daar hoort de pagina
+    // niet voor te verspringen.
+    if (zelfdePagina && navigatie !== "POP") return;
 
     const doel = navigatie === "POP" ? lees(key) : 0;
     if (doel <= 0) {
@@ -108,7 +134,7 @@ export function ScrollRestore() {
     return () => {
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [key, hash, navigatie]);
+  }, [key, hash, navigatie, pathname]);
 
   return null;
 }

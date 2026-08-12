@@ -101,13 +101,39 @@ export function besteOptie(
  *  uitloop op de baan en de laatste uitslagen invullen. */
 export const SLOT_EXPIRY_MARGIN_MIN = 30;
 
+/**
+ * Epoch (ms, clubtijd) waarop het slot zélf afgelopen is: start plus duur.
+ *
+ * Dit is "geweest" in de dagelijkse betekenis — de agenda kleurt er zijn
+ * verleden mee en de stemknoppen gaan hierop dicht. Bewust iets anders dan
+ * `optionEndMs` hieronder: dáár zit de marge van #440 bij, omdat een poll pas
+ * later zinloos wordt (uitloop op de baan, uitslagen invullen). Eén definitie
+ * voor beide zou of het raster of de vervaldatum verschuiven.
+ */
+export function momentEindeMs(
+  date: string,
+  startTime: string,
+  duration: number,
+  timeZone: string,
+): number {
+  return clubEpoch(date, startTime, timeZone) + duration * 60_000;
+}
+
 /** Epoch (ms, clubtijd) waarop een optie verlopen is: slot-einde plus marge. */
 function optionEndMs(o: PollOption, timeZone: string): number {
   return (
-    clubEpoch(o.date, o.start_time, timeZone) +
-    (o.duration + SLOT_EXPIRY_MARGIN_MIN) * 60_000
+    momentEindeMs(o.date, o.start_time, o.duration, timeZone) +
+    SLOT_EXPIRY_MARGIN_MIN * 60_000
   );
 }
+
+/**
+ * Uren vóór het eerste moment waarop `poll-deadline` de poll automatisch
+ * vastlegt. Clientkopie van `POLL_AUTO_LOCK_HOURS`
+ * (supabase/functions/poll-deadline/index.ts): alleen om te kúnnen zeggen
+ * wanneer er beslist wordt. Wie die env-waarde verzet, verzet deze mee.
+ */
+export const AUTO_LOCK_HOURS = 12;
 
 /**
  * Of een poll verlopen is (#440). Voor gelockte/geboekte polls telt het

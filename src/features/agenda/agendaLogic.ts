@@ -1,10 +1,4 @@
-import {
-  addDays,
-  clubEpoch,
-  dayInZone,
-  fromMinutes,
-  toMinutes,
-} from "@/lib/utils/time";
+import { addDays, dayInZone, fromMinutes, toMinutes } from "@/lib/utils/time";
 import { longDay } from "@/features/groups/planPollHelpers";
 import type {
   PlayPoll,
@@ -12,7 +6,7 @@ import type {
   PollVoteStatus,
   PollWindow,
 } from "@/features/groups/pollsApi";
-import { PLAYERS_PER_COURT } from "@/features/groups/pollLogic";
+import { PLAYERS_PER_COURT, momentEindeMs } from "@/features/groups/pollLogic";
 import type { GroupSummary } from "@/features/groups/api";
 
 /* ------------------------------------------------------------------ */
@@ -77,12 +71,12 @@ export type AgendaMarker = {
  *
  * Waar de tijdzone wél telt is "is dit al geweest?": dat is een vergelijking
  * met nu, en die moet per poll in de zone van díe club (#783). Vandaar
- * `clubEpoch` met `poll.club_timezone` hieronder.
+ * `momentEindeMs` met `poll.club_timezone` hieronder — dezelfde helper die de
+ * stemkaart op het overzicht gebruikt (#1196).
  */
 function isPast(option: PollOption, timeZone: string, nowMs: number): boolean {
   return (
-    clubEpoch(option.date, option.start_time, timeZone) +
-      option.duration * 60_000 <
+    momentEindeMs(option.date, option.start_time, option.duration, timeZone) <
     nowMs
   );
 }
@@ -95,9 +89,7 @@ function isPast(option: PollOption, timeZone: string, nowMs: number): boolean {
  * geloven.
  */
 export function momentVoorbij(m: AgendaMarker, nowMs: number): boolean {
-  return (
-    clubEpoch(m.date, m.startTime, m.clubTimezone) + m.duration * 60_000 < nowMs
-  );
+  return momentEindeMs(m.date, m.startTime, m.duration, m.clubTimezone) < nowMs;
 }
 
 /**
@@ -475,19 +467,27 @@ export function daysInMonth({ jaar, maand }: Maand): number {
   return new Date(Date.UTC(jaar, maand, 0)).getUTCDate();
 }
 
+/** Rijen die het raster altijd toont. */
+const RASTER_RIJEN = 6;
+
 /**
  * Het maandraster: hele weken van maandag t/m zondag, met de rand-dagen van de
- * vorige en volgende maand erbij. Vijf of zes rijen, afhankelijk van de maand.
+ * vorige en volgende maand erbij.
+ *
+ * Altijd zes rijen (#1195). Een maand heeft er van nature vier, vijf of zes
+ * nodig, en dat liet het raster tussen 286 en 334px wisselen — waardoor bij het
+ * bladeren alles eronder tot 84px op en neer sprong. Doorlopen tot zes rijen
+ * kost een week doorloopdagen die er toch al grijs bij stonden, en levert een
+ * kalender op die niet meer van hoogte verandert. Zo doen iOS en Google het ook.
  */
 export function monthGrid(m: Maand): RasterDag[][] {
   const first = `${m.jaar}-${pad(m.maand)}-01`;
   const last = `${m.jaar}-${pad(m.maand)}-${pad(daysInMonth(m))}`;
   const start = addDays(first, -weekdayIndex(first));
-  const end = addDays(last, 6 - weekdayIndex(last));
 
   const weeks: RasterDag[][] = [];
   let cursor = start;
-  while (cursor <= end) {
+  for (let rij = 0; rij < RASTER_RIJEN; rij++) {
     const week: RasterDag[] = [];
     for (let i = 0; i < 7; i++) {
       week.push({ date: cursor, inMonth: cursor >= first && cursor <= last });

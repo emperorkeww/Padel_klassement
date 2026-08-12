@@ -24,6 +24,8 @@ import { heroOverlay, heroPermanent } from "./heroThema";
 import { DashboardPrompts } from "./components/DashboardPrompts";
 import { EveningCard } from "./components/EveningCard";
 import { PollBanner } from "./components/PollBanner";
+import { StemKaart } from "./components/StemKaart";
+import { kiesStemMomenten } from "./stemMomenten";
 import { VarStemKaart } from "./components/VarStemKaart";
 import { VENSTER_UREN } from "@/features/matches/appeal";
 import { NextMatchCard } from "./components/NextMatchCard";
@@ -270,10 +272,11 @@ export function Dashboard() {
   const nextMatch = planned[0] ?? null;
   // Heeft de "Vandaag"-zone iets te melden? Zo niet, dan blijft ook de kop weg:
   // een lege zone met alleen een label is erger dan geen zone (#911). Voor de
-  // poll gebruiken we dezelfde keuze-functie als de banner zelf, zodat kop en
-  // inhoud niet uit elkaar kunnen lopen.
+  // speeldagen gebruiken we dezelfde twee keuze-functies als de kaarten zelf,
+  // zodat kop en inhoud niet uit elkaar kunnen lopen.
   const heeftPoll =
-    pickPollBanner(openPolls.data ?? [], myId, Date.now()) != null;
+    pickPollBanner(openPolls.data ?? [], myId, Date.now()) != null ||
+    kiesStemMomenten(openPolls.data ?? [], myId, Date.now()) != null;
   const nextMatchGroupName = nextMatch?.group_id
     ? ((groups.data ?? []).find((g) => g.id === nextMatch.group_id)?.name ?? null)
     : null;
@@ -414,6 +417,14 @@ export function Dashboard() {
               <VandaagSkeleton />
             ) : (
               <>
+                {/* Eerst de vraag, dan de reminder: wat op jóu wacht staat
+                    boven wat al vastligt (#1196). */}
+                <StemKaart
+                  bundles={openPolls.data ?? []}
+                  myId={myId}
+                  onGestemd={openPolls.reload}
+                />
+
                 <PollBanner bundles={openPolls.data ?? []} myId={myId} />
 
                 {nextMatch && (

@@ -47,16 +47,29 @@ describe("feedUrl / webcalUrl / googleCalendarUrl", () => {
   it("zet de feed url-encoded in Google's cid-parameter", () => {
     const link = googleCalendarUrl(TOKEN, BASE);
     expect(link).toBe(
-      `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(feedUrl(TOKEN, BASE))}`,
+      `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcalUrl(TOKEN, BASE))}`,
     );
     expect(link).toContain("%3A%2F%2F");
-    expect(new URL(link).searchParams.get("cid")).toBe(feedUrl(TOKEN, BASE));
+    expect(new URL(link).searchParams.get("cid")).toBe(webcalUrl(TOKEN, BASE));
   });
 
-  // Google haalt de feed serverside op: webcal: zou daar een schema zijn dat
-  // hun fetcher niet hoeft te kennen, dus de https-vorm gaat mee.
-  it("geeft Google de https-vorm, niet webcal", () => {
-    expect(googleCalendarUrl(TOKEN, BASE)).not.toContain("webcal");
+  /* Deze assertie stond tot #1197 andersom ("geeft Google de https-vorm, niet
+     webcal"), op de aanname dat Google de feed toch serverside ophaalt en het
+     schema dus niet uitmaakt. Dat klopt voor het ophálen, maar niet voor de
+     abonneervraag: `cid` is voor Google eerst een agenda-id en pas een
+     feed-URL als het schema dat zegt. Elke "voeg toe aan Google Agenda"-link
+     die in het wild werkt gebruikt daarom `cid=webcal%3A%2F%2F…`.
+
+     Dat de aanname anderhalf jaar stil kon blijven staan komt doordat deze
+     route niet lokaal te testen is (Google haalt geen localhost op), dus:
+     verander dit niet zonder het tegen een gedeployde feed te klikken. */
+  it("geeft Google de webcal-vorm in cid, met een https-feed erachter", () => {
+    expect(googleCalendarUrl(TOKEN, BASE)).toContain(encodeURIComponent("webcal://"));
+    expect(new URL(googleCalendarUrl(TOKEN, BASE)).searchParams.get("cid")).toMatch(
+      /^webcal:\/\//,
+    );
+    // De feed zelf blijft gewoon https; webcal is alleen het signaal aan Google.
+    expect(feedUrl(TOKEN, BASE)).toMatch(/^https:\/\//);
   });
 
   it("laat ook hier een afsluitende slash geen dubbele slash worden", () => {

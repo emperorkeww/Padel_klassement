@@ -1,0 +1,56 @@
+/* Stijl van StemRij (#1104, verhuisd in #1196).
+ *
+ * Hoort bij de component en niet bij een route: het dag-sheet van de agenda én
+ * het overzicht zetten dezelfde rij neer, en feature-CSS die aan één route
+ * hangt laat de tweede plek ongestyled achter. De component importeert dit
+ * bestand daarom zelf, naast Proposals.css voor de `seg`-knoppen. */
+
+.stemrij {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  /* Raakdoel in een sheet (#374); de segmentknoppen zelf zijn 34px hoog. */
+  min-height: 44px;
+}
+
+.stemrij__wanneer {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+/* Titel plus bijschrift (#1196): twee regels links, zodat de knoppen rechts
+   hun volle raakdoel houden op een smal scherm. */
+.stemrij__label {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stemrij__bijschrift {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stemrij__aantal {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+/* Vrije banen per moment (#1121): een stil getal naast de stemtelling, maar
+   "vol" mag opvallen — dat is het enige dat je keuze meteen verandert. */
+.stemrij__banen {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.stemrij__banen.is-vol {
+  color: var(--warn);
+}
+
+/* Knoppen rechts uitlijnen, ook als de telling ontbreekt. */
+.stemrij .seg {
+  margin-left: auto;
+}

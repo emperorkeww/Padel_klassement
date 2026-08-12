@@ -26,9 +26,13 @@ import {
 /* expliciete acties, en géén platformdetectie — user-agent-sniffing    */
 /* faalt stil op precies de randgevallen (iPad met desktop-UA,          */
 /* in-app-browsers) waar iemand die knop het hardst nodig heeft.        */
+/*                                                                     */
+/* Sinds #1197 woont dit in een sheet in plaats van onderaan de pagina. */
+/* Vandaar `zonderKop`: het sheet draagt de titel al, en de omlijsting  */
+/* van deze sectie zou een tweede kader binnen dat sheet zijn.          */
 /* ------------------------------------------------------------------ */
 
-export function AgendaAbonnement() {
+export function AgendaAbonnement({ zonderKop = false }: { zonderKop?: boolean } = {}) {
   const toast = useToast();
   const feed = useAsync(getMyFeedToken, []);
   // De net uitgegeven link wint van wat de query ophaalde: opnieuw laden zou
@@ -74,8 +78,10 @@ export function AgendaAbonnement() {
   }
 
   return (
-    <section className="agenda-abo">
-      <h2 className="agenda-abo__titel">Zet je speeldagen in je eigen agenda</h2>
+    <section className={`agenda-abo${zonderKop ? " agenda-abo--kaal" : ""}`}>
+      {!zonderKop && (
+        <h2 className="agenda-abo__titel">Zet je speeldagen in je eigen agenda</h2>
+      )}
       <p className="agenda-abo__tekst">
         Eén keer instellen in Google Agenda, Apple Agenda of Outlook, en daarna
         volgt het vanzelf: een nieuwe speeldag komt erbij, een verzet moment
@@ -112,8 +118,11 @@ export function AgendaAbonnement() {
           </p>
 
           <div className="agenda-abo__apps">
-            {/* Google claimt webcal:// niet, maar vangt deze https-link wél af;
-                zonder deze knop gebeurt er op Android niets (#1117). Nieuw
+            {/* De Google Agenda-app claimt webcal:// niet, maar deze link gaat
+                naar Google's eigen "agenda via URL toevoegen" en dáár komt de
+                abonneervraag; zonder deze knop gebeurt er op Android niets
+                (#1117). De cid-parameter draagt de webcal-vorm, anders leest
+                Google hem als agenda-id en blijft de vraag uit (#1197). Nieuw
                 tabblad, want dit is een website — geen app-overdracht. */}
             <a
               className="btn btn--primary agenda-abo__actie"

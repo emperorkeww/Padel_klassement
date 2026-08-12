@@ -38,6 +38,12 @@
   font-size: var(--fs-xl);
   font-weight: 800;
   letter-spacing: -0.02em;
+  /* Twee regels gereserveerd (#1195). Naast de knoppen blijft er zo weinig
+     breedte over dat "September 2026" omvalt en "Oktober 2026" niet — en dan
+     verschilt de kop 36px per maand en verspringt alles eronder bij het
+     bladeren. Zelfde ingreep als de telling hieronder, en dezelfde reden. */
+  line-height: 1.15;
+  min-height: 2.3em;
 }
 
 .agenda-kop__telling {
@@ -164,6 +170,29 @@
 }
 .agenda-filter::-webkit-scrollbar {
   display: none;
+}
+
+/* Welke kant vervaagt komt uit data-schaduw (#912, hier toegepast in #1195):
+   een fade die er altijd staat liegt zodra je aan het einde bent. Zonder dit
+   liep de derde chip gewoon van het scherm af — gemeten 443px inhoud in een
+   rij van 358px — zonder enig teken dat er meer stond. */
+.agenda-filter {
+  --fade: 24px;
+}
+.agenda-filter[data-schaduw="rechts"] {
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--fade)), transparent);
+}
+.agenda-filter[data-schaduw="links"] {
+  mask-image: linear-gradient(to left, #000 calc(100% - var(--fade)), transparent);
+}
+.agenda-filter[data-schaduw="beide"] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade),
+    #000 calc(100% - var(--fade)),
+    transparent
+  );
 }
 
 .agenda-filter__chip {
@@ -373,6 +402,10 @@
   font-size: 0.6875rem;
   font-weight: 600;
   color: var(--ink-soft);
+  /* De legenda toont alleen wat er in deze maand te zien is, dus hij kan leeg
+     zijn — en dan zou het dagpaneel 17px omhoog schuiven bij het bladeren
+     (#1195). De regel blijft daarom gereserveerd. */
+  min-height: 1.5em;
 }
 
 .agenda-legenda__item {
@@ -970,39 +1003,7 @@
   border-top: 1px solid var(--line);
 }
 
-.stemrij {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  /* Raakdoel in een sheet (#374); de segmentknoppen zelf zijn 34px hoog. */
-  min-height: 44px;
-}
-
-.stemrij__wanneer {
-  font-size: var(--fs-sm);
-  font-weight: 600;
-}
-
-.stemrij__aantal {
-  font-size: var(--fs-xs);
-  color: var(--ink-soft);
-}
-
-/* Vrije banen per moment (#1121): een stil getal naast de stemtelling, maar
-   "vol" mag opvallen — dat is het enige dat je keuze meteen verandert. */
-.stemrij__banen {
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  color: var(--ink-soft);
-}
-.stemrij__banen.is-vol {
-  color: var(--warn);
-}
-
-/* Knoppen rechts uitlijnen, ook als de telling ontbreekt. */
-.stemrij .seg {
-  margin-left: auto;
-}
+/* De rijen zelf staan in StemRij.css, bij de component (#1196). */
 
 .dagsheet__acties {
   display: flex;
@@ -1184,6 +1185,74 @@
    pas de vraag of je het in je eigen agenda wil. Zelfde kaartvorm als de
    instap-kaart, maar met de neutrale lijn — dit is geen uitnodiging om iets
    te doen, het is een voorziening die er staat. */
+/* ---- Weergavekeuze + abonneren (#1197) ---- */
+
+/* De segmentbalk houdt de breedte die ze had; de abonneerknop staat ernaast in
+   plaats van in de maandkop. Daar zou ze in de lijstweergave verdwijnen (die
+   knoppenrij is `hidden`) en op telefoonbreedte vecht ze met "Vandaag" en de
+   twee pijlen om de laatste pixels. */
+.agenda-weergave {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agenda-weergave .tabs--segment {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+/* Dezelfde ronde 44px-vorm als de maandnavigatie: het is bediening van
+   dezelfde orde, en 44 is de aanraakmaat die dit blad aanhoudt. */
+.agenda-abo-knop {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+.agenda-abo-knop:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+.agenda-abo-knop:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* De regel onderaan de pagina die hetzelfde sheet opent. Eén regel, geen kaart:
+   wie hier komt scrolde langs alles heen en heeft een herinnering nodig, geen
+   tweede uitleg. */
+.agenda-abo-teaser {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.agenda-abo-teaser:hover {
+  border-color: var(--accent-line);
+}
+.agenda-abo-teaser:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 .agenda-abo {
   display: flex;
   flex-direction: column;
@@ -1192,6 +1261,14 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
+}
+
+/* In het sheet (#1197) draagt de dialoog de kop en de omlijsting al; een eigen
+   kader eromheen zou een tweede kaart binnen de kaart zijn. */
+.agenda-abo--kaal {
+  padding: 0;
+  border: 0;
+  background: none;
 }
 
 .agenda-abo__titel {

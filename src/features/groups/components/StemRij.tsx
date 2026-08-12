@@ -1,9 +1,11 @@
 import type { PollVoteStatus } from "@/features/groups/pollsApi";
-import { VOTE_SEGMENTS } from "@/features/groups/planPollHelpers";
-import { PollJaIcon, PollNeeIcon } from "@/features/groups/components/pollIconen";
+import { VOTE_SEGMENTS } from "../planPollHelpers";
+import { PollJaIcon, PollNeeIcon } from "./pollIconen";
+import "@/features/groups/Proposals.css";
+import "./StemRij.css";
 
 /* ------------------------------------------------------------------ */
-/* Eén moment om op te stemmen, zoals het in het dag-sheet staat.      */
+/* Eén moment om op te stemmen: dag, telling en de drie knoppen.       */
 /*                                                                     */
 /* Dezelfde handeling als op de Plannen-tab, dus dezelfde knoppen:      */
 /* VOTE_SEGMENTS en de `seg`-klassen uit Proposals.css, precies zoals   */
@@ -12,10 +14,17 @@ import { PollJaIcon, PollNeeIcon } from "@/features/groups/components/pollIconen
 /* rij in een sheet moet dragen. De vrije banen komen er sinds #1121    */
 /* wél bij: zonder dat getal kies je tussen twee momenten op stemmen    */
 /* alleen, terwijl er op één ervan geen baan meer is.                   */
+/*                                                                     */
+/* Woont bij de polls en niet bij de agenda (#1196): stemmen op een     */
+/* moment is groups-domein, de agenda was toevallig de eerste plek waar */
+/* het zo compact moest. Hij brengt daarom zijn eigen CSS mee — feature- */
+/* CSS hangt aan de route, dus zonder deze twee imports komt de rij      */
+/* elders ongestyled binnen.                                            */
 /* ------------------------------------------------------------------ */
 
 export function StemRij({
   titel,
+  bijschrift,
   omschrijving,
   aantal,
   banen,
@@ -24,6 +33,10 @@ export function StemRij({
 }: {
   /** Wat er links staat: "Jouw stem" of "do 13 aug · 20:00". */
   titel: string;
+  /** Tweede regel onder de titel, bijvoorbeeld de groepsnaam wanneer één lijst
+   *  momenten uit meerdere groepen draagt (#1196). Onder en niet achter de
+   *  titel: op een telefoon knijpt een derde tekst de knoppen weg. */
+  bijschrift?: string;
   /** Hetzelfde moment voluit, voor de knopnamen. Een sheet kan meerdere
    *  stemrijen dragen, en dan is drie keer "Ik kan" geen naam maar een raadsel. */
   omschrijving: string;
@@ -36,7 +49,14 @@ export function StemRij({
 }) {
   return (
     <div className="stemrij">
-      <span className="stemrij__wanneer">{titel}</span>
+      {bijschrift ? (
+        <span className="stemrij__label">
+          <span className="stemrij__wanneer">{titel}</span>
+          <span className="stemrij__bijschrift">{bijschrift}</span>
+        </span>
+      ) : (
+        <span className="stemrij__wanneer">{titel}</span>
+      )}
       {aantal != null && (
         <span className="stemrij__aantal">
           {aantal} {aantal === 1 ? "kan" : "kunnen"}

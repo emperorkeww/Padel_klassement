@@ -172,7 +172,16 @@ export function useDashboardData() {
     // een eigen bron en verschenen daardoor gespreid, telkens bovenin de pagina.
     // Eén gedeelde laadvlag laat de zone in één keer wisselen van skeleton naar
     // kaarten, in plaats van drie keer de rest omlaag te duwen.
-    vandaagLoading: openPolls.loading || myMatches.loading || results.loading,
+    // Alleen de eerste keer, zolang er nog niets te tonen valt. useAsync zet
+    // `loading` óók bij een reload terwijl de vorige data gewoon blijft staan,
+    // en die reload komt hier vaak: elke stem op de stemkaart en elk
+    // realtime-event op play_poll_votes. Op de kale vlag flikkerde de hele zone
+    // dan naar het skelet en terug, precies terwijl je op een knop tikte
+    // (#1196). "Nog niets binnen" is de vraag die deze vlag hoort te stellen.
+    vandaagLoading:
+      (openPolls.loading && openPolls.data == null) ||
+      (myMatches.loading && myMatches.data == null) ||
+      (results.loading && results.data == null),
   };
 }
 

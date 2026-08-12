@@ -33,11 +33,10 @@ import {
   type AgendaMarker,
 } from "../agendaLogic";
 import { StatusGlyph } from "@/ui/StatusGlyph";
-import { StemRij } from "./StemRij";
-// De stemknoppen zijn dezelfde als op de Plannen-tab en wonen in Proposals.css;
-// dezelfde weg die PlanTab, MakeTeams en SuggestionsCard nemen. Die regels
-// kopiëren zou ze uit het zicht van de contrast- en glascheck halen.
-import "@/features/groups/Proposals.css";
+// De stemrij woont sinds #1196 bij de polls en brengt zijn eigen stijl mee
+// (StemRij.css + Proposals.css voor de `seg`-knoppen). Die regels hier kopiëren
+// zou ze uit het zicht van de contrast- en glascheck halen.
+import { StemRij } from "@/features/groups/components/StemRij";
 
 /** Hoeveel avatars de stemmersrij toont voordat de rest een telling wordt. */
 const MAX_AVATARS = 6;

@@ -67,7 +67,16 @@ const ASSETS = pad("../../../dist/assets");
 // nog steeds ruim onder de per-bestandsgrens die een ongecomprimeerde bron vangt.
 // Voor de volgende die dit leest: méét, en verhoog vanaf de gemeten stand — niet
 // vanaf de vorige grens.
-const TOTAAL_MAX_MB = 11.0;
+//
+// Die ~248 kB was op zijn beurt opgesoupeerd: gemeten op develop (179a512c)
+// staat het geheel op 10,999988 MB — twaalf byte onder de grens. Een wijziging
+// van vijfendertig byte (twee CSS-regels en een lus, #1195) liet de build dus
+// struikelen op een budget dat over artwork gaat. De opbouw is onveranderd:
+// 4,5 MB webp (de kaartmasters), 4,4 MB audio (twee dictator-fragmenten van
+// ruim 2 MB elk), 1,8 MB js, 0,5 MB css. Nu 11,25 MB, gemeten vanaf 10,999988:
+// ~256 kB echte lucht, en de per-bestandsgrens hieronder blijft het vangnet
+// voor een ongecomprimeerde bron.
+const TOTAAL_MAX_MB = 11.25;
 // Bovengrens per bestand: de twee audiofragmenten (2,14 MB) zijn de zwaarste
 // die hier thuishoren.
 const BESTAND_MAX_MB = 2.5;

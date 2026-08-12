@@ -141,6 +141,37 @@ describe("monthGrid", () => {
     expect(daysInMonth({ jaar: 2028, maand: 2 })).toBe(29);
     expect(daysInMonth({ jaar: 2026, maand: 12 })).toBe(31);
   });
+
+  // Sinds #1195 is het raster in elke maand even hoog. Stond dit niet vast, dan
+  // sprong bij het bladeren alles eronder tot 84px op en neer.
+  it("levert altijd zes rijen, twee jaar lang", () => {
+    for (let i = 0; i < 24; i++) {
+      const maand = { jaar: 2026 + Math.floor(i / 12), maand: (i % 12) + 1 };
+      expect(monthGrid(maand)).toHaveLength(6);
+    }
+  });
+
+  it("vult de kortst mogelijke maand aan met doorloopdagen", () => {
+    // Februari 2021: 28 dagen die op een maandag beginnen — precies vier weken,
+    // het enige geval dat van nature vier rijen oplevert.
+    const weeks = monthGrid({ jaar: 2021, maand: 2 });
+    expect(weeks).toHaveLength(6);
+    expect(weeks[0][0].date).toBe("2021-02-01");
+    expect(weeks[3][6].date).toBe("2021-02-28");
+    // De twee rijen erna zijn maart, en dragen dat ook uit.
+    expect(weeks[4][0]).toEqual({ date: "2021-03-01", inMonth: false });
+    expect(weeks[5][6]).toEqual({ date: "2021-03-14", inMonth: false });
+    expect(weeks.flat().filter((d) => d.inMonth)).toHaveLength(28);
+  });
+
+  it("laat het opgehaalde venster meelopen met de zesde rij", () => {
+    // windowFor leest monthGrid, dus de fetch dekt vanzelf wat je ziet staan.
+    const weeks = monthGrid({ jaar: 2021, maand: 2 });
+    expect(windowFor({ jaar: 2021, maand: 2 })).toEqual({
+      from: weeks[0][0].date,
+      to: weeks[5][6].date,
+    });
+  });
 });
 
 describe("maandvenster", () => {
