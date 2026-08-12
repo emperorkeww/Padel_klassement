@@ -6,8 +6,9 @@
 //    poll krijgen leden die nog niet stemden één herinnering.
 // 2. Auto-sluiten: 12u vóór het eerste moment wordt de best gesteunde,
 //    volgens de momentopname haalbare optie vastgelegd (locked); de
-//    push_on_poll_update-webhook meldt dat aan de stemmers. Zonder één
-//    enkele ja-stem wordt de poll geannuleerd.
+//    push_on_poll_update-webhook meldt dat aan de stemmers. Haalt geen enkel
+//    moment vier spelers (ja + misschien, #1234), dan wordt de poll
+//    geannuleerd — mét een melding aan iedereen die stemde.
 // 3. Speeldag-herinnering: enkele uren vóór een vastgelegd/geboekt moment
 //    krijgen de ja-stemmers een "vanavond padel"-push.
 // 4. Rondes klaarzetten: staat er op de ochtend van de speeldag nog geen
@@ -28,12 +29,15 @@ import { dagInZone } from "../_shared/klok.ts";
 import {
   kiesTitel,
   kiesUit,
+  POLL_AFGELAST,
   POLL_LAATSTE_KANS,
   roastSeed,
   SPEELDAG_VANDAAG,
   TITEL_LAATSTE_KANS,
+  TITEL_POLL_AFGELAST,
   TITEL_SPEELDAG,
 } from "../_shared/roast.ts";
+import { kiesMoment } from "../_shared/pollBeslissing.ts";
 import {
   magRondesZetten,
   RONDE_MIN,
@@ -246,12 +250,21 @@ Deno.serve(async (req) => {
     const allVotes = votes ?? [];
     const yesOn = (optionId: string) =>
       allVotes.filter((v) => v.option_id === optionId && v.status === "yes");
+    /** Unieke stemmers met deze status op dit moment. De PK is (option_id,
+     *  player_id), dus de set is een gordel bij de riem. */
+    const aantalOp = (optionId: string, status: "yes" | "maybe") =>
+      new Set(
+        allVotes
+          .filter((v) => v.option_id === optionId && v.status === status)
+          .map((v) => v.player_id),
+      ).size;
 
     const tz = poll.club_timezone ?? TIME_ZONE;
     if (poll.status === "open") {
       // Verlopen (#440/#445): álle momenten voorbij → stil annuleren zodat de
       // rij niet eeuwig als 'open' blijft staan. Geen push (send-push heeft
-      // geen cancelled-tak); de hoofdquery filtert cancelled er nadien uit.
+      // geen cancelled-tak, en de melding uit #1234 hangt aan de drempel, niet
+      // aan de status); de hoofdquery filtert cancelled er nadien uit.
       if (opts.every((o) => optionEndMs(o, tz) <= now)) {
         await admin
           .from("play_polls")
@@ -294,20 +307,20 @@ Deno.serve(async (req) => {
           .eq("id", poll.id);
       }
 
-      // 2) Auto-sluiten: beste haalbare optie vastleggen.
+      // 2) Auto-sluiten: beste haalbare optie vastleggen, of annuleren als
+      //    geen enkel moment vier spelers haalt (#1234).
       if (first - now <= AUTO_LOCK_HOURS * 3600_000) {
-        const candidates = opts
-          .map((o) => ({ o, yes: yesOn(o.id).length }))
-          .filter(({ o, yes }) => {
-            if (yes === 0) return false;
-            const needed = Math.max(1, Math.ceil(yes / 4));
-            return o.courts_free == null || o.courts_free >= needed;
-          })
-          .sort((a, b) => b.yes - a.yes);
-        if (candidates.length > 0) {
+        const gekozen = kiesMoment(opts.map((o) => ({
+          optionId: o.id,
+          ja: aantalOp(o.id, "yes"),
+          misschien: aantalOp(o.id, "maybe"),
+          courtsFree: o.courts_free,
+          startMs: clubEpoch(o.date, o.start_time, tz),
+        })));
+        if (gekozen) {
           await admin
             .from("play_polls")
-            .update({ status: "locked", locked_option_id: candidates[0].o.id })
+            .update({ status: "locked", locked_option_id: gekozen.optionId })
             .eq("id", poll.id);
           result.locked += 1; // push volgt via de update-webhook
         } else {
@@ -316,6 +329,22 @@ Deno.serve(async (req) => {
             .update({ status: "cancelled" })
             .eq("id", poll.id);
           result.cancelled += 1;
+          // Dit is de énige annulering die iets meldt. De twee verval-takken
+          // hierboven en hieronder zwijgen bewust: daar is de speeldag stil
+          // langs iedereen heen gegleden, hier is er een beslissing genomen.
+          // Uit de cron en niet via de webhook naar send-push, want alleen
+          // hier is de reden bekend — een cancelled-tak daar zou ook bij een
+          // verlopen of handmatig geannuleerde poll afgaan.
+          await bezorg(admin, [{
+            recipients: [...new Set(allVotes.map((v) => v.player_id))],
+            title: kiesTitel(TITEL_POLL_AFGELAST, poll.id),
+            body: `Te weinig spelers voor een baan. ${
+              kiesUit(POLL_AFGELAST, roastSeed(poll.id, "afgelast"))
+            }`,
+            url: `/speeldag/${poll.id}`,
+            soort: "poll",
+            tag: `poll-${poll.id}`,
+          }]);
         }
       }
       continue;
