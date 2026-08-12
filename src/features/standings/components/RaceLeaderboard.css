@@ -74,13 +74,22 @@
   color: color-mix(in srgb, var(--accent) 70%, var(--ink));
 }
 
-/* Tijdlijn-bediening (#1241): stap, scrub of speel het verloop af. */
+/* Tijdlijn-bediening (#1241): stap, scrub of speel het verloop af.
+   Blijft plakken zolang de baan in beeld is (#1254) — je kijkt naar de banen,
+   dus daar hoort de dagaanduiding en de pauzeknop bij te blijven. */
 .race-tijdlijn {
+  position: sticky;
+  top: var(--topbar-h, 0px);
+  z-index: 6;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  gap: var(--sp-1);
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
 }
 .race-tijdlijn__knoppen {
   display: flex;
@@ -91,16 +100,33 @@
   width: clamp(6rem, 14vw, 10rem);
   accent-color: var(--accent);
 }
+/* Kleine tekst op --surface-2 haalt met --ink-soft maar 4,34:1 in het lichte
+   thema; daar is --ink-soft-strong voor (5,13:1). Geldt voor beide regels: de
+   status staat sinds #1254 op het vlak van de balk, het verhaal stond al op
+   --surface-2. */
 .race-tijdlijn__status {
-  color: var(--ink-soft);
+  color: var(--ink-soft-strong);
   font-size: var(--fs-xs);
+}
+/* Staat de tijdlijn uit (zoeken, gekozen periode), dan zegt deze regel waarom
+   — eerder verdween de hele bediening zonder een woord uitleg (#1254). */
+.race-tijdlijn__uit {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-soft-strong);
+  font-size: var(--fs-xs);
+}
+.race-tijdlijn__bereik {
+  color: var(--ink-soft-strong);
 }
 .race-tijdlijn__verhaal {
   margin: 0;
   padding: var(--sp-1) var(--sp-4);
   border-bottom: 1px solid var(--line);
   background: var(--surface-2);
-  color: var(--ink-soft);
+  color: var(--ink-soft-strong);
   font-size: var(--fs-xs);
   font-weight: 700;
 }
@@ -185,7 +211,9 @@ button.race-overview__punt:focus-visible {
   z-index: 5;
   padding: var(--sp-3) var(--sp-4) var(--sp-1);
   background: var(--surface-2);
-  color: var(--ink-soft);
+  /* Zelfde reden als bij de tijdlijn-balk: --ink-soft haalt op --surface-2
+     maar 4,34:1 en de ratinggetallen staan op --fs-xs. */
+  color: var(--ink-soft-strong);
   font-size: var(--fs-xs);
   font-variant-numeric: tabular-nums;
 }
@@ -585,8 +613,13 @@ button.race-overview__punt:focus-visible {
   .race-summary {
     width: 100%;
   }
+  /* Krap houden: samen met de topbar staat deze balk vast bovenaan, en elke
+     pixel gaat van de banen af. 92px → 76px (#1254). */
   .race-tijdlijn {
+    flex-direction: column;
     align-items: stretch;
+    gap: var(--sp-1);
+    padding-block: var(--sp-1);
   }
   .race-tijdlijn__knoppen .btn {
     min-height: 44px;
@@ -598,10 +631,12 @@ button.race-overview__punt:focus-visible {
   .race-tijdlijn__status {
     text-align: center;
   }
+  /* De as en de poorten plakken ónder de bediening; die hoogte wordt gemeten
+     (#1254) omdat de statusregel op een smal scherm wikkelt. */
   .race-axis,
   .race-divisions {
     position: sticky;
-    top: var(--topbar-h, 0px);
+    top: calc(var(--topbar-h, 0px) + var(--race-tijdlijn-h, 0px));
   }
   .race-axis {
     grid-template-columns: 0 minmax(0, 1fr);
@@ -609,7 +644,7 @@ button.race-overview__punt:focus-visible {
   }
   .race-divisions {
     grid-template-columns: 0 minmax(0, 1fr);
-    top: calc(var(--topbar-h, 0px) + 2.25rem);
+    top: calc(var(--topbar-h, 0px) + var(--race-tijdlijn-h, 0px) + 2.25rem);
     padding-inline: var(--sp-2);
   }
   .race-axis__track,

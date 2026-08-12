@@ -22,6 +22,20 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
+// #1254: telt hoe vaak de rijen-keten opnieuw doorgerekend wordt. `recentForm`
+// draait één keer per speler per herberekening van `playerRows`.
+const vormTeller = vi.hoisted(() => ({ n: 0 }));
+vi.mock("@/features/rating/results", async (importActual) => {
+  const echt = await importActual<typeof import("@/features/rating/results")>();
+  return {
+    ...echt,
+    recentForm: (...args: Parameters<typeof echt.recentForm>) => {
+      vormTeller.n++;
+      return echt.recentForm(...args);
+    },
+  };
+});
+
 vi.mock("@/lib/supabase/client", () => {
   // Afgeronde match in Q2 2026, gewonnen door t-cd (Carol & Dave).
   const MATCH_Q2 = {
@@ -768,6 +782,31 @@ describe("Kaarten-tab en kaart-preview (#497)", () => {
         }
       });
     }
+
+    it("rekent de ranglijst niet opnieuw door zodra je scrolt (#1254)", async () => {
+      const herstel = metVolleRanglijst();
+      try {
+        renderPage();
+        await screen.findAllByText(/alice anders/i);
+        const chip = await screen.findByRole("button", { name: /jouw positie/i });
+        const voor = vormTeller.n;
+        expect(voor).toBeGreaterThan(0);
+
+        // Scrollen voorbij de rustzone laat `useVerbergBijScrollen` (#942)
+        // state zetten: het klassement rendert opnieuw.
+        Object.defineProperty(window, "scrollY", { configurable: true, value: 400 });
+        fireEvent.scroll(window);
+        await waitFor(() => expect(chip).toHaveClass("is-verborgen"));
+
+        // Die render mag de hele keten — standen, rijen, sorteren, hernummeren
+        // — niet opnieuw doorrekenen. Hier viel eerder ook het afspelen van de
+        // race-tijdlijn over.
+        expect(vormTeller.n).toBe(voor);
+      } finally {
+        Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
+        herstel();
+      }
+    });
 
     it("blijft weg op de Teams-tab — daar sta jij niet als speler", async () => {
       const herstel = metVolleRanglijst();

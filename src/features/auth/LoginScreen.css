@@ -227,7 +227,9 @@
   gap: var(--sp-1);
   padding: var(--sp-1);
   margin-bottom: var(--sp-6);
-  background: var(--surface-2);
+  /* Zelfde track-paar als .tabs in ui.css (#1255): actief hoort in beide
+     thema's bóven de track te liggen. */
+  background: var(--track);
   border: 1px solid var(--line);
   border-radius: 999px;
 }
@@ -256,7 +258,7 @@
 }
 
 .login-tab.is-active {
-  background: var(--surface);
+  background: var(--track-actief);
   color: var(--accent);
   font-weight: 750;
   box-shadow: var(--shadow-sm);
