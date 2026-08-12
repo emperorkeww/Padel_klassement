@@ -71,6 +71,7 @@ function toon(
   profielen: Record<string, Profile> = {},
 ) {
   const onGestemd = vi.fn();
+  const onClose = vi.fn();
   render(
     <MemoryRouter>
       <ToastProvider>
@@ -83,12 +84,12 @@ function toon(
           myId="me"
           onGestemd={onGestemd}
           onPlan={onPlan}
-          onClose={() => {}}
+          onClose={onClose}
         />
       </ToastProvider>
     </MemoryRouter>,
   );
-  return { onGestemd };
+  return { onGestemd, onClose };
 }
 
 describe("<DagSheet />", () => {
@@ -307,5 +308,99 @@ describe("<DagSheet /> — twijfelaars en stille leden (#1121)", () => {
   it("zegt waar de speeldag op wacht", () => {
     toon([marker({ status: "open", myVote: null })]);
     expect(screen.getByText("Jij moet nog stemmen.")).toBeInTheDocument();
+  });
+});
+
+/* ---- #1180: een kop met sluitknop, en een sheet die korter blijft ---- */
+
+describe("<DagSheet /> — kop en opbouw (#1180)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-08-07T09:00:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  // Dit sheet was het enige van de app zonder enige sluit-affordance: het gaf
+  // geen `title` mee, dus er kwam ook geen X.
+  it("zet de datum als kop, met een sluitknop ernaast", async () => {
+    const { onClose } = toon([marker()]);
+    expect(
+      screen.getByRole("heading", { name: "donderdag 13 augustus" }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Sluiten" }));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  const NAMEN = Object.fromEntries(
+    ["a", "b", "c", "d", "e", "f"].map((k, i) => [
+      `n${i}`,
+      {
+        id: `n${i}`,
+        username: k,
+        full_name: `Speler ${k.toUpperCase()}`,
+        avatar_url: null,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ]),
+  ) as unknown as Record<string, Profile>;
+
+  it("vouwt een lange namenlijst op tot de eerste vier", async () => {
+    toon(
+      [
+        marker({
+          status: "open",
+          myVote: "yes",
+          nietGestemdIds: ["n0", "n1", "n2", "n3", "n4", "n5"],
+        }),
+      ],
+      [],
+      undefined,
+      NAMEN,
+    );
+
+    // Twintig namen als lopende tekst maakten het sheet twee schermen lang.
+    expect(screen.getByText(/Speler A, Speler B, Speler C, Speler D$/)).
+      toBeInTheDocument();
+    expect(screen.queryByText(/Speler E/)).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "+2 meer" }));
+    expect(screen.getByText(/Speler E, Speler F$/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /meer$/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("laat een korte namenlijst met rust", () => {
+    toon(
+      [marker({ status: "open", maybeVoterIds: ["n0", "n1"] })],
+      [],
+      undefined,
+      NAMEN,
+    );
+    expect(screen.getByText("Speler A, Speler B")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /meer$/ })).not.toBeInTheDocument();
+  });
+
+  it("telt de ja-stemmers die niet meer in de avatarrij passen", () => {
+    // Zeven ja-stemmers, zes avatars: de zevende viel stilletjes weg terwijl
+    // het kopje erboven "7 van 8" zei.
+    toon([
+      marker({
+        status: "open",
+        yesVoterIds: ["n0", "n1", "n2", "n3", "n4", "n5", "n6"],
+      }),
+    ]);
+    expect(screen.getByText("Ik kan — 7 van 8")).toBeInTheDocument();
+    expect(screen.getByText("+1")).toBeInTheDocument();
+  });
+
+  it("zet twee speeldagen op één dag in eigen vlakken", () => {
+    toon([marker(), marker({ optionId: "opt-2", pollId: "poll-2" })]);
+    expect(document.querySelector(".dagsheet--meerdere")).toBeInTheDocument();
+  });
+
+  it("houdt één speeldag randloos", () => {
+    toon([marker()]);
+    expect(document.querySelector(".dagsheet--meerdere")).not.toBeInTheDocument();
   });
 });
