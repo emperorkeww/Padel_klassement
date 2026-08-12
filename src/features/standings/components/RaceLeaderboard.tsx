@@ -4,6 +4,7 @@ import {
   useState,
   type CSSProperties,
   type ReactNode,
+  type Ref,
 } from "react";
 import { Link } from "react-router-dom";
 import { BIG_DADDY_EMOJI } from "@/features/dashboard/bigDaddy";
@@ -38,12 +39,18 @@ export function RaceLeaderboard({
   rows,
   axisRows,
   allowTimeline,
+  meRef,
+  onJumpToMe,
 }: {
   rows: Row[];
   /** Het VOLLEDIGE veld (ongefilterd): hier hangen as en pack-drempels aan,
    *  zodat zoeken of filteren de baan niet onder je voeten verschuift. */
   axisRows: Row[];
   allowTimeline: boolean;
+  /** Anker op de eigen lane, voor de "Jouw positie"-chip (#1241). */
+  meRef?: Ref<HTMLDivElement>;
+  /** Spring-naar-mij vanaf de kijker-punt in de overzichtsstrook. */
+  onJumpToMe?: () => void;
 }) {
   const ratedRows = useMemo(
     () => rows.filter((row): row is Row & { rating: number } => row.rating != null),
@@ -165,7 +172,12 @@ export function RaceLeaderboard({
         className="race-board__course"
         style={{ "--race-intervals": axis.ticks.length - 1 } as RaceStyle}
       >
-        <RaceOverview rows={axisRows} axis={axis} checkpoints={checkpoints} />
+        <RaceOverview
+          rows={axisRows}
+          axis={axis}
+          checkpoints={checkpoints}
+          onJumpToMe={onJumpToMe}
+        />
         <RaceAxis axis={axis} />
         <DivisionCheckpointLabels axis={axis} checkpoints={checkpoints} />
         {riser && riserRow && (
@@ -186,6 +198,7 @@ export function RaceLeaderboard({
             playerPrevPosition,
             playerRank,
             isDimmed,
+            meRef,
           })}
         </div>
       </div>
@@ -382,6 +395,7 @@ function renderLanes({
   playerPrevPosition: (row: Row & { rating: number }) => number;
   playerRank: (row: Row & { rating: number }) => number;
   isDimmed: (row: Row & { rating: number }) => boolean;
+  meRef?: Ref<HTMLDivElement>;
 }) {
   const firstToPack = new Map(packs.map((pack) => [pack.rows[0].key, pack]));
   const packedKeys = new Set(packs.flatMap((pack) => pack.rows.map((row) => row.key)));
@@ -424,6 +438,7 @@ function RaceLane({
   playerPrevPosition,
   playerRank,
   isDimmed,
+  meRef,
 }: {
   row: Row & { rating: number };
   axis: DivisionAxis;
@@ -434,6 +449,7 @@ function RaceLane({
   playerPrevPosition: (row: Row & { rating: number }) => number;
   playerRank: (row: Row & { rating: number }) => number;
   isDimmed: (row: Row & { rating: number }) => boolean;
+  meRef?: Ref<HTMLDivElement>;
 }) {
   const shownRating = playerPosition(row);
   const shownRank = playerRank(row);
@@ -458,6 +474,7 @@ function RaceLane({
       data-flip-key={row.key}
       data-rank={shownRank}
       style={laneStyle}
+      ref={row.isMe ? meRef : undefined}
     >
       <div className="race-lane__identity">
         <span className={`rank rank--${shownRank}`}>{shownRank}</span>

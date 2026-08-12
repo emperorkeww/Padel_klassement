@@ -156,6 +156,22 @@
     0 0 0 3px var(--accent);
   opacity: 1;
 }
+/* De kijker-punt is een echte knop (#1241): spring naar jouw baan. */
+button.race-overview__punt {
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+}
+button.race-overview__punt::after {
+  /* Raakvlak ruim boven de 12px-punt zelf. */
+  content: "";
+  position: absolute;
+  inset: -14px;
+}
+button.race-overview__punt:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
 
 .race-axis,
 .race-divisions,
