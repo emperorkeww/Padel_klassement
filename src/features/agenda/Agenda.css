@@ -830,6 +830,13 @@
 .dagsheet {
   display: grid;
   gap: var(--sp-3);
+  /* Hoogte van één chip, hier één keer vastgelegd (#1233): een regel tekst op
+     --fs-xs, plus 4px padding en 1px rand aan de boven- en onderkant. De
+     baanregel reserveert er precies zoveel mee, dus de regelhoogte staat er
+     expliciet bij: erven zou de twee uit elkaar laten lopen zodra de
+     bodyregelhoogte ooit verschuift. */
+  --dagsheet-chip-regel: 1.4;
+  --dagsheet-chip-hoogte: calc(var(--fs-xs) * var(--dagsheet-chip-regel) + 10px);
 }
 
 .dagsheet__datum {
@@ -934,10 +941,30 @@
   border-radius: 999px;
   background: var(--surface-2);
   font-size: var(--fs-xs);
+  line-height: var(--dagsheet-chip-regel);
   font-weight: 600;
 }
 .dagsheet__chip--groep {
   font-weight: 700;
+}
+
+/* Vrije banen en prijs, op een eigen regel (#1233).
+
+   Die twee komen van Playtomic en landen dus ná het openen. Tussen groep en
+   club erbij zetten liet de chiprij naar twee regels springen, en een sheet dat
+   onderaan verankerd staat groeit dan naar bóven — precies onder de vinger die
+   al onderweg was. Deze regel staat er zodra we weten dát er iets onderweg is
+   en houdt zijn hoogte vast: leeg, half gevuld of vol is dezelfde hoogte.
+
+   `nowrap` maakt dat sluitend — hij kán niet groeien. De twee chips passen
+   samen ruim op één regel, ook op 320px. */
+.dagsheet__baan {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  min-height: var(--dagsheet-chip-hoogte);
 }
 
 .dagsheet__tegels {
