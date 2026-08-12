@@ -230,6 +230,14 @@ const LADDER = [
   ["surface-elevated", "surface", 3, "verhoogd vlak (hero, sheets)"],
   ["surface-hover", "surface", 4, "hover is voelbaar"],
   ["surface-active", "surface", 4, "gekozen item is voelbaar"],
+  // Opeenvolgende stappen (#1255). Alles tegen --surface meten liet de drie
+  // bovenste niveaus binnen 4,3 L* van elkaar kruipen: elk haalde ruim zijn
+  // minimum tegen de kaart terwijl sheet, hover en subtiel vlak onderling
+  // hetzelfde vlak waren. Op licht zijn deze twee informatief én misleidend
+  // om een andere reden: daar dónkert hover juist (wit → grijs), dus de stap
+  // is daar negatief by design.
+  ["surface-elevated", "surface-2", 3, "verhoogd vlak boven het subtiele vlak (#1255)"],
+  ["surface-hover", "surface-elevated", 3, "hover boven het verhoogde vlak (#1255)"],
   ["line", "surface", 6, "kaartrand is zichtbaar"],
   ["line-strong", "surface", 12, "sterke rand is duidelijk"],
   ["divider", "surface", 3, "separator blijft zwakker dan een kaartrand"],
@@ -286,6 +294,52 @@ for (const [hi, lo, min, label] of RICHTING) {
     if (!ok) richtingFailures++;
     console.log(
       `  ${ok ? "ok  " : "FAIL"} ${d.toFixed(1).padStart(5)} L* ≥ ${min}  ${hi} boven ${lo}, thema ${name} (${label})`,
+    );
+  }
+}
+
+// ---- Soft-vlakken op donker (#1255) ----
+// De --*-soft-badge-vlakken (en de avatar-achtergronden, zelfde rol) moeten
+// als familie bóven het hover-niveau liggen: een badge ligt op wisselende
+// dragers — kaart, subtiel vlak, sheet — en moet boven de líchtste daarvan
+// blijven, anders leest hij als gat (les uit #1074; vóór #1255 was
+// --accent-soft zelfs donkerder dan --surface-2). Daarnaast een
+// chroma-bodem: op dit lichtheidsniveau leest C* < 8 als grijs en draagt het
+// vlak zijn kleurfamilie niet meer (--slof-soft zat op C* 4,4).
+// Alleen donker: op licht liggen de softs juist ónder de witte kaart — daar
+// is "donkerder dan de drager" de normale richting.
+// Let op bij uitbreiden: dit selecteert op naam. -soft-tokens die tekst zijn
+// in plaats van vlak (--ink-soft) horen in de uitzonderingslijst.
+function chromaOf(value) {
+  const rgb = parseColor(value);
+  if (!rgb) return 0;
+  const [r, g, b] = rgb.slice(0, 3).map((c) => {
+    const v = c / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  const X = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047;
+  const Y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const Z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
+  const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+  return Math.hypot(500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z)));
+}
+
+const SOFT_TEKST = new Set(["ink-soft", "paneel-om-ink-soft"]); // tekst, geen vlak
+let softFailures = 0;
+console.log("\n— Soft-vlakken: boven hover en echt getint (donker) —");
+{
+  const hoverL = lightness(dark["surface-hover"]);
+  for (const [k, v] of Object.entries(dark)) {
+    const isSoft = k.endsWith("-soft") && !SOFT_TEKST.has(k);
+    const isAvatar = /^avatar-h\d-bg$/.test(k);
+    if ((!isSoft && !isAvatar) || !parseColor(v)) continue;
+    const l = lightness(v);
+    const c = chromaOf(v);
+    const okL = l > hoverL;
+    const okC = c >= 8;
+    if (!okL || !okC) softFailures++;
+    console.log(
+      `  ${okL && okC ? "ok  " : "FAIL"} L* ${l.toFixed(1).padStart(5)} > ${hoverL.toFixed(1)}  C* ${c.toFixed(1).padStart(5)} ≥ 8  ${k}`,
     );
   }
 }
@@ -570,6 +624,7 @@ for (const [naam, tokens] of [
 if (
   darkFailures > 0 ||
   richtingFailures > 0 ||
+  softFailures > 0 ||
   islandFailures > 0 ||
   divisieFailures > 0 ||
   swirlFailures > 0
@@ -578,6 +633,8 @@ if (
     console.error(`\n${darkFailures} donkere contrastpa(a)r(en) onder de drempel.`);
   if (richtingFailures > 0)
     console.error(`${richtingFailures} richtingspa(a)r(en) omgekeerd of te vlak.`);
+  if (softFailures > 0)
+    console.error(`${softFailures} soft-vlak(ken) onder hover of te grijs.`);
   if (islandFailures > 0)
     console.error(`${islandFailures} kaart-eiland-pa(a)r(en) onder de drempel.`);
   if (divisieFailures > 0)
