@@ -18,6 +18,7 @@ import {
   rememberName,
   pickRival,
   heroCrestTekst,
+  openstaandeUitslagen,
   pickPollBanner,
 } from "./dashboardHelpers";
 import { heroOverlay, heroPermanent } from "./heroThema";
@@ -70,6 +71,7 @@ export function Dashboard() {
     openPolls,
     completed,
     evening,
+    onMatches,
     coreError,
     retryCore,
     coreLoading,
@@ -259,16 +261,10 @@ export function Dashboard() {
           }
         : { to: "/groepen", label: "Wedstrijden genereren" };
 
-  // Geplande matches waarin ik meedoe: de laagste ronde eerst — dat is de
-  // eerstvolgende match om te spelen (en de uitslag van in te vullen).
-  const planned = myGames
-    .filter((m) => m.status !== "completed")
-    .sort(
-      (a, b) =>
-        (a.round_number ?? Number.MAX_SAFE_INTEGER) -
-          (b.round_number ?? Number.MAX_SAFE_INTEGER) ||
-        a.created_at.localeCompare(b.created_at),
-    );
+  // Mijn openstaande matches, de langst wachtende uitslag vooraan (#1210).
+  // Daarvóór stond de laagste ronde bovenaan; sinds de kaart de score-sheet
+  // zelf opent, is de match van gisteren dringender dan die van volgende week.
+  const planned = openstaandeUitslagen(myGames);
   const nextMatch = planned[0] ?? null;
   // Heeft de "Vandaag"-zone iets te melden? Zo niet, dan blijft ook de kop weg:
   // een lege zone met alleen een label is erger dan geen zone (#911). Voor de
@@ -300,6 +296,10 @@ export function Dashboard() {
     nextBadge,
     vandaag: new Date().toISOString().slice(0, 10),
   });
+
+  // Wat de kaart hieronder níét al oppakt (#1210): de kaart neemt de eerste,
+  // de chip wijst naar de rest.
+  const restUitslagen = Math.max(0, planned.length - 1);
 
   // Komen alle openstaande uitslagen uit één groep, link dan direct naar de
   // rondes van die groep in plaats van naar de algemene matchespagina.
@@ -357,18 +357,23 @@ export function Dashboard() {
       />
 
       {/* De acties staan direct onder de hero (#911): "3 uitslagen wachten op
-          jou" is het enige op deze pagina waar iemand iets mee móet. */}
-      {(planned.length > 0 || incoming.length > 0) && (
+          jou" is het enige op deze pagina waar iemand iets mee móet.
+
+          Sinds #1210 telt de chip alleen wat er *naast* de matchkaart nog
+          openstaat: die kaart vult de eerste uitslag zelf in, dus als er maar
+          één wacht is de chip een omweg naar een handeling die twee kaarten
+          lager al klaarstaat. */}
+      {(restUitslagen > 0 || incoming.length > 0) && (
         <div className="todo-strip">
-          {planned.length > 0 && (
+          {restUitslagen > 0 && (
             <Link
               className="todo-chip"
               to={plannedGroupId ? `/groepen/${plannedGroupId}` : "/spelen"}
             >
-              <span className="todo-chip__count">{planned.length}</span>
-              {planned.length === 1
-                ? "uitslag wacht op jou"
-                : "uitslagen wachten op jou"}
+              <span className="todo-chip__count">{restUitslagen}</span>
+              {restUitslagen === 1
+                ? "andere uitslag wacht op jou"
+                : "andere uitslagen wachten op jou"}
               <span className="todo-chip__pijl" aria-hidden="true">
                 →
               </span>
@@ -433,6 +438,8 @@ export function Dashboard() {
                     groupName={nextMatchGroupName}
                     teams={tmap}
                     profiles={pmap}
+                    myId={myId}
+                    onSaved={onMatches}
                   />
                 )}
 

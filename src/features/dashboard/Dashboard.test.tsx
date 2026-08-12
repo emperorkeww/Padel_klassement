@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -14,7 +22,7 @@ import Dashboard from "./Dashboard";
 import { supabase } from "@/lib/supabase/client";
 import { makeQuery } from "@/test/supabaseMock";
 import { invalidateAll } from "@/lib/supabase/queryCache";
-import { PROFILES } from "@/test/fixtures";
+import { MATCH_PLANNED, PROFILES, TABLES } from "@/test/fixtures";
 import { isoParts } from "@/features/standings/pias";
 
 // De baanbeschikbaarheid komt via fetch (Playtomic-proxy); leeg antwoord volstaat.
@@ -78,16 +86,50 @@ describe("<Dashboard />", () => {
     expect(link.closest(".hero")).not.toBeNull();
   });
 
-  it("toont de eerstvolgende geplande match compact met doorlink naar invullen", async () => {
+  it("toont de eerstvolgende geplande match compact, met de weg naar het detail", async () => {
     renderPage();
     expect(await screen.findByText(/jouw volgende match/i)).toBeInTheDocument();
-    // Compact (#273): geen score-invoer op het overzicht, wél een link naar de
-    // match-detail waar de uitslag ingevuld wordt.
-    const invullen = await screen.findByRole("link", { name: /invullen/i });
-    expect(invullen.getAttribute("href")).toMatch(/^\/matches\//);
-    expect(screen.queryByRole("button", { name: /^opslaan$/i })).toBeNull();
-    // Actiestrook: één openstaande uitslag.
-    expect(await screen.findByText(/uitslag wacht op jou/i)).toBeInTheDocument();
+    // Compact (#273): de kaart zelf blijft klein — corrigeren, verzetten en
+    // verwijderen wonen op het matchdetail, en die weg blijft open.
+    const detail = await screen.findByRole("link", { name: /bekijk de match/i });
+    expect(detail.getAttribute("href")).toMatch(/^\/matches\//);
+    // Eén openstaande uitslag: die pakt de kaart, dus de chip blijft weg (#1210).
+    expect(screen.queryByText(/wacht op jou/i)).toBeNull();
+  });
+
+  // #1210: van "er wacht een uitslag op mij" naar "de uitslag staat er" waren
+  // drie tot vier tikken plus zoekwerk. De sheet hoort hier open te gaan.
+  it("vult een uitslag in zonder het overzicht te verlaten", async () => {
+    renderPage();
+    await screen.findByText(/jouw volgende match/i);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /uitslag invullen/i }),
+    );
+    const sheet = await screen.findByRole("dialog", { name: /uitslag/i });
+
+    await userEvent.type(
+      within(sheet).getByRole("spinbutton", {
+        name: /^score alice anders & bob boers$/i,
+      }),
+      "6",
+    );
+    await userEvent.type(
+      within(sheet).getByRole("spinbutton", {
+        name: /^score carol claes & dave de vos$/i,
+      }),
+      "4",
+    );
+    await userEvent.click(
+      within(sheet).getByRole("button", { name: /uitslag opslaan/i }),
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    // De schrijfactie ging langs de gewone weg (matches.update), niet langs een
+    // eigen dashboard-route.
+    expect(supabase.from).toHaveBeenCalledWith("matches");
   });
 
   it("toont een foutstaat i.p.v. onboarding als een kernquery faalt", async () => {
@@ -233,16 +275,26 @@ describe("<Dashboard />", () => {
   });
 
   it("zet de acties direct onder de hero, vóór de vandaag-zone (#911)", async () => {
-    const { container } = renderPage();
-    await screen.findByText(/jouw volgende match/i);
-    const strip = container.querySelector(".todo-strip");
-    const zone = container.querySelector(".dash-zone");
-    expect(strip).not.toBeNull();
-    expect(zone).not.toBeNull();
-    // compareDocumentPosition: FOLLOWING (4) betekent "zone komt na strip".
-    expect(
-      strip!.compareDocumentPosition(zone!) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    // Twee openstaande uitslagen: de kaart pakt er één, de chip wijst naar de
+    // andere — anders staat de strook er sinds #1210 terecht niet.
+    const extra = { ...MATCH_PLANNED, id: "m-plan-strip", round_number: 3 };
+    TABLES.matches = [...TABLES.matches, extra];
+    invalidateAll();
+    try {
+      const { container } = renderPage();
+      await screen.findByText(/jouw volgende match/i);
+      const strip = container.querySelector(".todo-strip");
+      const zone = container.querySelector(".dash-zone");
+      expect(strip).not.toBeNull();
+      expect(zone).not.toBeNull();
+      // compareDocumentPosition: FOLLOWING (4) betekent "zone komt na strip".
+      expect(
+        strip!.compareDocumentPosition(zone!) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    } finally {
+      TABLES.matches = TABLES.matches.filter((m) => m !== extra);
+      invalidateAll();
+    }
   });
 
   it("reserveert de ruimte van de vandaag-zone tijdens het laden (#911)", async () => {
@@ -286,16 +338,34 @@ describe("<Dashboard />", () => {
     }
   });
 
-  it("geeft de todo-chips een zichtbare pijl (#911)", async () => {
-    const { container } = renderPage();
-    await screen.findByText(/uitslagen wachten op jou|uitslag wacht op jou/i);
-    const chip = container.querySelector(".todo-chip");
-    expect(chip!.querySelector(".todo-chip__pijl")).not.toBeNull();
-    // Decoratie: de pijl hoort niet in de toegankelijke naam van de link.
-    expect(chip!.querySelector(".todo-chip__pijl")).toHaveAttribute(
-      "aria-hidden",
-      "true",
-    );
+  // Sinds #1210 telt de chip alleen wat de matchkaart niet al oppakt: met één
+  // openstaande uitslag zou hij naar een handeling wijzen die twee kaarten lager
+  // klaarstaat.
+  it("wijst met de todo-chip naar de andere openstaande uitslagen (#911, #1210)", async () => {
+    const extra = {
+      ...MATCH_PLANNED,
+      id: "m-plan-2",
+      round_number: 3,
+    };
+    TABLES.matches = [...TABLES.matches, extra];
+    invalidateAll();
+    try {
+      const { container } = renderPage();
+      expect(
+        await screen.findByText(/andere uitslag wacht op jou/i),
+      ).toBeInTheDocument();
+      const chip = container.querySelector(".todo-chip");
+      expect(chip!.querySelector(".todo-chip__count")).toHaveTextContent("1");
+      expect(chip!.querySelector(".todo-chip__pijl")).not.toBeNull();
+      // Decoratie: de pijl hoort niet in de toegankelijke naam van de link.
+      expect(chip!.querySelector(".todo-chip__pijl")).toHaveAttribute(
+        "aria-hidden",
+        "true",
+      );
+    } finally {
+      TABLES.matches = TABLES.matches.filter((m) => m !== extra);
+      invalidateAll();
+    }
   });
 
   it("toont de weekmissies-kaart met drie voortgangsbalken", async () => {
