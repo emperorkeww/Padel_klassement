@@ -305,6 +305,73 @@ describe("<RaceLeaderboard />", () => {
     expect(status()).toHaveAttribute("aria-live", "polite");
   });
 
+  // Wie nu voorstaat, stond op de startdag laatst — daar hoort de baan naar te
+  // luisteren, niet naar de stand van vandaag (#1254).
+  const inhaalRows = (): Row[] => [
+    row("p1", 1050, {
+      rank: 1,
+      shift: 4,
+      name: "Inhaler",
+      history: [{ match_id: "m1", rating_before: 990, rating_after: 1050, delta: 60, played_at: "2026-08-05T20:00:00Z" }],
+    }),
+    row("p2", 1000, {
+      rank: 2,
+      name: "Achterblijver",
+      history: [{ match_id: "m2", rating_before: 1060, rating_after: 1000, delta: -60, played_at: "2026-08-05T20:00:00Z" }],
+    }),
+  ];
+  const laneNamen = (container: HTMLElement) =>
+    [...container.querySelectorAll(".race-lane__name")].map((el) => el.textContent);
+
+  it("herschikt de banen naar de rangen van het getoonde frame", () => {
+    const { container } = render(film(inhaalRows()));
+    expect(laneNamen(container)).toEqual(["Inhaler", "Achterblijver"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Vorige speeldag" }));
+
+    // Op de startdag stond Achterblijver nog voor: de banen wisselen mee, niet
+    // alleen het rangnummer.
+    expect(laneNamen(container)).toEqual(["Achterblijver", "Inhaler"]);
+    expect(container.querySelector(".race-lane")).toHaveAttribute("data-rank", "1");
+  });
+
+  it("toont op het slotframe de verschuiving van díe speeldag, niet de live pijl", () => {
+    render(film(inhaalRows()));
+    // Live hoort de pijl uit het klassement te komen.
+    expect(screen.getByText("▲4")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Vorige speeldag" }));
+    fireEvent.click(screen.getByRole("button", { name: "Volgende speeldag" }));
+
+    // Terug op het laatste frame — maar nog steeds ín de film: Inhaler klom die
+    // dag van #2 naar #1. Eerder klapte hier alles terug op de live waarden.
+    expect(screen.queryByText("▲4")).toBeNull();
+    expect(screen.getByText("▲1")).toBeInTheDocument();
+  });
+
+  it("bepaalt de gevechten op het getoonde frame en niet op de stand van nu", () => {
+    // Nu klitten p2, p3 en p4 samen; op de startdag stonden ze ver uit elkaar.
+    const rows = [
+      row("p1", 1100, { rank: 1 }),
+      row("p2", 1050, { rank: 2 }),
+      row("p3", 1045, {
+        rank: 3,
+        history: [{ match_id: "m1", rating_before: 990, rating_after: 1045, delta: 55, played_at: "2026-08-05T20:00:00Z" }],
+      }),
+      row("p4", 1040, {
+        rank: 4,
+        history: [{ match_id: "m2", rating_before: 900, rating_after: 1040, delta: 140, played_at: "2026-08-05T20:00:00Z" }],
+      }),
+    ];
+    const { container } = render(film(rows));
+    expect(container.querySelector(".race-pack__label")).toHaveTextContent("#2–#4");
+
+    fireEvent.click(screen.getByRole("button", { name: "Vorige speeldag" }));
+
+    // Op de startdag was er geen gevecht: 1100 / 1050 / 990 / 900.
+    expect(container.querySelector(".race-pack")).toBeNull();
+  });
+
   it("biedt geen tijdlijn zonder aantoonbare wijziging", () => {
     renderRace([row("p1", 1000), row("p2", 990)]);
     expect(screen.queryByRole("button", { name: /speel af/i })).toBeNull();
