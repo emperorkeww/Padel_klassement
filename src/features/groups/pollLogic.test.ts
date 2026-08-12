@@ -107,6 +107,28 @@ describe("tallyOption", () => {
     expect(t.needed).toBe(1);
     expect(t.enoughPlayers).toBe(false);
   });
+
+  it("telt ja plus misschien voor de drempel van vier (#1234)", () => {
+    const bijna = tallyOption(option(), [
+      vote("p1", "yes"),
+      vote("p2", "maybe"),
+      vote("p3", "no"),
+    ]);
+    expect(bijna.mee).toBe(2);
+    expect(bijna.tekort).toBe(2);
+
+    const gehaald = tallyOption(option(), [
+      vote("p1", "yes"),
+      vote("p2", "yes"),
+      vote("p3", "maybe"),
+      vote("p4", "maybe"),
+      vote("p5", "no"),
+    ]);
+    expect(gehaald.mee).toBe(4);
+    expect(gehaald.tekort).toBe(0);
+    // De drempel is niet hetzelfde als "genoeg ja-stemmers voor een baan".
+    expect(gehaald.enoughPlayers).toBe(false);
+  });
 });
 
 describe("besteOptie", () => {

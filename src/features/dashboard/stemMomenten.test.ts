@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { kiesStemMomenten } from "./stemMomenten";
+import { kiesStemMomenten, sluitTekst } from "./stemMomenten";
 import type { OpenPollBundle } from "./dashboardHelpers";
 import type { GroupSummary } from "@/features/groups/api";
 import type {
@@ -342,6 +342,35 @@ describe("kiesStemMomenten", () => {
     expect(data).toBeNull();
   });
 
+  it("telt het tekort tot vier uit ja én misschien (#1234)", () => {
+    const data = kiesStemMomenten(
+      [
+        bundel(
+          groep("g1", "Vrijdagpadel"),
+          [poll()],
+          [optie({ id: "o-1" }), optie({ id: "o-2", date: "2026-08-14" })],
+          [
+            // o-1: twee ja en een misschien → nog één nodig. De 'nee' telt niet.
+            stem("o-1", "p1", "yes"),
+            stem("o-1", "p2", "yes"),
+            stem("o-1", "p3", "maybe"),
+            stem("o-1", "p4", "no"),
+            // o-2: vier spelers, waarvan de helft twijfelt → gehaald.
+            stem("o-2", "p1", "yes"),
+            stem("o-2", "p2", "yes"),
+            stem("o-2", "p3", "maybe"),
+            stem("o-2", "p4", "maybe"),
+          ],
+        ),
+      ],
+      "p1",
+      NU,
+    );
+
+    expect(data?.momenten[0]).toMatchObject({ optionId: "o-1", tekort: 1 });
+    expect(data?.momenten[1]).toMatchObject({ optionId: "o-2", tekort: 0 });
+  });
+
   it("geeft niets terug zonder groepen of zonder momenten", () => {
     expect(kiesStemMomenten([], "p1", NU)).toBeNull();
     expect(
@@ -351,5 +380,26 @@ describe("kiesStemMomenten", () => {
         NU,
       ),
     ).toBeNull();
+  });
+});
+
+describe("sluitTekst", () => {
+  it("zegt in gewone taal wanneer er beslist wordt", () => {
+    expect(sluitTekst(null, NU)).toBeNull();
+    expect(sluitTekst(NU - UUR, NU)).toBe("Er wordt zo beslist.");
+    expect(sluitTekst(NU + UUR / 2, NU)).toBe("Sluit binnen het uur.");
+    expect(sluitTekst(NU + 5 * UUR, NU)).toBe("Sluit over 5 uur.");
+  });
+
+  it("noemt het tekort erbij zolang de vier niet gehaald is (#1234)", () => {
+    expect(sluitTekst(NU + 5 * UUR, NU, 2)).toBe(
+      "Sluit over 5 uur — nog 2 spelers nodig.",
+    );
+    expect(sluitTekst(NU + 5 * UUR, NU, 1)).toBe(
+      "Sluit over 5 uur — nog 1 speler nodig.",
+    );
+    expect(sluitTekst(NU - UUR, NU, 3)).toBe(
+      "Er wordt zo beslist — nog 3 spelers nodig.",
+    );
   });
 });

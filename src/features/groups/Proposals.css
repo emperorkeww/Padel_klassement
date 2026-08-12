@@ -468,6 +468,20 @@
   font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
+/* De speeldag haalt geen enkel moment met vier spelers (#1234). Waarschuwing,
+   geen fout: er kan nog gestemd worden tot de cron beslist. */
+.poll-card__tekort {
+  margin: var(--sp-2) 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--warn-line);
+  border-radius: var(--radius-sm);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: var(--fs-xs);
+}
+.poll-row-detail__tekort {
+  color: var(--warn);
+}
 /* Haalbaarheid als meter (#946): een ring die vol/half/leeg staat. Dit is de
    afleesbare status; de knoppengroep ernaast is de actie. Ze deelden eerder
    allebei een ✓ en dan weet je niet wat je aantikt. */

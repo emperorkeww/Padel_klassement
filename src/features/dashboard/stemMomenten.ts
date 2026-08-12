@@ -46,6 +46,9 @@ export type StemMoment = {
   startMs: number;
   /** Aantal spelers met "ik kan" op dit moment. */
   jaAantal: number;
+  /** Spelers die er nog bij moeten voor de drempel van vier (#1234); 0 =
+   *  gehaald. Ja én misschien tellen mee, net als in `poll-deadline`. */
+  tekort: number;
   /** Mijn stem op dít moment; null als ik er niets over zei. */
   mijnStem: PollVoteStatus | null;
 };
@@ -98,6 +101,7 @@ export function kiesStemMomenten(
         ) {
           continue;
         }
+        const telling = tallyOption(option, votes);
         kandidaten.push({
           pollId: poll.id,
           optionId: option.id,
@@ -107,7 +111,8 @@ export function kiesStemMomenten(
           startTime: option.start_time,
           duration: option.duration,
           startMs: clubEpoch(option.date, option.start_time, tz),
-          jaAantal: tallyOption(option, votes).yes.length,
+          jaAantal: telling.yes.length,
+          tekort: telling.tekort,
           mijnStem:
             votes.find(
               (v) => v.option_id === option.id && v.player_id === myId,
@@ -159,16 +164,26 @@ export function kiesStemMomenten(
  * Bewust relatief en niet als klok: het moment hoort bij een club met een eigen
  * tijdzone, en "sluit over 5 uur" heeft die vraag niet. Null zolang het niet
  * dringend is — dan hoeft de kaart er niets over te zeggen.
+ *
+ * Staat dat eerste moment onder de vier (#1234), dan hoort het tekort erbij:
+ * dít is het venster waarin de cron erover beslist, en dan is "sluit over 5
+ * uur" zonder "en dan gaat het zo niet door" de halve waarheid.
  */
 export function sluitTekst(
   sluitMs: number | null,
   nowMs: number,
+  tekort = 0,
 ): string | null {
   if (sluitMs == null) return null;
   const uren = (sluitMs - nowMs) / 3600_000;
-  if (uren <= 0) return "Er wordt zo beslist.";
-  if (uren < 1) return "Sluit binnen het uur.";
-  return `Sluit over ${Math.round(uren)} uur.`;
+  const kop =
+    uren <= 0
+      ? "Er wordt zo beslist"
+      : uren < 1
+        ? "Sluit binnen het uur"
+        : `Sluit over ${Math.round(uren)} uur`;
+  if (tekort <= 0) return `${kop}.`;
+  return `${kop} — nog ${tekort} ${tekort === 1 ? "speler" : "spelers"} nodig.`;
 }
 
 /** Op tijd, en bij gelijke tijd op optie-id: twee groepen die toevallig

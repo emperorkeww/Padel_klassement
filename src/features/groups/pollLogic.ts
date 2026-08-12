@@ -46,6 +46,10 @@ export interface OptionTally {
   needed: number;
   /** Genoeg spelers voor minstens één baan (4+ ja-stemmers). */
   enoughPlayers: boolean;
+  /** Spelers die dit moment openhouden: ja plus misschien. */
+  mee: number;
+  /** Hoeveel er nog bij moeten voor de drempel; 0 = gehaald. */
+  tekort: number;
 }
 
 export function tallyOption(
@@ -56,12 +60,18 @@ export function tallyOption(
   const by = (s: PollVoteStatus) =>
     mine.filter((v) => v.status === s).map((v) => v.player_id);
   const yes = by("yes");
+  const maybe = by("maybe");
+  // Ja + misschien is de telling waarop `poll-deadline` beslist (#1234); zie
+  // supabase/functions/_shared/pollBeslissing.ts.
+  const mee = yes.length + maybe.length;
   return {
     yes,
-    maybe: by("maybe"),
+    maybe,
     no: by("no"),
     needed: courtsNeeded(yes.length),
     enoughPlayers: yes.length >= PLAYERS_PER_COURT,
+    mee,
+    tekort: Math.max(0, PLAYERS_PER_COURT - mee),
   };
 }
 

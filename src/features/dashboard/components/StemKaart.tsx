@@ -70,7 +70,9 @@ export function StemKaart({
   }
 
   const groep = data.momenten[0].groupName;
-  const sluit = sluitTekst(data.sluitMs, now);
+  // Het tekort van het eerste moment: dat is het moment waarover `sluitMs`
+  // gaat, en de rijen staan op tijd gesorteerd.
+  const sluit = sluitTekst(data.sluitMs, now, data.momenten[0].tekort);
 
   return (
     <section className="card stemkaart" aria-labelledby="stemkaart-titel">
