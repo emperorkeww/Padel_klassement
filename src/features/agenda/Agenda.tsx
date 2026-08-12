@@ -12,6 +12,7 @@ import { readFlag, writeFlag } from "@/lib/utils/localFlag";
 import { NieuweSpeeldagSheet } from "@/features/groups/components/NieuweSpeeldagSheet";
 import { getMyGroups } from "@/features/groups/api";
 import { getProfilesMap } from "@/features/profiles/api";
+import { getMatchDaysInWindow } from "@/features/matches/api";
 import { getPollWindow, type PollWindow } from "@/features/groups/pollsApi";
 import {
   buildMarkers,
@@ -29,6 +30,7 @@ import {
   telInMaand,
   volgendeSpeeldagen,
   wachtOpJou,
+  wedstrijdDagen,
   windowFor,
   zelfdeMaand,
   type AgendaMarker,
@@ -128,6 +130,26 @@ export function Agenda() {
     [groepSleutel, vandaag, lijstEinde],
   );
 
+  // Wat er in dit venster gespeeld is (#1182). Alleen tot en met vandaag: een
+  // wedstrijd in de toekomst bestaat niet, en zo blijft de sleutel stabiel
+  // zolang je in dezelfde maand rondkijkt. De grens loopt een dag ruim, want
+  // `played_at` is een tijdstip en de dag wordt in clubtijd bepaald.
+  const wedstrijdEinde = to < vandaag ? to : vandaag;
+  const wedstrijden = useAsync(
+    () =>
+      getMatchDaysInWindow(
+        lijst.map((g) => g.id),
+        `${addDays(from, -1)}T00:00:00.000Z`,
+        `${addDays(wedstrijdEinde, 1)}T23:59:59.999Z`,
+      ),
+    [groepSleutel, from, wedstrijdEinde],
+    { enabled: from <= vandaag },
+  );
+  const wedstrijdenPerDag = useMemo(
+    () => wedstrijdDagen(wedstrijden.data ?? [], globaleClub.timezone),
+    [wedstrijden.data, globaleClub.timezone],
+  );
+
   // Een poll die iemand anders vastlegt of boekt hoort vanzelf in het raster te
   // verschijnen; alle drie de tabellen voeden dezelfde twee vensters.
   // De twee reload-functies zijn stabiel (useAsync geeft ze via useCallback);
@@ -142,6 +164,8 @@ export function Agenda() {
   useRealtime("play_polls", herlaad);
   useRealtime("play_poll_options", herlaad);
   useRealtime("play_poll_votes", herlaad);
+  // Een uitslag die iemand logt zet een dag in het verleden aan (#1182).
+  useRealtime("matches", wedstrijden.reload);
 
   const alleMarkers = useMemo(
     () => buildMarkers(venster.data ?? LEEG_VENSTER, lijst, myId, Date.now()),
@@ -198,6 +222,10 @@ export function Agenda() {
     return out;
   }, [markers, lijstMarkers]);
   const weeks = useMemo(() => monthGrid(maand), [maand]);
+  const groepNamen = useMemo(
+    () => Object.fromEntries(lijst.map((g) => [g.id, g.name])),
+    [lijst],
+  );
   const ledenPerGroep = useMemo(
     () => Object.fromEntries(lijst.map((g) => [g.id, g.member_ids.length])),
     [lijst],
@@ -243,6 +271,14 @@ export function Agenda() {
     );
     return (["booked", "locked", "open"] as const).filter((s) => aanwezig.has(s));
   }, [markers, raster.from, raster.to]);
+
+  const wedstrijdenInBeeld = useMemo(
+    () =>
+      Object.keys(wedstrijdenPerDag).some(
+        (d) => d >= raster.from && d <= raster.to,
+      ),
+    [wedstrijdenPerDag, raster.from, raster.to],
+  );
 
   /**
    * De tab-stop verplaatsen. Loopt hij het raster uit — pijltje voorbij de
@@ -470,6 +506,7 @@ export function Agenda() {
                 <MaandRaster
                   weeks={weeks}
                   perDag={perDag}
+                  wedstrijdenPerDag={wedstrijdenPerDag}
                   bezig={verversen}
                   vandaag={vandaag}
                   gekozenDag={gekozenDag}
@@ -479,7 +516,7 @@ export function Agenda() {
                 />
               )}
 
-              {zichtbareStatussen.length > 0 && (
+              {(zichtbareStatussen.length > 0 || wedstrijdenInBeeld) && (
                 <ul className="agenda-legenda">
                   {zichtbareStatussen.map((status) => (
                     <li key={status} className="agenda-legenda__item">
@@ -487,6 +524,12 @@ export function Agenda() {
                       {statusChip(status)}
                     </li>
                   ))}
+                  {wedstrijdenInBeeld && (
+                    <li className="agenda-legenda__item">
+                      <StatusGlyph status="played" size={8} />
+                      Gespeeld
+                    </li>
+                  )}
                 </ul>
               )}
 
@@ -498,6 +541,8 @@ export function Agenda() {
                   datum={gekozenDag}
                   vandaag={vandaag}
                   markers={perDag[gekozenDag] ?? []}
+                  wedstrijden={wedstrijdenPerDag[gekozenDag] ?? []}
+                  groepNamen={groepNamen}
                   volgende={volgende}
                   ledenPerGroep={ledenPerGroep}
                   profielen={profielen.data ?? {}}

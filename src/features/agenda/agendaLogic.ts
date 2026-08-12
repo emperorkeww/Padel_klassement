@@ -1,4 +1,10 @@
-import { addDays, clubEpoch, fromMinutes, toMinutes } from "@/lib/utils/time";
+import {
+  addDays,
+  clubEpoch,
+  dayInZone,
+  fromMinutes,
+  toMinutes,
+} from "@/lib/utils/time";
 import { longDay } from "@/features/groups/planPollHelpers";
 import type {
   PlayPoll,
@@ -323,6 +329,59 @@ export function volgendeSpeeldagen(
     .slice(0, max);
 }
 
+/* ------------------------------------------------------------------ */
+/* Gespeelde wedstrijden (#1182).                                      */
+/*                                                                     */
+/* De agenda kende alleen speeldagen: polls. Maar loggen kan zonder     */
+/* poll, en dat is de kernflow van de app — een dag met drie           */
+/* wedstrijden erop meldde doodleuk "er stond geen speeldag op".        */
+/* ------------------------------------------------------------------ */
+
+/** De wedstrijden van één groep op één kalenderdag. */
+export type WedstrijdDag = {
+  date: string;
+  groupId: string;
+  matchIds: string[];
+};
+
+/**
+ * Van matchrijen naar dagen.
+ *
+ * `played_at` is een tijdstip, geen kalenderdag — anders dan
+ * `play_poll_options.date`, dat de dag al in clubtijd bewaart. De omrekening
+ * gaat daarom door `dayInZone` met de tijdzone van je clubkeuze, precies zoals
+ * de Vandaag-tab sinds #783: een match van 00:30 hoort bij de avond ervoor als
+ * je zone dat zegt.
+ */
+export function wedstrijdDagen(
+  rijen: { id: string; group_id: string | null; played_at: string | null }[],
+  timeZone: string,
+): Record<string, WedstrijdDag[]> {
+  const perDagGroep = new Map<string, WedstrijdDag>();
+  for (const rij of rijen) {
+    if (rij.played_at == null || rij.group_id == null) continue;
+    const date = dayInZone(rij.played_at, timeZone);
+    const sleutel = `${date}|${rij.group_id}`;
+    const bestaand = perDagGroep.get(sleutel);
+    if (bestaand) bestaand.matchIds.push(rij.id);
+    else
+      perDagGroep.set(sleutel, {
+        date,
+        groupId: rij.group_id,
+        matchIds: [rij.id],
+      });
+  }
+
+  const uit: Record<string, WedstrijdDag[]> = {};
+  for (const dag of perDagGroep.values()) (uit[dag.date] ??= []).push(dag);
+  return uit;
+}
+
+/** Hoeveel wedstrijden er op een dag staan, over de groepen heen. */
+export function telWedstrijden(dagen: WedstrijdDag[]): number {
+  return dagen.reduce((n, d) => n + d.matchIds.length, 0);
+}
+
 /**
  * Alles wat er nog aankomt, als speeldagen op volgorde (#1182) — de bron van de
  * lijstweergave.
@@ -633,13 +692,22 @@ export function dagLabel(
   markers: AgendaMarker[],
   /** Een dag die geweest is nodigt niet uit om te plannen (#1091). */
   verleden = false,
+  /** Aantal gelogde wedstrijden op deze dag (#1182). De ruit in de cel is
+   *  decoratief, dus wat hij betekent moet hier staan. */
+  wedstrijden = 0,
 ): string {
   const dag = longDay(date);
+  const gespeeld =
+    wedstrijden > 0
+      ? `${wedstrijden} ${wedstrijden === 1 ? "wedstrijd" : "wedstrijden"} gespeeld`
+      : null;
   if (markers.length === 0) {
+    if (gespeeld) return `${dag}, ${gespeeld}`;
     return verleden
       ? `${dag}, niets gespeeld`
       : `${dag}, niets gepland, plan een speeldag`;
   }
+  const staart = gespeeld ? `, ${gespeeld}` : "";
   // Bij een open poll hoort de stemstand erbij: de brede cel zegt "stem" of
   // "jij ✓" (markerHint), en een naam die dat verzwijgt spreekt de cel tegen.
   const beschrijf = (m: AgendaMarker) =>
@@ -649,8 +717,8 @@ export function dagLabel(
         ? ", jij stemde al"
         : ", jij stemde nog niet"
       : "");
-  if (markers.length === 1) return `${dag}, ${beschrijf(markers[0])}`;
-  return `${dag}, ${markers.length} speeldagen: ${markers.map(beschrijf).join("; ")}`;
+  if (markers.length === 1) return `${dag}, ${beschrijf(markers[0])}${staart}`;
+  return `${dag}, ${markers.length} speeldagen: ${markers.map(beschrijf).join("; ")}${staart}`;
 }
 
 /** Wat een cel toont en wat er onder "+N" verdwijnt. De "+N" is een regel van

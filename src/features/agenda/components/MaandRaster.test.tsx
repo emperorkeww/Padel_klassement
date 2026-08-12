@@ -161,6 +161,36 @@ describe("<MaandRaster />", () => {
     expect(dag).toHaveAccessibleName(/4 speeldagen/);
   });
 
+  it("markeert een dag waarop gespeeld is, ook zonder speeldag (#1182)", () => {
+    toon({
+      perDag: {},
+      wedstrijdenPerDag: {
+        "2026-08-05": [{ date: "2026-08-05", groupId: "g1", matchIds: ["m1", "m2"] }],
+      },
+    });
+    const dag = screen.getByRole("button", { name: /woensdag 5 augustus/ });
+    expect(stippenVan(dag)).toEqual(["played"]);
+    // De ruit is decoratief; de naam draagt de betekenis.
+    expect(dag).toHaveAccessibleName(/2 wedstrijden gespeeld/);
+  });
+
+  it("laat de speeldagen een plek inleveren voor de ruit", () => {
+    toon({
+      perDag: {
+        "2026-08-13": [
+          marker({ optionId: "a", startTime: "17:00" }),
+          marker({ optionId: "b", startTime: "18:00" }),
+          marker({ optionId: "c", startTime: "19:00" }),
+        ],
+      },
+      wedstrijdenPerDag: {
+        "2026-08-13": [{ date: "2026-08-13", groupId: "g1", matchIds: ["m1"] }],
+      },
+    });
+    const dag = screen.getByRole("button", { name: /donderdag 13 augustus/ });
+    expect(stippenVan(dag)).toEqual(["booked", "booked", "played"]);
+  });
+
   it("houdt de stippenrij ook leeg op zijn plek", () => {
     toon();
     const leeg = screen.getByRole("button", { name: /woensdag 26 augustus/ });

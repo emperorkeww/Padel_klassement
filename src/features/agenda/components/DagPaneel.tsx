@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { longDay, shortDay } from "@/features/groups/planPollHelpers";
 import type { Profile } from "@/types";
 import {
@@ -5,6 +6,7 @@ import {
   metHoofdletter,
   statusLabel,
   type AgendaMarker,
+  type WedstrijdDag,
 } from "../agendaLogic";
 import { StatusGlyph } from "@/ui/StatusGlyph";
 import { SpeeldagKaart } from "./SpeeldagKaart";
@@ -23,6 +25,8 @@ export function DagPaneel({
   datum,
   vandaag,
   markers,
+  wedstrijden = [],
+  groepNamen = {},
   volgende,
   ledenPerGroep,
   profielen,
@@ -34,6 +38,9 @@ export function DagPaneel({
   datum: string;
   vandaag: string;
   markers: AgendaMarker[];
+  /** Wat er die dag gespeeld is, per groep (#1182). */
+  wedstrijden?: WedstrijdDag[];
+  groepNamen?: Record<string, string>;
   /** De eerstvolgende speeldagen ná deze dag. Alleen zichtbaar zolang de dag
    *  zelf leeg is — anders staat er van alles onder elkaar dat over
    *  verschillende dagen gaat. */
@@ -74,25 +81,39 @@ export function DagPaneel({
         )}
       </header>
 
+      {/* Wat er gespeeld is (#1182). Staat boven de lege staat én boven de
+          speeldagkaarten: op een dag die geweest is is dít het nieuws. */}
+      {wedstrijden.length > 0 && (
+        <ul className="dagpaneel__lijst">
+          {wedstrijden.map((w) => (
+            <li key={w.groupId}>
+              <WedstrijdRij dag={w} groepNaam={groepNamen[w.groupId] ?? "Groep"} />
+            </li>
+          ))}
+        </ul>
+      )}
+
       {markers.length === 0 ? (
         <>
-          <div className="dagpaneel__leeg">
-            <p className="dagpaneel__leeg-titel">Nog niets gepland</p>
-            <p className="dagpaneel__leeg-tekst">
-              {onPlan
-                ? "Zet er een speeldag op en laat je groep stemmen."
-                : "Deze dag is geweest en er stond geen speeldag op."}
-            </p>
-            {onPlan && (
-              <button
-                type="button"
-                className="btn btn--primary dagpaneel__plan"
-                onClick={onPlan}
-              >
-                Speeldag plannen
-              </button>
-            )}
-          </div>
+          {wedstrijden.length === 0 && (
+            <div className="dagpaneel__leeg">
+              <p className="dagpaneel__leeg-titel">Nog niets gepland</p>
+              <p className="dagpaneel__leeg-tekst">
+                {onPlan
+                  ? "Zet er een speeldag op en laat je groep stemmen."
+                  : "Deze dag is geweest en er stond geen speeldag op."}
+              </p>
+              {onPlan && (
+                <button
+                  type="button"
+                  className="btn btn--primary dagpaneel__plan"
+                  onClick={onPlan}
+                >
+                  Speeldag plannen
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Een lege dag is de plek waar de vraag "en wanneer dán wel?" komt.
               Hier staat het antwoord, in plaats van dat je maand voor maand
@@ -116,6 +137,40 @@ export function DagPaneel({
         </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * Wat er die dag gespeeld is (#1182).
+ *
+ * Eén rij per groep, want dat is de eenheid waarin je erover praat ("drie
+ * wedstrijden bij Vamos!"). Bij precies één wedstrijd gaat de link naar die
+ * wedstrijd; bij meer naar het matchoverzicht van de groep, want een dagfilter
+ * bestaat daar niet.
+ */
+function WedstrijdRij({
+  dag,
+  groepNaam,
+}: {
+  dag: WedstrijdDag;
+  groepNaam: string;
+}) {
+  const n = dag.matchIds.length;
+  const naar =
+    n === 1 ? `/matches/${dag.matchIds[0]}` : `/spelen?groep=${dag.groupId}`;
+  return (
+    <Link className="speeldag speeldag--gespeeld" to={naar}>
+      <span className="speeldag__rail speeldag__rail--past" aria-hidden="true" />
+      <span className="speeldag__body">
+        <span className="speeldag__top">
+          <span className="speeldag__tijd">
+            {n} {n === 1 ? "wedstrijd" : "wedstrijden"}
+          </span>
+          <span className="speeldag__chip speeldag__chip--past">Gespeeld</span>
+        </span>
+        <span className="speeldag__titel">{groepNaam}</span>
+      </span>
+    </Link>
   );
 }
 
