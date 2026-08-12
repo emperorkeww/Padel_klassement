@@ -214,4 +214,19 @@ describe("<DagPaneel />", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByText(/deze dag is geweest/i)).toBeInTheDocument();
   });
+  // #1213: Banen leest ?datum= al uit de URL, maar niets in de plan-flow wees
+  // erheen — "is er die dag een baan vrij" moest je elders opnieuw intikken.
+  it("wijst naar de vrije banen van deze dag", () => {
+    toon();
+    expect(
+      screen.getByRole("link", { name: /vrije banen op deze dag/i }),
+    ).toHaveAttribute("href", "/banen?datum=2026-08-08");
+  });
+
+  it("laat die wegwijzer weg op een dag die geweest is", () => {
+    toon({ datum: "2026-08-01", markers: [], onPlan: undefined });
+    expect(
+      screen.queryByRole("link", { name: /vrije banen/i }),
+    ).not.toBeInTheDocument();
+  });
 });
