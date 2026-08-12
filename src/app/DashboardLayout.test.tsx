@@ -89,6 +89,9 @@ function renderShell(pad = "/") {
               <Route path="/" element={<div>pagina-inhoud</div>} />
               <Route path="/groepen/:id" element={<div>pagina-inhoud</div>} />
               <Route path="/matches/:id" element={<div>pagina-inhoud</div>} />
+              {/* #1211: de landing van "Ik" en de instellingen ernaast. */}
+              <Route path="/spelers/:id" element={<div>pagina-inhoud</div>} />
+              <Route path="/profiel" element={<div>pagina-inhoud</div>} />
             </Route>
           </Routes>
         </ToastProvider>
@@ -162,6 +165,39 @@ describe("<DashboardLayout />", () => {
     await screen.findByText("pagina-inhoud");
     for (const link of screen.getAllByRole("link", { name: /^spelen$/i })) {
       expect(link).toHaveAttribute("aria-current", "page");
+    }
+  });
+
+  // #1211: "Ik" beloofde identiteit en leverde een wachtwoordveld. De tab en
+  // de avatars landen nu op de eigen spelerskaart; de instellingen blijven
+  // dezelfde sectie, maar zijn niet meer de landing.
+  it("laat 'Ik' en de avatars op het eigen spelersprofiel landen", async () => {
+    renderShell();
+    await screen.findByText("pagina-inhoud");
+
+    for (const link of screen.getAllByRole("link", { name: /^ik$/i })) {
+      expect(link).toHaveAttribute("href", "/spelers/p1");
+    }
+    expect(
+      screen.getByRole("link", { name: /naar mijn profiel/i }),
+    ).toHaveAttribute("href", "/spelers/p1");
+    // De zijbalkvoet (naam + e-mail) wijst naar dezelfde plek.
+    expect(
+      screen.getByText("alice@example.com").closest("a"),
+    ).toHaveAttribute("href", "/spelers/p1");
+  });
+
+  it("houdt 'Ik' actief op de instellingenpagina", async () => {
+    renderShell("/profiel");
+    for (const link of await screen.findAllByRole("link", { name: /^ik$/i })) {
+      expect(link).toHaveAttribute("aria-current", "page");
+    }
+  });
+
+  it("markeert 'Ik' niet op het profiel van iemand anders", async () => {
+    renderShell("/spelers/p2");
+    for (const link of await screen.findAllByRole("link", { name: /^ik$/i })) {
+      expect(link).not.toHaveAttribute("aria-current");
     }
   });
 
