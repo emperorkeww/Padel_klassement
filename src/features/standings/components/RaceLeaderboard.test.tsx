@@ -38,7 +38,7 @@ function renderRace(
         <RaceLeaderboard
           rows={rows}
           axisRows={axisRows}
-          allowTimeline={allowTimeline}
+          timelineUit={allowTimeline ? null : "De tijdlijn staat uit terwijl je zoekt."}
           onJumpToMe={onJumpToMe}
         />
       </ToastProvider>
@@ -191,7 +191,7 @@ describe("<RaceLeaderboard />", () => {
   const film = (rows: Row[]) => (
     <MemoryRouter>
       <ToastProvider>
-        <RaceLeaderboard rows={rows} axisRows={rows} allowTimeline />
+        <RaceLeaderboard rows={rows} axisRows={rows} timelineUit={null} />
       </ToastProvider>
     </MemoryRouter>
   );
@@ -401,6 +401,43 @@ describe("<RaceLeaderboard />", () => {
     expect(container.querySelector(".race-pack")).toBeNull();
   });
 
+  it("zegt waarom de tijdlijn er niet is", () => {
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <RaceLeaderboard
+            rows={filmRows()}
+            axisRows={filmRows()}
+            timelineUit="De tijdlijn staat uit terwijl je zoekt — wis het zoekveld om het verloop af te spelen."
+          />
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("button", { name: /speel af/i })).toBeNull();
+    expect(screen.getByText(/wis het zoekveld om het verloop af te spelen/i)).toBeInTheDocument();
+  });
+
+  it("benoemt de reikwijdte pas als het venster de film echt afknipt", () => {
+    const dagen = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({
+        match_id: `m${i}`,
+        rating_before: 1000 + i * 5,
+        rating_after: 1005 + i * 5,
+        delta: 5,
+        played_at: `2026-08-${String(i + 1).padStart(2, "0")}T20:00:00Z`,
+      }));
+
+    const { unmount } = render(
+      film([row("p1", 1010, { history: dagen(2) }), row("p2", 1000)]),
+    );
+    expect(screen.queryByText(/laatste 10 speeldagen/i)).toBeNull();
+    unmount();
+
+    render(film([row("p1", 1065, { history: dagen(13) }), row("p2", 1000)]));
+    expect(screen.getByText(/laatste 10 speeldagen/i)).toBeInTheDocument();
+  });
+
   it("biedt geen tijdlijn zonder aantoonbare wijziging", () => {
     renderRace([row("p1", 1000), row("p2", 990)]);
     expect(screen.queryByRole("button", { name: /speel af/i })).toBeNull();
@@ -414,7 +451,7 @@ describe("<RaceLeaderboard />", () => {
           <RaceLeaderboard
             rows={[row("p1", 1050), row("p2", 1030, { isMe: true })]}
             axisRows={[row("p1", 1050), row("p2", 1030, { isMe: true })]}
-            allowTimeline={false}
+            timelineUit="De tijdlijn staat uit terwijl je zoekt."
             meRef={meRef}
           />
         </ToastProvider>

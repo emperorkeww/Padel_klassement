@@ -12,7 +12,11 @@ import { TierBadge } from "@/features/rating/components/TierBadge";
 import { useFlip } from "@/lib/hooks/useFlip";
 import { Avatar } from "@/ui/Avatar";
 import { primeAvatarMorph, type Row } from "../leaderboardHelpers";
-import { buildRaceTimeline, type RaceFrame } from "../raceTimeline";
+import {
+  buildRaceTimeline,
+  MAX_TIMELINE_DAYS,
+  type RaceFrame,
+} from "../raceTimeline";
 import {
   calculateDivisionAxis,
   calculateRacePosition,
@@ -50,7 +54,7 @@ const SPEEL_INTERVAL_MS = 900;
 export function RaceLeaderboard({
   rows,
   axisRows,
-  allowTimeline,
+  timelineUit,
   meRef,
   onJumpToMe,
 }: {
@@ -58,7 +62,9 @@ export function RaceLeaderboard({
   /** Het VOLLEDIGE veld (ongefilterd): hier hangen as en pack-drempels aan,
    *  zodat zoeken of filteren de baan niet onder je voeten verschuift. */
   axisRows: Row[];
-  allowTimeline: boolean;
+  /** Waaróm er geen tijdlijn is (zoeken, gekozen periode), of null als hij mag.
+   *  Eén bron: eerder verdween de hele bediening zonder een woord uitleg. */
+  timelineUit: string | null;
   /** Anker op de eigen lane, voor de "Jouw positie"-chip (#1241). */
   meRef?: Ref<HTMLDivElement>;
   /** Spring-naar-mij vanaf de kijker-punt in de overzichtsstrook. */
@@ -84,11 +90,11 @@ export function RaceLeaderboard({
     [ratedRows],
   );
   const timeline = useMemo(
-    () => (allowTimeline ? buildRaceTimeline(ratedRows) : null),
+    () => (timelineUit == null ? buildRaceTimeline(ratedRows) : null),
     // `ratedRows` staat er bewust niet bij: de handtekening hierboven dekt de
     // inhoud, de array-identiteit zegt niets.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [allowTimeline, timelineSig],
+    [timelineUit, timelineSig],
   );
   const me = useMemo(() => findCurrentUser(axisRows), [axisRows]);
   const axis = useMemo(() => {
@@ -136,7 +142,7 @@ export function RaceLeaderboard({
   useEffect(() => {
     setFrameIdx(null);
     setPlaying(false);
-  }, [timelineSig, allowTimeline]);
+  }, [timelineSig, timelineUit]);
 
   useEffect(() => {
     if (!playing || !timeline) return;
@@ -279,7 +285,7 @@ export function RaceLeaderboard({
           directe zoon van de baan kan hij over de volle hoogte blijven plakken
           (#1254). Anders scrolde de dagaanduiding weg juist terwijl je langs de
           banen keek, en was er geen pauzeknop meer in beeld. */}
-      {timeline && (
+      {timeline ? (
         <RaceTijdlijn
           balkRef={tijdlijnRef}
           frames={timeline.frames}
@@ -288,6 +294,8 @@ export function RaceLeaderboard({
           onKies={kiesFrame}
           onSpeel={toggleSpelen}
         />
+      ) : (
+        timelineUit && <p className="race-tijdlijn__uit">{timelineUit}</p>
       )}
 
       {/* De strook is decor; dit is hetzelfde verhaal voor schermlezers. */}
@@ -392,6 +400,9 @@ function RaceTijdlijn({
   const laatste = frames.length - 1;
   const frame = frames[shownIdx];
   const label = frame.day ? `Speeldag ${formatDay(frame.day)}` : "Startstand";
+  // De scrubber suggereert "het hele verhaal", maar de film is begrensd. Dat
+  // zeggen we alleen als de grens ook echt knelt (#1254).
+  const geknipt = laatste >= MAX_TIMELINE_DAYS;
 
   return (
     <div className="race-tijdlijn" ref={balkRef}>
@@ -441,6 +452,12 @@ function RaceTijdlijn({
         {shownIdx === laatste && !playing
           ? "Na de laatste speeldag"
           : `${label} · stand ${shownIdx + 1} van ${frames.length}`}
+        {geknipt && (
+          <span className="race-tijdlijn__bereik">
+            {" "}
+            · laatste {MAX_TIMELINE_DAYS} speeldagen
+          </span>
+        )}
       </span>
     </div>
   );
