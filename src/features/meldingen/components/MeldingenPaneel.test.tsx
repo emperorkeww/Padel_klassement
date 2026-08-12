@@ -31,7 +31,10 @@ const melding = (over: Partial<Melding> = {}): Melding => ({
   ...over,
 });
 
-function toon(meldingen: Melding[], props: Partial<{ laadt: boolean; limiet: number }> = {}) {
+function toon(
+  meldingen: Melding[],
+  props: Partial<{ laadt: boolean; limiet: number; verzoeken: number }> = {},
+) {
   const onClose = vi.fn();
   const onVeranderd = vi.fn();
   render(
@@ -42,6 +45,7 @@ function toon(meldingen: Melding[], props: Partial<{ laadt: boolean; limiet: num
         meldingen={meldingen}
         laadt={props.laadt ?? false}
         limiet={props.limiet ?? 20}
+        verzoeken={props.verzoeken ?? 0}
         onVeranderd={onVeranderd}
       />
     </MemoryRouter>,
@@ -150,6 +154,50 @@ describe("<MeldingenPaneel /> (#1090)", () => {
     expect(
       screen.getByRole("link", { name: /meldingsvoorkeuren/i }),
     ).toBeInTheDocument();
+  });
+
+  // #1232: het overzicht droeg de "N vriendschapsverzoeken"-pil, en de melding
+  // die send-push erbij schrijft verdwijnt zodra je hem gelezen hebt. Deze
+  // regel leest de toestand, dus hij blijft staan tot je antwoordt.
+  describe("openstaande vriendschapsverzoeken (#1232)", () => {
+    it("zet een verzoek bovenaan, met de weg naar de vriendenpagina", async () => {
+      const { onClose } = toon([melding()], { verzoeken: 1 });
+      const link = screen.getByRole("link", {
+        name: /1 vriendschapsverzoek wacht op jou/i,
+      });
+      expect(link).toHaveAttribute("href", "/vrienden");
+      // Vóór de meldingenlijst: dit wacht op een antwoord, die is geschiedenis.
+      expect(
+        link.compareDocumentPosition(screen.getByText("Nieuwe speeldag-poll")) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      await userEvent.click(link);
+      expect(onClose).toHaveBeenCalled();
+    });
+
+    it("telt en vervoegt meervoud", () => {
+      toon([], { verzoeken: 3 });
+      expect(
+        screen.getByRole("link", {
+          name: /3 vriendschapsverzoeken wachten op jou/i,
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("zegt niets over verzoeken als er geen zijn", () => {
+      toon([melding()]);
+      expect(screen.queryByText(/wacht op jou/i)).toBeNull();
+    });
+
+    it("spreekt de lege staat niet tegen", () => {
+      // "Nog niets te melden" terwijl er juist iets op je wacht: dan is de
+      // regel hierboven de inhoud van het paneel.
+      toon([], { verzoeken: 1 });
+      expect(screen.queryByText(/nog niets te melden/i)).toBeNull();
+      expect(
+        screen.getByRole("link", { name: /vriendschapsverzoek wacht op jou/i }),
+      ).toBeInTheDocument();
+    });
   });
 
   it("markeert ongelezen items ook voor wie geen kleur ziet", () => {

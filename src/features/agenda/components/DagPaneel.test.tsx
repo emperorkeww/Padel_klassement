@@ -31,6 +31,7 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
     nietGestemdIds: [],
     courts: null,
     accessCode: null,
+    courtsFree: null,
     changedAt: "2026-08-01T18:00:00.000Z",
     ...overrides,
   };

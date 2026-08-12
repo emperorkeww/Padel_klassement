@@ -36,6 +36,7 @@ import {
   diffPollOptions,
   nonVoters,
   optionState,
+  PLAYERS_PER_COURT,
   tallyOption,
   vastlegbaar,
 } from "@/features/groups/pollLogic";
@@ -310,6 +311,15 @@ export function PollCard({
   /* Momenten waaruit nog te kiezen valt (#1181). Bij één kandidaat voegt de
      lijst niets toe aan de knop die 'm al voorstelt. */
   const keuzes = options.filter((o) => vastlegbaar(o, today));
+
+  /* Zoals het er nu voor staat, annuleert `poll-deadline` deze speeldag
+     (#1234): geen enkel moment dat nog te spelen valt haalt vier spelers op
+     ja of misschien. Op kaartniveau, want het is geen eigenschap van één rij —
+     en de annulering treft de hele speeldag. */
+  const geenMomentHaalbaar =
+    poll.status === "open" &&
+    keuzes.length > 0 &&
+    keuzes.every((o) => tallyOption(o, votes).tekort > 0);
   const magKiezen =
     isManager && (poll.status === "open" || poll.status === "locked");
   const toonKiezer = magKiezen && keuzes.length > (poll.status === "open" ? 1 : 0);
@@ -525,6 +535,13 @@ export function PollCard({
           );
         })}
       </ul>
+
+      {geenMomentHaalbaar && (
+        <p className="poll-card__tekort" role="status">
+          Zoals het nu staat gaat deze speeldag niet door: er zijn{" "}
+          {PLAYERS_PER_COURT} spelers nodig op één moment.
+        </p>
+      )}
 
       {collapsed && poll.status === "locked" && options.length > 1 && (
         <button

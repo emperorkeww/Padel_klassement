@@ -274,25 +274,44 @@ describe("<Dashboard />", () => {
     if (alarm) expect(alarm.closest("details.dash-cijfers")).toBeNull();
   });
 
-  it("zet de acties direct onder de hero, vóór de vandaag-zone (#911)", async () => {
-    // Twee openstaande uitslagen: de kaart pakt er één, de chip wijst naar de
-    // andere — anders staat de strook er sinds #1210 terecht niet.
+  it("zet geen pillenstrook meer onder de hero (#1232)", async () => {
+    // Precies de situatie waarin de strook vóór #1232 verscheen: twee
+    // openstaande uitslagen (de kaart pakt er één, de chip wees naar de rest)
+    // én een binnengekomen vriendschapsverzoek. Beide signalen staan nu
+    // elders — de matchkaart hieronder, de attentiestip op Spelen (#1227) en
+    // de meldingen-inbox (#1090) — dus hier hoort niets meer te staan.
     const extra = { ...MATCH_PLANNED, id: "m-plan-strip", round_number: 3 };
-    TABLES.matches = [...TABLES.matches, extra];
+    const verzoek = {
+      id: "f-pending",
+      requester_id: "p5",
+      addressee_id: "p1",
+      status: "pending",
+      created_at: TABLES.friendships[0].created_at,
+      updated_at: TABLES.friendships[0].updated_at,
+    };
+    const matches = TABLES.matches;
+    const friendships = TABLES.friendships;
+    TABLES.matches = [...matches, extra];
+    TABLES.friendships = [...friendships, verzoek];
     invalidateAll();
     try {
       const { container } = renderPage();
-      await screen.findByText(/jouw volgende match/i);
-      const strip = container.querySelector(".todo-strip");
-      const zone = container.querySelector(".dash-zone");
-      expect(strip).not.toBeNull();
-      expect(zone).not.toBeNull();
-      // compareDocumentPosition: FOLLOWING (4) betekent "zone komt na strip".
-      expect(
-        strip!.compareDocumentPosition(zone!) & Node.DOCUMENT_POSITION_FOLLOWING,
-      ).toBeTruthy();
+      await screen.findByText(/vul de uitslag in|jouw volgende match/i);
+      expect(container.querySelector(".todo-strip")).toBeNull();
+      expect(container.querySelector("[class*='todo-chip']")).toBeNull();
+      expect(screen.queryByText(/vriendschapsverzoek/i)).toBeNull();
+      expect(screen.queryByText(/wacht(en)? op jou/i)).toBeNull();
+      // De hero sluit direct aan op het eerstvolgende blok van de pagina.
+      const hero = container.querySelector(".dashboard > .hero");
+      expect(hero).not.toBeNull();
+      expect(hero!.nextElementSibling).not.toBeNull();
+      expect(hero!.nextElementSibling!.className).not.toMatch(/todo-/);
+      // En het openstaande signaal is verplaatst, niet verdwenen: de matchkaart
+      // biedt de uitslag zelf aan.
+      expect(container.querySelector(".dash-zone")).not.toBeNull();
     } finally {
-      TABLES.matches = TABLES.matches.filter((m) => m !== extra);
+      TABLES.matches = matches;
+      TABLES.friendships = friendships;
       invalidateAll();
     }
   });
@@ -334,36 +353,6 @@ describe("<Dashboard />", () => {
       expect(container.querySelector("details.dash-cijfers")).toBeNull();
     } finally {
       fromMock.mockImplementation(orig);
-      invalidateAll();
-    }
-  });
-
-  // Sinds #1210 telt de chip alleen wat de matchkaart niet al oppakt: met één
-  // openstaande uitslag zou hij naar een handeling wijzen die twee kaarten lager
-  // klaarstaat.
-  it("wijst met de todo-chip naar de andere openstaande uitslagen (#911, #1210)", async () => {
-    const extra = {
-      ...MATCH_PLANNED,
-      id: "m-plan-2",
-      round_number: 3,
-    };
-    TABLES.matches = [...TABLES.matches, extra];
-    invalidateAll();
-    try {
-      const { container } = renderPage();
-      expect(
-        await screen.findByText(/andere uitslag wacht op jou/i),
-      ).toBeInTheDocument();
-      const chip = container.querySelector(".todo-chip");
-      expect(chip!.querySelector(".todo-chip__count")).toHaveTextContent("1");
-      expect(chip!.querySelector(".todo-chip__pijl")).not.toBeNull();
-      // Decoratie: de pijl hoort niet in de toegankelijke naam van de link.
-      expect(chip!.querySelector(".todo-chip__pijl")).toHaveAttribute(
-        "aria-hidden",
-        "true",
-      );
-    } finally {
-      TABLES.matches = TABLES.matches.filter((m) => m !== extra);
       invalidateAll();
     }
   });

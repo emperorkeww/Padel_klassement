@@ -154,17 +154,43 @@ export function DagSheet({
     { enabled: teLaden.length > 0 },
   );
 
-  /** Vrije banen en prijs van één moment; null zolang er niets binnen is. */
+  /**
+   * Hoort er bij dít moment een baantelling? Dezelfde regel als `teLaden`, maar
+   * per moment in plaats van per (club, dag) — en dat verschil doet ertoe
+   * (#1233).
+   *
+   * De opgehaalde data ligt op club en dag, dus een geboekte speeldag naast een
+   * open poll in dezelfde club op dezelfde dag vond die telling ook, en zette
+   * "1 baan vrij" neer bij een baan die allang geboekt was. Hier hangt de
+   * gereserveerde regel aan, dus zonder deze grens zou zo'n blok bovendien lege
+   * ruimte reserveren voor een vraag die het niet stelt.
+   */
+  function baanVerwacht(m: AgendaMarker): boolean {
+    if (m.status !== "open" || m.past) return false;
+    return m.date <= addDays(dateInZone(m.clubTimezone), 6);
+  }
+
+  /**
+   * Vrije banen en prijs van één moment.
+   *
+   * `wacht` zegt of er voor dit moment überhaupt iets opgehaald wordt: daarop
+   * reserveert de baanregel zijn hoogte, ook als het antwoord nooit komt.
+   * Zolang de live-telling er niet is, draagt `vrij` de momentopname die bij het
+   * aanmaken bewaard werd — hetzelfde als PollCard.liveFree() doet.
+   */
   function baanInfo(m: AgendaMarker): {
     vrij: number | null;
     prijs: string | null;
+    wacht: boolean;
   } {
-    const dag = banen.data?.[`${m.clubId}|${m.date}`];
-    if (!dag) return { vrij: null, prijs: null };
+    const wacht = baanVerwacht(m);
+    const dag = wacht ? banen.data?.[`${m.clubId}|${m.date}`] : undefined;
+    if (!dag) return { vrij: wacht ? m.courtsFree : null, prijs: null, wacht };
     const week = [{ date: m.date, data: dag, error: null }];
     return {
-      vrij: vrijeBanenOpSlot(week, m.date, m.startTime, m.duration),
+      vrij: vrijeBanenOpSlot(week, m.date, m.startTime, m.duration) ?? m.courtsFree,
       prijs: prijsPerPersoon(week, m.date, m.startTime, m.duration),
+      wacht,
     };
   }
 
@@ -309,8 +335,12 @@ function Speeldag({
   profielen: Record<string, Profile>;
   stemVan: (m: AgendaMarker) => PollVoteStatus | null;
   onStem: (m: AgendaMarker, status: PollVoteStatus) => void;
-  /** Vrije banen en prijs van een moment; null zolang er niets binnen is. */
-  baanInfo: (m: AgendaMarker) => { vrij: number | null; prijs: string | null };
+  /** Vrije banen en prijs van een moment, plus of er nog iets onderweg is. */
+  baanInfo: (m: AgendaMarker) => {
+    vrij: number | null;
+    prijs: string | null;
+    wacht: boolean;
+  };
   nu: number;
   /** Staat er nog een speeldag naast op deze dag? Dan draagt dit blok zijn eigen
    *  vlak, en op een glazen sheet is dat glas (#1207). Als enige blok blijft het
@@ -325,7 +355,7 @@ function Speeldag({
   const stembaar = marker.status === "open" && !momentVoorbij(marker, nu);
   const stap = volgendeStap(marker);
   const naam = (id: string) => displayName(profielen[id]);
-  const { vrij, prijs } = baanInfo(marker);
+  const { vrij, prijs, wacht } = baanInfo(marker);
   return (
     <article
       className={`dagsheet__speeldag${eigenVlak ? " glas glas--subtiel" : ""}`}
@@ -341,18 +371,31 @@ function Speeldag({
       <p className="dagsheet__chips">
         <span className="dagsheet__chip dagsheet__chip--groep">{marker.groupName}</span>
         <span className="dagsheet__chip">{marker.clubName}</span>
-        {/* Wat er nog vrij is en wat het kost (#1121): precies de twee dingen
-            waar je op zit te wachten als je nog moet beslissen of je "ik kan"
-            aantikt. Ze staan alleen bij een moment waarop nog gestemd wordt. */}
-        {vrij != null && (
-          <span className="dagsheet__chip">
-            {vrij === 0
-              ? "geen baan meer vrij"
-              : `${vrij} ${vrij === 1 ? "baan" : "banen"} vrij`}
-          </span>
-        )}
-        {prijs && <span className="dagsheet__chip">± {prijs} p.p.</span>}
       </p>
+
+      {/* Wat er nog vrij is en wat het kost (#1121): precies de twee dingen
+          waar je op zit te wachten als je nog moet beslissen of je "ik kan"
+          aantikt. Ze staan alleen bij een moment waarop nog gestemd wordt.
+
+          Op een eigen regel en niet tussen de chips hierboven (#1233): die
+          telling komt van Playtomic en landt dus ná het openen, en tussen groep
+          en club erbij komen liet de rij naar twee regels springen — met een
+          sheet dat onderaan verankerd staat, groeit dat recht onder je vinger
+          weg. Deze regel staat er zodra we wéten dat er iets onderweg is, houdt
+          zijn hoogte vast tot het antwoord er is, en blijft ook staan als het
+          nooit komt. `nowrap` maakt dat sluitend: hij kan niet groeien. */}
+      {wacht && (
+        <p className="dagsheet__baan">
+          {vrij != null && (
+            <span className="dagsheet__chip">
+              {vrij === 0
+                ? "geen baan meer vrij"
+                : `${vrij} ${vrij === 1 ? "baan" : "banen"} vrij`}
+            </span>
+          )}
+          {prijs && <span className="dagsheet__chip">± {prijs} p.p.</span>}
+        </p>
+      )}
 
       {/* Waar deze speeldag op wacht — dezelfde zin als op de kaart in het
           dagpaneel, zodat het sheet niets nieuws hoeft te beweren (#1121). */}

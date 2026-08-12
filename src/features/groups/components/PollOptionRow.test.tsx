@@ -41,6 +41,8 @@ const TALLY: OptionTally = {
   no: [],
   needed: 1,
   enoughPlayers: false,
+  mee: 3,
+  tekort: 1,
 };
 
 function renderRow(
@@ -92,6 +94,38 @@ describe("<PollOptionRow /> misschien-stemmers (#803)", () => {
     renderRow({ votable: false });
 
     expect(screen.getByText("1 mee · 2?")).toBeInTheDocument();
+  });
+});
+
+// Onder de vier spelers annuleert `poll-deadline` de speeldag (#1234). Dat mag
+// je niet pas uit de annuleringsmelding hoeven te leren.
+describe("<PollOptionRow /> — drempel van vier (#1234)", () => {
+  it("noemt in het detail hoeveel spelers er nog bij moeten", () => {
+    renderRow({ detailOpen: true });
+
+    expect(
+      screen.getByText(/nog 1 speler nodig — onder de 4 gaat de speeldag niet door/i),
+    ).toBeInTheDocument();
+  });
+
+  it("draagt het tekort ook in de naam van de statusknop", () => {
+    renderRow();
+
+    expect(
+      screen.getByRole("button", { name: /nog 1 speler\(s\) nodig/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("zwijgt zodra de vier gehaald is", () => {
+    renderRow({
+      tally: { ...TALLY, maybe: ["p2", "p3", "p4"], mee: 4, tekort: 0 },
+      detailOpen: true,
+    });
+
+    expect(screen.queryByText(/nodig — onder de/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^haalbaarheid: haalbaar — uitleg$/i }),
+    ).toBeInTheDocument();
   });
 });
 
