@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 
 // api.ts importeert het snapshot-leespad (#405) en dus de supabase-client;
 // in de testomgeving bestaat die env niet, dus mocken.
@@ -102,5 +103,27 @@ describe("WeekGrid", () => {
     expect(link.getAttribute("href")).toMatch(
       /^https:\/\/playtomic\.io\/clubs\//,
     );
+  });
+  // #1213: het weekraster is waar "dan maar donderdag" ontstaat, dus daar hoort
+  // de stap naar het plannen. De link gaat naar de agenda — één plan-flow.
+  it("geeft elke dag een weg naar het plannen", () => {
+    render(
+      <MemoryRouter>
+        <WeekGrid
+          week={week}
+          duration={null}
+          onPickDay={() => {}}
+          planPad={(d) => `/agenda?dag=${d}&plan=1`}
+        />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByRole("link", { name: /plan een speeldag op .*1 jan/i }),
+    ).toHaveAttribute("href", "/agenda?dag=2099-01-01&plan=1");
+  });
+
+  it("laat die weg weg zonder groep", () => {
+    render(<WeekGrid week={week} duration={null} onPickDay={() => {}} />);
+    expect(screen.queryByRole("link", { name: /plan een speeldag/i })).toBeNull();
   });
 });

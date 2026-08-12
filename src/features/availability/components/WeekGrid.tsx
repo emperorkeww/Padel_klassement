@@ -1,4 +1,5 @@
 import { Fragment, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { coveredTimes, type CourtRow, type WeekDay } from "@/features/availability/api";
 import { useClub } from "@/features/availability/club";
 import {
@@ -35,11 +36,15 @@ export function WeekGrid({
   week,
   duration,
   onPickDay,
+  planPad,
 }: {
   week: WeekDay[];
   /** Duurfilter in minuten; null = alle duren tonen. */
   duration: number | null;
   onPickDay: (date: string) => void;
+  /** Waar "Plan" per dag heen wijst (#1213). Ontbreekt voor wie in geen enkele
+   *  groep zit: dan is er niets om een speeldag voor te starten. */
+  planPad?: (date: string) => string;
 }) {
   const club = useClub();
   const timeZone = week.find((d) => d.data)?.data?.timeZone ?? club.timezone;
@@ -143,6 +148,19 @@ export function WeekGrid({
                 <span className="sr-only">
                   {summary ? `Vrije starttijden — ${summary}.` : "Geen vrije starttijden."}
                 </span>
+                {/* De weg terug naar plannen, per dag (#1213): in het
+                    weekraster kijk je juist naar dagen naast elkaar, dus dít is
+                    de plek waar "dan maar donderdag" ontstaat. Alleen vooruit;
+                    een dag die geweest is valt niet meer te plannen. */}
+                {planPad && day.date >= today && (
+                  <Link
+                    className="week-rowhead__plan"
+                    to={planPad(day.date)}
+                    aria-label={`Plan een speeldag op ${label}`}
+                  >
+                    Plan
+                  </Link>
+                )}
               </>
             ) : null
           }
