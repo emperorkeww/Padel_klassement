@@ -164,6 +164,11 @@ export function useDashboardData() {
     // Afgeleid uit de uitslagen.
     completed,
     evening,
+    // Herlaadcascade na een geschreven uitslag (#1210): dezelfde als die het
+    // realtime-abonnement afvuurt, want het is dezelfde gebeurtenis. De kaart
+    // die zelf een uitslag opslaat wacht niet op het abonnement — die weet het
+    // al.
+    onMatches,
     // Foutafhandeling van de kernbronnen.
     coreError,
     retryCore,

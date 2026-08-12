@@ -77,6 +77,44 @@ export function matchWhen(m: Match, groupName?: string | null): string {
   return parts.join(" · ");
 }
 
+/**
+ * Mijn openstaande matches, met de uitslag die het langst wacht vooraan
+ * (#1210).
+ *
+ * Het overzicht sorteerde tot nu toe op rondenummer: dat is "wat je straks
+ * speelt", en daar hoort de kaart naar te wijzen zolang alles nog moet komen.
+ * Maar de kaart opent sinds #1210 de score-sheet, en dan is de match van
+ * gisteren waarvan niemand de uitslag invulde dringender dan de ronde van
+ * volgende week. Een match zonder tijdstip kan niet verstreken zijn en blijft
+ * dus in de tweede groep, op rondenummer.
+ */
+export function openstaandeUitslagen(matches: Match[], now = Date.now()): Match[] {
+  const open = matches.filter((m) => m.status !== "completed");
+  const verstreken = (m: Match) =>
+    m.played_at != null && new Date(m.played_at).getTime() <= now;
+  const wachtend = open
+    .filter(verstreken)
+    .sort((a, b) => (a.played_at ?? "").localeCompare(b.played_at ?? ""));
+  const komend = open
+    .filter((m) => !verstreken(m))
+    .sort(
+      (a, b) =>
+        (a.round_number ?? Number.MAX_SAFE_INTEGER) -
+          (b.round_number ?? Number.MAX_SAFE_INTEGER) ||
+        a.created_at.localeCompare(b.created_at),
+    );
+  return [...wachtend, ...komend];
+}
+
+/** Wacht deze match al op zijn uitslag, of moet hij nog gespeeld worden? */
+export function wachtOpUitslag(m: Match, now = Date.now()): boolean {
+  return (
+    m.status !== "completed" &&
+    m.played_at != null &&
+    new Date(m.played_at).getTime() <= now
+  );
+}
+
 /** Aanwezigheid van vandaag per eigen groep.
  *
  *  Drie queries in totaal, niet drie per groep (#736): dit draait bij elke

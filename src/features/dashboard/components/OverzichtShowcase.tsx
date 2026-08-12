@@ -162,6 +162,7 @@ export function OverzichtShowcase() {
               groupName="Vrijdagavond Padel"
               teams={TEAMS}
               profiles={PROFIELEN}
+              myId="p1"
             />
           </div>
         </section>

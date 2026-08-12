@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { ToastProvider } from "@/ui/ToastProvider";
 import type { Badge } from "@/features/profiles/badges";
 import type { Match, Profile, Team } from "@/types";
 import { DashExtras } from "./DashExtras";
@@ -82,12 +83,15 @@ describe("<NextMatchCard /> — namen boven metadata (#940)", () => {
   it("toont alle vier de namen voluit", () => {
     render(
       <MemoryRouter>
-        <NextMatchCard
-          match={MATCH}
-          groupName="Vrijdagavond Padel"
-          teams={TEAMS}
-          profiles={PROFIELEN}
-        />
+        <ToastProvider>
+          <NextMatchCard
+            match={MATCH}
+            groupName="Vrijdagavond Padel"
+            teams={TEAMS}
+            profiles={PROFIELEN}
+            myId="p1"
+          />
+        </ToastProvider>
       </MemoryRouter>,
     );
     for (const naam of Object.values(PROFIELEN))
@@ -99,12 +103,15 @@ describe("<NextMatchCard /> — namen boven metadata (#940)", () => {
     // volle breedte en de namen ernaast niet. Daar staat nu "vs".
     const { container } = render(
       <MemoryRouter>
-        <NextMatchCard
-          match={MATCH}
-          groupName="Vrijdagavond Padel"
-          teams={TEAMS}
-          profiles={PROFIELEN}
-        />
+        <ToastProvider>
+          <NextMatchCard
+            match={MATCH}
+            groupName="Vrijdagavond Padel"
+            teams={TEAMS}
+            profiles={PROFIELEN}
+            myId="p1"
+          />
+        </ToastProvider>
       </MemoryRouter>,
     );
     expect(container.querySelector(".match-card__mid")).toHaveTextContent("vs");
