@@ -1184,6 +1184,74 @@
    pas de vraag of je het in je eigen agenda wil. Zelfde kaartvorm als de
    instap-kaart, maar met de neutrale lijn — dit is geen uitnodiging om iets
    te doen, het is een voorziening die er staat. */
+/* ---- Weergavekeuze + abonneren (#1197) ---- */
+
+/* De segmentbalk houdt de breedte die ze had; de abonneerknop staat ernaast in
+   plaats van in de maandkop. Daar zou ze in de lijstweergave verdwijnen (die
+   knoppenrij is `hidden`) en op telefoonbreedte vecht ze met "Vandaag" en de
+   twee pijlen om de laatste pixels. */
+.agenda-weergave {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agenda-weergave .tabs--segment {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+/* Dezelfde ronde 44px-vorm als de maandnavigatie: het is bediening van
+   dezelfde orde, en 44 is de aanraakmaat die dit blad aanhoudt. */
+.agenda-abo-knop {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+.agenda-abo-knop:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+.agenda-abo-knop:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* De regel onderaan de pagina die hetzelfde sheet opent. Eén regel, geen kaart:
+   wie hier komt scrolde langs alles heen en heeft een herinnering nodig, geen
+   tweede uitleg. */
+.agenda-abo-teaser {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.agenda-abo-teaser:hover {
+  border-color: var(--accent-line);
+}
+.agenda-abo-teaser:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 .agenda-abo {
   display: flex;
   flex-direction: column;
@@ -1192,6 +1260,14 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
+}
+
+/* In het sheet (#1197) draagt de dialoog de kop en de omlijsting al; een eigen
+   kader eromheen zou een tweede kaart binnen de kaart zijn. */
+.agenda-abo--kaal {
+  padding: 0;
+  border: 0;
+  background: none;
 }
 
 .agenda-abo__titel {

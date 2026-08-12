@@ -26,9 +26,13 @@ import {
 /* expliciete acties, en géén platformdetectie — user-agent-sniffing    */
 /* faalt stil op precies de randgevallen (iPad met desktop-UA,          */
 /* in-app-browsers) waar iemand die knop het hardst nodig heeft.        */
+/*                                                                     */
+/* Sinds #1197 woont dit in een sheet in plaats van onderaan de pagina. */
+/* Vandaar `zonderKop`: het sheet draagt de titel al, en de omlijsting  */
+/* van deze sectie zou een tweede kader binnen dat sheet zijn.          */
 /* ------------------------------------------------------------------ */
 
-export function AgendaAbonnement() {
+export function AgendaAbonnement({ zonderKop = false }: { zonderKop?: boolean } = {}) {
   const toast = useToast();
   const feed = useAsync(getMyFeedToken, []);
   // De net uitgegeven link wint van wat de query ophaalde: opnieuw laden zou
@@ -74,8 +78,10 @@ export function AgendaAbonnement() {
   }
 
   return (
-    <section className="agenda-abo">
-      <h2 className="agenda-abo__titel">Zet je speeldagen in je eigen agenda</h2>
+    <section className={`agenda-abo${zonderKop ? " agenda-abo--kaal" : ""}`}>
+      {!zonderKop && (
+        <h2 className="agenda-abo__titel">Zet je speeldagen in je eigen agenda</h2>
+      )}
       <p className="agenda-abo__tekst">
         Eén keer instellen in Google Agenda, Apple Agenda of Outlook, en daarna
         volgt het vanzelf: een nieuwe speeldag komt erbij, een verzet moment
