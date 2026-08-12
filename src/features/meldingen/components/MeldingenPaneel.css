@@ -8,6 +8,39 @@
   max-width: 460px;
 }
 
+/* "Wacht op jou" (#1232): staat bovenaan het paneel, vóór de lijst, en leest
+   als één aanraakbare regel. Accent-vlak i.p.v. een kaart — het is een
+   wegwijzer, geen melding, en mag zich niet voordoen als de rijen eronder. */
+.meldingen__wacht {
+  margin: 0 0 var(--sp-3);
+}
+.meldingen__wacht-link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+.meldingen__wacht-link:hover,
+.meldingen__wacht-link:focus-visible {
+  border-color: var(--accent-strong);
+}
+.meldingen__wacht-icoon {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+/* De pijl sluit de regel rechts af: "hier ga je heen", ook stilstaand. */
+.meldingen__wacht-pijl {
+  margin-left: auto;
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
 .meldingen__acties {
   display: flex;
   justify-content: flex-end;
