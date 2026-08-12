@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -26,11 +26,11 @@ const row = (key: string, rating: number, options: Partial<Row> = {}): Row => ({
   ...options,
 });
 
-function renderRace(rows: Row[], allowReplay = true, axisRows: Row[] = rows) {
+function renderRace(rows: Row[], allowTimeline = true, axisRows: Row[] = rows) {
   return render(
     <MemoryRouter>
       <ToastProvider>
-        <RaceLeaderboard rows={rows} axisRows={axisRows} allowReplay={allowReplay} />
+        <RaceLeaderboard rows={rows} axisRows={axisRows} allowTimeline={allowTimeline} />
       </ToastProvider>
     </MemoryRouter>,
   );
@@ -118,41 +118,48 @@ describe("<RaceLeaderboard />", () => {
     expect(container.querySelector(".race-pack")).toBeNull();
   });
 
-  it("start replay alleen op verzoek vanuit de echte vorige rating", () => {
-    renderRace([
-      row("p1", 1020, {
-        rank: 1,
-        shift: 1,
-        name: "Stijger",
-        history: [{ match_id: "m1", rating_before: 990, rating_after: 1020, delta: 30, played_at: "2026-08-01T20:00:00Z" }],
-      }),
-      row("p2", 1000, { rank: 2, shift: -1 }),
-    ]);
+  const tijdlijnRows = () => [
+    row("p1", 1020, {
+      rank: 1,
+      shift: 1,
+      name: "Stijger",
+      history: [{ match_id: "m1", rating_before: 990, rating_after: 1020, delta: 30, played_at: "2026-08-01T20:00:00Z" }],
+    }),
+    row("p2", 1000, { rank: 2, shift: -1 }),
+  ];
+
+  it("stapt door de speeldagen met echte vorige ratings en rangen", () => {
+    renderRace(tijdlijnRows());
 
     expect(screen.getByLabelText("Stijger: 1020 rating")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /bekijk verschuivingen/i }));
-    expect(screen.getByText(/stand vóór 1 augustus/i)).toBeInTheDocument();
+    expect(screen.getByText("Na de laatste speeldag")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Vorige speeldag" }));
     expect(screen.getByLabelText("Stijger: 990 rating")).toBeInTheDocument();
+    expect(screen.getByText(/startstand · stand 1 van 2/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Volgende speeldag" }));
+    expect(screen.getByLabelText("Stijger: 1020 rating")).toBeInTheDocument();
+    expect(screen.getByText(/Stijger klimt van #2 naar #1/)).toBeInTheDocument();
   });
 
-  it("slaat de beweging over bij prefers-reduced-motion", () => {
-    const original = window.matchMedia;
-    window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as typeof window.matchMedia;
+  it("speelt automatisch af en stopt op de live stand", () => {
+    vi.useFakeTimers();
     try {
-      renderRace([
-        row("p1", 1020, {
-          rank: 1,
-          shift: 1,
-          history: [{ match_id: "m1", rating_before: 990, rating_after: 1020, delta: 30, played_at: "2026-08-01T20:00:00Z" }],
-        }),
-        row("p2", 1000, { rank: 2, shift: -1 }),
-      ]);
-      fireEvent.click(screen.getByRole("button", { name: /bekijk verschuivingen/i }));
-      expect(screen.getByRole("button", { name: /opnieuw bekijken/i })).toBeInTheDocument();
-      expect(screen.getByLabelText("Speler p1: 1020 rating")).toBeInTheDocument();
+      renderRace(tijdlijnRows());
+      fireEvent.click(screen.getByRole("button", { name: /speel af/i }));
+      expect(screen.getByLabelText("Stijger: 990 rating")).toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(900);
+      });
+      expect(screen.getByLabelText("Stijger: 1020 rating")).toBeInTheDocument();
+      expect(screen.getByText("Na de laatste speeldag")).toBeInTheDocument();
     } finally {
-      window.matchMedia = original;
+      vi.useRealTimers();
     }
+  });
+
+  it("biedt geen tijdlijn zonder aantoonbare wijziging", () => {
+    renderRace([row("p1", 1000), row("p2", 990)]);
+    expect(screen.queryByRole("button", { name: /speel af/i })).toBeNull();
   });
 
   it("heeft een aparte mobiele lane-layout zonder horizontale paginascroll", () => {

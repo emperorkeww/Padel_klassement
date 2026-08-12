@@ -64,7 +64,19 @@ export function build() {
     },
     rpc: (name: string, params: unknown) => {
       calls.push({ method: "rpc", name, args: [params] });
-      return Promise.resolve(take());
+      // Thenable met kettingmethodes, net als echt: ook een RPC-resultaat is
+      // een filter-builder waar bv. `.range()` op kan (#1241, paginering).
+      const r = take();
+      const q: Record<string, unknown> = {};
+      for (const m of ["range", "limit", "order", "select"]) {
+        q[m] = (...args: unknown[]) => {
+          calls.push({ method: m, name, args });
+          return q;
+        };
+      }
+      q.then = (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) =>
+        Promise.resolve(r).then(res, rej);
+      return q;
     },
     storage: {
       from: (bucket: string) => ({

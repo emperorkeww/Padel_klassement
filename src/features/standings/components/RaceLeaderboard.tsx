@@ -1,19 +1,17 @@
 import {
   useEffect,
   useMemo,
-  useRef,
   useState,
   type CSSProperties,
+  type ReactNode,
 } from "react";
 import { Link } from "react-router-dom";
 import { BIG_DADDY_EMOJI } from "@/features/dashboard/bigDaddy";
 import { TierBadge } from "@/features/rating/components/TierBadge";
 import { Avatar } from "@/ui/Avatar";
-import { useToast } from "@/ui/ToastProvider";
-import { prefersReducedMotion } from "@/lib/utils/motion";
 import { primeAvatarMorph, type Row } from "../leaderboardHelpers";
+import { buildRaceTimeline, type RaceFrame } from "../raceTimeline";
 import {
-  buildRaceReplay,
   calculateDivisionAxis,
   calculateRacePosition,
   detectRatingPacks,
@@ -26,42 +24,42 @@ import {
   rankShiftLabel,
   type DivisionAxis,
   type RacePack,
-  type RaceReplay,
 } from "../raceUtils";
 import { RaceDetailSheet } from "./RaceDetailSheet";
 import { RaceOverview } from "./RaceOverview";
 import "./RaceLeaderboard.css";
 
 type RaceStyle = CSSProperties & Record<`--${string}`, string | number>;
-type ReplayPhase = "idle" | "before" | "moving" | "done";
+
+/** Interval van de afspeelknop; ruim boven de 700ms-marker-transitie. */
+const SPEEL_INTERVAL_MS = 900;
 
 export function RaceLeaderboard({
   rows,
   axisRows,
-  allowReplay,
+  allowTimeline,
 }: {
   rows: Row[];
   /** Het VOLLEDIGE veld (ongefilterd): hier hangen as en pack-drempels aan,
    *  zodat zoeken of filteren de baan niet onder je voeten verschuift. */
   axisRows: Row[];
-  allowReplay: boolean;
+  allowTimeline: boolean;
 }) {
-  const toast = useToast();
   const ratedRows = useMemo(
     () => rows.filter((row): row is Row & { rating: number } => row.rating != null),
     [rows],
   );
-  const replay = useMemo(
-    () => (allowReplay ? buildRaceReplay(ratedRows) : null),
-    [allowReplay, ratedRows],
+  const timeline = useMemo(
+    () => (allowTimeline ? buildRaceTimeline(ratedRows) : null),
+    [allowTimeline, ratedRows],
   );
   const me = useMemo(() => findCurrentUser(axisRows), [axisRows]);
   const axis = useMemo(() => {
     const values = axisRows
       .map((row) => row.rating)
       .filter((rating): rating is number => rating != null);
-    // Historische replay-posities voeden de as bewust niet: die klemmen op de
-    // rand, zodat de as niet verspringt zodra je de replay start.
+    // Historische tijdlijnposities voeden de as bewust niet: die klemmen op
+    // de rand, zodat de as niet verspringt zodra je gaat scrubben.
     return calculateDivisionAxis(values, me?.rating ?? null);
   }, [axisRows, me]);
   const checkpoints = useMemo(() => divisionCheckpoints(axis), [axis]);
@@ -73,47 +71,66 @@ export function RaceLeaderboard({
     );
     return detectRatingPacks(ratedRows, drempels.neighborGap, drempels.maxSpread);
   }, [axisRows, ratedRows]);
-  const [phase, setPhase] = useState<ReplayPhase>("idle");
+
+  // null = live (het laatste frame); een getal = de kijker scrubt of speelt af.
+  const [frameIdx, setFrameIdx] = useState<number | null>(null);
+  const [playing, setPlaying] = useState(false);
   const [openPlayer, setOpenPlayer] = useState<string | null>(null);
-  const timers = useRef<number[]>([]);
+
+  const laatste = timeline ? timeline.frames.length - 1 : 0;
+  const shownIdx = Math.min(frameIdx ?? laatste, laatste);
+  const frame = timeline?.frames[shownIdx] ?? null;
+  // Het vorige frame tekent het spoor — in de live stand is dat de laatste
+  // speeldag, zodat de richting ook in rust zichtbaar is.
+  const vorigFrame = timeline && shownIdx > 0 ? timeline.frames[shownIdx - 1] : null;
+  const scrubbing = timeline != null && shownIdx < laatste;
 
   useEffect(() => {
-    setPhase("idle");
-    return () => {
-      for (const timer of timers.current) window.clearTimeout(timer);
-      timers.current = [];
-    };
-  }, [replay]);
+    setFrameIdx(null);
+    setPlaying(false);
+  }, [timeline]);
 
-  const playReplay = () => {
-    if (!replay) return;
-    for (const timer of timers.current) window.clearTimeout(timer);
-    timers.current = [];
-    if (prefersReducedMotion()) {
-      setPhase("done");
-      if (replay.event) toast.info(replay.event);
-      return;
+  useEffect(() => {
+    if (!playing || !timeline) return;
+    const id = window.setInterval(() => {
+      setFrameIdx((huidig) => Math.min((huidig ?? 0) + 1, timeline.frames.length - 1));
+    }, SPEEL_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [playing, timeline]);
+
+  useEffect(() => {
+    if (playing && timeline && frameIdx != null && frameIdx >= timeline.frames.length - 1) {
+      setPlaying(false);
     }
-    setPhase("before");
-    timers.current.push(
-      window.setTimeout(() => setPhase("moving"), 550),
-      window.setTimeout(() => {
-        setPhase("done");
-        if (replay.event) toast.info(replay.event);
-      }, 1400),
-    );
-  };
+  }, [playing, timeline, frameIdx]);
 
   if (ratedRows.length === 0) {
     return <p className="empty">Geen spelers met een rating om in de race te tonen.</p>;
   }
 
-  const playerPosition = (row: Row & { rating: number }) => {
-    const replayPlayer = replay?.players.get(row.key);
-    return phase === "before" && replayPlayer
-      ? replayPlayer.previousRating
-      : row.rating;
+  const kiesFrame = (idx: number) => {
+    setPlaying(false);
+    setFrameIdx(idx);
   };
+  const toggleSpelen = () => {
+    if (playing) {
+      setPlaying(false);
+      return;
+    }
+    if (shownIdx >= laatste) setFrameIdx(0);
+    setPlaying(true);
+  };
+
+  const playerPosition = (row: Row & { rating: number }) =>
+    scrubbing && frame ? (frame.ratings.get(row.key) ?? row.rating) : row.rating;
+  const playerPrevPosition = (row: Row & { rating: number }) =>
+    vorigFrame?.ratings.get(row.key) ?? playerPosition(row);
+  const playerRank = (row: Row & { rating: number }) =>
+    scrubbing && frame ? (frame.ranks.get(row.key) ?? row.rank ?? 0) : (row.rank ?? 0);
+  const isDimmed = (row: Row & { rating: number }) =>
+    scrubbing && frame != null && !frame.debuted.has(row.key);
+  const riser = frameIdx != null && shownIdx > 0 ? (frame?.riser ?? null) : null;
+  const riserRow = riser ? ratedRows.find((row) => row.key === riser.key) : null;
 
   // De divisiepoort waar de kijker naartoe rijdt, voor het accent op de eigen lane.
   const doelVanaf =
@@ -128,8 +145,18 @@ export function RaceLeaderboard({
     : null;
 
   return (
-    <div className={`race-board${phase === "moving" ? " is-moving" : ""}`}>
-      <RaceHeader rows={axisRows} packs={packs} replay={replay} phase={phase} onReplay={playReplay} />
+    <div className="race-board">
+      <RaceHeader rows={axisRows} packs={packs}>
+        {timeline && (
+          <RaceTijdlijn
+            frames={timeline.frames}
+            shownIdx={shownIdx}
+            playing={playing}
+            onKies={kiesFrame}
+            onSpeel={toggleSpelen}
+          />
+        )}
+      </RaceHeader>
 
       {/* De strook is decor; dit is hetzelfde verhaal voor schermlezers. */}
       <p className="sr-only">{raceSrSummary(axisRows, checkpoints)}</p>
@@ -141,17 +168,24 @@ export function RaceLeaderboard({
         <RaceOverview rows={axisRows} axis={axis} checkpoints={checkpoints} />
         <RaceAxis axis={axis} />
         <DivisionCheckpointLabels axis={axis} checkpoints={checkpoints} />
+        {riser && riserRow && (
+          <p className="race-tijdlijn__verhaal" aria-live="polite">
+            <span aria-hidden="true">📈</span> {riserRow.name} klimt van #{riser.from}{" "}
+            naar #{riser.to}
+          </p>
+        )}
         <div className="race-board__lanes" role="list" aria-label="Raceklassement">
           {renderLanes({
             rows: ratedRows,
             packs,
             axis,
-            replay,
-            phase,
             checkpoints,
             doelVanaf,
             onOpenPlayer: setOpenPlayer,
             playerPosition,
+            playerPrevPosition,
+            playerRank,
+            isDimmed,
           })}
         </div>
       </div>
@@ -174,15 +208,12 @@ export function RaceLeaderboard({
 function RaceHeader({
   rows,
   packs,
-  replay,
-  phase,
-  onReplay,
+  children,
 }: {
   rows: Row[];
   packs: RacePack[];
-  replay: RaceReplay | null;
-  phase: ReplayPhase;
-  onReplay: () => void;
+  /** De tijdlijn-bediening, naast of onder de samenvatting. */
+  children?: ReactNode;
 }) {
   const me = findCurrentUser(rows);
   const goal =
@@ -210,32 +241,74 @@ function RaceHeader({
         </div>
       )}
 
-      {replay && (
-        <div className="race-replay">
-          <button
-            type="button"
-            className="btn btn--sm race-replay__button"
-            onClick={onReplay}
-            disabled={phase === "before" || phase === "moving"}
-          >
-            <span aria-hidden="true">{phase === "done" ? "↻" : "▶"}</span>
-            {phase === "done"
-              ? "Opnieuw bekijken"
-              : phase === "before"
-                ? "Vorige stand…"
-                : phase === "moving"
-                  ? "In beweging…"
-                  : "Bekijk verschuivingen"}
-          </button>
-          <span className="race-replay__status" aria-live="polite">
-            {phase === "before"
-              ? `Stand vóór ${formatDay(replay.day)}`
-              : phase === "moving"
-                ? "Nieuwe stand wordt zichtbaar"
-                : "Na de laatste speeldag"}
-          </span>
-        </div>
-      )}
+      {children}
+    </div>
+  );
+}
+
+function RaceTijdlijn({
+  frames,
+  shownIdx,
+  playing,
+  onKies,
+  onSpeel,
+}: {
+  frames: RaceFrame[];
+  shownIdx: number;
+  playing: boolean;
+  onKies: (idx: number) => void;
+  onSpeel: () => void;
+}) {
+  const laatste = frames.length - 1;
+  const frame = frames[shownIdx];
+  const label = frame.day ? `Speeldag ${formatDay(frame.day)}` : "Startstand";
+
+  return (
+    <div className="race-tijdlijn">
+      <div className="race-tijdlijn__knoppen">
+        <button
+          type="button"
+          className="btn btn--sm"
+          aria-label="Vorige speeldag"
+          onClick={() => onKies(Math.max(0, shownIdx - 1))}
+          disabled={shownIdx === 0}
+        >
+          <span aria-hidden="true">‹</span>
+        </button>
+        <input
+          type="range"
+          className="race-tijdlijn__scrubber"
+          min={0}
+          max={laatste}
+          step={1}
+          value={shownIdx}
+          aria-label="Tijdlijn van speeldagen"
+          aria-valuetext={label}
+          onChange={(e) => onKies(Number(e.currentTarget.value))}
+        />
+        <button
+          type="button"
+          className="btn btn--sm"
+          aria-label="Volgende speeldag"
+          onClick={() => onKies(Math.min(laatste, shownIdx + 1))}
+          disabled={shownIdx === laatste}
+        >
+          <span aria-hidden="true">›</span>
+        </button>
+        <button
+          type="button"
+          className="btn btn--sm race-tijdlijn__speel"
+          onClick={onSpeel}
+        >
+          <span aria-hidden="true">{playing ? "⏸" : "▶"}</span>{" "}
+          {playing ? "Pauzeer" : "Speel af"}
+        </button>
+      </div>
+      <span className="race-tijdlijn__status" aria-live="polite">
+        {shownIdx === laatste && !playing
+          ? "Na de laatste speeldag"
+          : `${label} · stand ${shownIdx + 1} van ${frames.length}`}
+      </span>
     </div>
   );
 }
@@ -302,12 +375,13 @@ function renderLanes({
   rows: (Row & { rating: number })[];
   packs: RacePack[];
   axis: DivisionAxis;
-  replay: RaceReplay | null;
-  phase: ReplayPhase;
   checkpoints: ReturnType<typeof divisionCheckpoints>;
   doelVanaf: number | null;
   onOpenPlayer: (key: string | null) => void;
   playerPosition: (row: Row & { rating: number }) => number;
+  playerPrevPosition: (row: Row & { rating: number }) => number;
+  playerRank: (row: Row & { rating: number }) => number;
+  isDimmed: (row: Row & { rating: number }) => boolean;
 }) {
   const firstToPack = new Map(packs.map((pack) => [pack.rows[0].key, pack]));
   const packedKeys = new Set(packs.flatMap((pack) => pack.rows.map((row) => row.key)));
@@ -343,42 +417,43 @@ function renderLanes({
 function RaceLane({
   row,
   axis,
-  replay,
-  phase,
   checkpoints,
   doelVanaf,
   onOpenPlayer,
   playerPosition,
+  playerPrevPosition,
+  playerRank,
+  isDimmed,
 }: {
   row: Row & { rating: number };
   axis: DivisionAxis;
-  replay: RaceReplay | null;
-  phase: ReplayPhase;
   checkpoints: ReturnType<typeof divisionCheckpoints>;
   doelVanaf: number | null;
   onOpenPlayer: (key: string | null) => void;
   playerPosition: (row: Row & { rating: number }) => number;
+  playerPrevPosition: (row: Row & { rating: number }) => number;
+  playerRank: (row: Row & { rating: number }) => number;
+  isDimmed: (row: Row & { rating: number }) => boolean;
 }) {
-  const replayPlayer = replay?.players.get(row.key);
   const shownRating = playerPosition(row);
-  const shownRank =
-    phase === "before" && replayPlayer?.previousRank != null
-      ? replayPlayer.previousRank
-      : (row.rank ?? 0);
+  const shownRank = playerRank(row);
   const x = calculateRacePosition(shownRating, axis);
+  const prevX = calculateRacePosition(playerPrevPosition(row), axis);
   // Buiten de (aan het veld verankerde) as geknipt: klem op de rand, maar
   // toon het echte getal met een richtingpijl.
   const offAxis =
     shownRating < axis.min ? "onder" : shownRating > axis.max ? "boven" : null;
-  const shiftLabel = rankShiftLabel(row, replayPlayer?.previousRank ?? null);
+  const shiftLabel = rankShiftLabel(row, null);
   const laneStyle = {
     "--race-x": `${x}%`,
     "--race-rating-x": x,
+    "--race-spoor-links": `${Math.min(x, prevX)}%`,
+    "--race-spoor-breedte": `${Math.abs(x - prevX)}%`,
   } as RaceStyle;
 
   return (
     <div
-      className={`race-lane${row.isMe ? " is-me" : ""}${(row.rank ?? 0) === 1 ? " is-leader" : ""}`}
+      className={`race-lane${row.isMe ? " is-me" : ""}${(row.rank ?? 0) === 1 ? " is-leader" : ""}${isDimmed(row) ? " is-voor-debuut" : ""}`}
       role="listitem"
       data-flip-key={row.key}
       data-rank={shownRank}
@@ -434,6 +509,12 @@ function RaceLane({
           />
         ))}
         <span className="race-lane__progress" aria-hidden="true" />
+        {x !== prevX && (
+          <span
+            className={`race-lane__spoor${x >= prevX ? " is-op" : " is-neer"}`}
+            aria-hidden="true"
+          />
+        )}
         <span
           className={`race-lane__marker${x > 82 ? " is-near-end" : ""}${
             offAxis ? " is-off-axis" : ""
