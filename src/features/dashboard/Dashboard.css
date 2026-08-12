@@ -763,33 +763,13 @@
   flex-wrap: wrap;
 }
 
-/* Divisie-tegel: badge-pill i.p.v. fs-2xl-tekst (#374). */
-.stat__value--tier {
-  display: flex;
-  align-items: center;
-  min-height: 1.4em;
-}
-/* In een smalle tegel wikkelt het divisielabel binnen de pill i.p.v. eruit
-   te steken; zo blijft ook het nummer (bv. "III") zichtbaar. */
-.stat__value--tier .tier-badge {
-  max-width: 100%;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  text-align: center;
-}
-/* Op extra-smal is een 1-van-4-tegel (~46px) te krap voor een divisienaam:
-   dan 2×2, zodat de pill op één à twee regels past. */
-@media (max-width: 480px) {
-  .dashboard .stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-}
-@media (max-width: 720px) {
-  .stat__value--tier {
-    justify-content: center;
-  }
-
+/* Drie tegels sinds de Divisie-tegel verhuisde naar de hero-kop (#1242): op
+   élke breedte één rij van drie — ook op 390px houdt elke tegel dan ~110px,
+   ruim genoeg voor "#4", "62%" en "Gespeeld". De 2×2- en 4-koloms regels van
+   ui.css gelden voor de vier-tegel-variant op het profiel. */
+.dashboard .stats,
+.dashboard .sk-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 /* "Nog X tot [volgende divisie]" onder de rating (#127). */

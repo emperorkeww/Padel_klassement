@@ -177,40 +177,19 @@ describe("<Dashboard />", () => {
     ).toHaveAttribute("href", "/banen");
   });
 
-  it("stuurt de genereer-knop bij één groep direct naar de Teams-tab (#73)", async () => {
+  it("houdt in de hero één primaire actie over (#1242)", async () => {
     renderPage();
-    const knop = await screen.findByRole("link", {
-      name: /wedstrijden genereren/i,
-    });
-    // Alice zit in precies één groep (g1): de knop lost zijn belofte in door
-    // rechtstreeks naar de genereer-tab van die groep te gaan, niet naar de
-    // groepenlijst.
-    expect(knop).toHaveAttribute("href", "/groepen/g1?tab=spelen");
-  });
-
-  it("toont zonder groep een 'maak een groep'-actie i.p.v. genereren (#73)", async () => {
-    invalidateAll();
-    const fromMock = supabase.from as unknown as {
-      getMockImplementation: () => (table: string) => unknown;
-      mockImplementation: (impl: (table: string) => unknown) => void;
-    };
-    const orig = fromMock.getMockImplementation();
-    fromMock.mockImplementation((table) =>
-      table === "groups" ? makeQuery({ data: [], error: null }) : orig(table),
-    );
-    try {
-      renderPage();
-      // Zonder groep is "genereren" een loze belofte: de knop wordt een
-      // eerlijke call-to-action die naar de groepenlijst leidt.
-      const knop = await screen.findByRole("link", { name: /maak een groep/i });
-      expect(knop).toHaveAttribute("href", "/groepen");
-      expect(
-        screen.queryByRole("link", { name: /wedstrijden genereren/i }),
-      ).toBeNull();
-    } finally {
-      fromMock.mockImplementation(orig);
-      invalidateAll();
-    }
+    const loggen = await screen.findByRole("link", { name: /match loggen/i });
+    expect(loggen).toHaveAttribute("href", "/spelen?log=1");
+    expect(loggen).toHaveClass("btn--primary");
+    // De genereer-CTA (#73) en de banen-knop zijn weg: de Spelen-tab draagt
+    // beide ingangen en de baanteaser-kaart wijst al naar /banen. Drie knoppen
+    // maakten van de belangrijkste er geen.
+    expect(
+      screen.queryByRole("link", { name: /wedstrijden genereren/i }),
+    ).toBeNull();
+    expect(screen.queryByRole("link", { name: /maak een groep/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /^vrije banen$/i })).toBeNull();
   });
 
   it("laat je op het overzicht zelf op de lopende speeldag stemmen (#1196)", async () => {
@@ -844,11 +823,12 @@ describe("<Dashboard />", () => {
       name: /Eerste overwinning/,
     });
 
-    // De badge zit niet meer in een link; navigeren kan alleen via de pijl.
+    // De badge zit niet in een link; en zolang de hele kast in de rij past is
+    // er ook geen overloop-link (#1242) — de profiel-ingang is de avatar.
     expect(badge.closest("a")).toBeNull();
     expect(
-      screen.getByRole("link", { name: "Alle badges bekijken" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("link", { name: "Alle badges bekijken" }),
+    ).toBeNull();
 
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
     fireEvent.click(badge);

@@ -43,11 +43,11 @@ export function DashExtras({
 
       {nextBadge && nextBadge.voortgang && (
         <section className="card next-badge">
+          {/* Geen "Alle badges →"-link meer (#1242): dat was de derde stille
+              weg naar het eigen profiel; de collectie zit al achter de
+              hero-avatar en de overloop van de badgestrip. */}
           <div className="card__head">
             <h2 className="card__title">Volgende badge</h2>
-            <Link className="profile-link" to={`/spelers/${myId}`}>
-              Alle badges →
-            </Link>
           </div>
           <p className="next-badge__tally">
             {behaald} van {badges.length} badges behaald

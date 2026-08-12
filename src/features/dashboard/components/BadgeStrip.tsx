@@ -50,13 +50,17 @@ export function BadgeStrip({ badges, to }: { badges: Badge[]; to: string }) {
             {b.emoji}
           </button>
         ))}
-        <Link
-          className="hero__badges-more"
-          to={to}
-          aria-label="Alle badges bekijken"
-        >
-          {rest > 0 ? `+${rest}` : "→"}
-        </Link>
+        {/* Alleen als overloop (#1242): past de kast, dan is deze link een
+            tweede stille weg naar het profiel — de avatar is dé ingang. */}
+        {rest > 0 && (
+          <Link
+            className="hero__badges-more"
+            to={to}
+            aria-label="Alle badges bekijken"
+          >
+            +{rest}
+          </Link>
+        )}
       </div>
       {active && (
         <span className="hero__badge-tip" role="tooltip">

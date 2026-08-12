@@ -170,16 +170,13 @@ export function OverzichtShowcase() {
         <DashCijfers>
           <StatsRow
             loading={false}
-            rating={1201}
             rank={6}
             winrate={0.58}
             played={64}
           />
           <RatingCard
-            myId={MIJ}
             loading={false}
             rating={1201}
-            games={64}
             dayDelta={12}
             history={HISTORIE}
           />

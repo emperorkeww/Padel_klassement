@@ -10,7 +10,6 @@ import { PiasCard } from "@/features/groups/components/PiasCard";
 import { piasDetail } from "@/features/groups/maandpias";
 import { categorize } from "@/features/friends/api";
 import { displayName } from "@/features/profiles/api";
-import { tierProgress } from "@/features/rating/tiers";
 import { byRank } from "@/features/rating/standings";
 import { deltaToday } from "@/features/standings/ratingDelta";
 import {
@@ -210,10 +209,6 @@ export function Dashboard() {
   const rate = me ? winRate(me.won, me.played) : null;
   const myRating = ratings.data?.[myId]?.rating ?? null;
   const myRatingGames = ratings.data?.[myId]?.games ?? 0;
-  // "Nog X tot [volgende divisie]" — alleen tonen als er een volgende tier is.
-  const myProgress = tierProgress(myRating);
-  const myTierNext =
-    myProgress && myProgress.volgende ? myProgress : null;
   const rhist = ratingHistory.data ?? [];
   // Dag-cumulatieve ELO-beweging voor de ▲/▼-badge (#352), niet de laatste match.
   const dayDelta = deltaToday(rhist, club.timezone);
@@ -244,22 +239,6 @@ export function Dashboard() {
   // hebben hun eigen skeleton, en anders zou de lege staat even flitsen voor
   // iemand die allang speelt (#911).
   const toonCijfers = coreLoading || hasPlayed;
-  // Hero-CTA voor wedstrijden genereren (#73): het label moet kloppen met waar
-  // je landt. Genereren gebeurt op de Vandaag-tab van een groep (#674), dus met
-  // precies één groep sturen we daar direct heen; zonder groep is "genereren"
-  // een loze belofte, dus wordt het een "maak een groep"-CTA; met meerdere
-  // groepen kies je eerst op de lijst. Tijdens het laden een neutrale fallback
-  // om geen valse belofte te tonen.
-  const generateCta = groups.loading
-    ? { to: "/groepen", label: "Wedstrijden genereren" }
-    : myGroups.length === 0
-      ? { to: "/groepen", label: "Maak een groep" }
-      : myGroups.length === 1
-        ? {
-            to: `/groepen/${myGroups[0].id}?tab=spelen`,
-            label: "Wedstrijden genereren",
-          }
-        : { to: "/groepen", label: "Wedstrijden genereren" };
 
   // Mijn openstaande matches, de langst wachtende uitslag vooraan (#1210).
   // Daarvóór stond de laagste ronde bovenaan; sinds de kaart de score-sheet
@@ -292,7 +271,6 @@ export function Dashboard() {
     eloRanked,
     nextMatch,
     rival,
-    tierNext: myTierNext,
     nextBadge,
     vandaag: new Date().toISOString().slice(0, 10),
   });
@@ -316,7 +294,6 @@ export function Dashboard() {
         naam={myName}
         rating={myRating}
         ratingGames={myRatingGames}
-        rank={rank}
         heeftStand={!!me}
         loading={standings.loading}
         status={{
@@ -340,7 +317,6 @@ export function Dashboard() {
         earnedBadges={earnedBadges}
         form={form}
         briefing={coachBriefingTekst}
-        generateCta={generateCta}
       />
 
       {/* Hier stond tot #1232 een pillenstrook (#911, #1210). Beide pillen
@@ -459,17 +435,14 @@ export function Dashboard() {
         <DashCijfers>
           <StatsRow
             loading={standings.loading}
-            rating={myRating}
             rank={rank}
             winrate={rate}
             played={me?.played ?? 0}
           />
 
           <RatingCard
-            myId={myId}
             loading={ratings.loading}
             rating={myRating}
-            games={myRatingGames}
             dayDelta={dayDelta}
             history={rhist}
           />

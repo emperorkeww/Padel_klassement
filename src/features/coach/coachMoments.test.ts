@@ -108,24 +108,13 @@ describe("coachBriefing", () => {
     expect(r).not.toContain("Zoë");
   });
 
-  it("de rivaal-match wint van promotie-nabij en de gewone match", () => {
+  it("de rivaal-match wint van de gewone matchdag-toon", () => {
     const r = coachBriefing({
       ...basis,
       heeftMatch: true,
       rivaalMatch: { naam: "Zoë", verliesreeks: 4 },
-      promotieNabij: { divisie: "Prof II", emoji: "🏆", punten: 10 },
     });
     expect(r).toContain("Zoë");
-  });
-
-  it("meldt een promotie binnen handbereik met divisie en Elo-afstand", () => {
-    const r = coachBriefing({
-      ...basis,
-      promotieNabij: { divisie: "Prof II", emoji: "🏆", punten: 12 },
-    });
-    expect(r).toContain("Prof II");
-    expect(r).toContain("12");
-    expect(r).not.toMatch(/%\w+%/);
   });
 
   it("meldt de dag-Elo-beweging boven de drempel en valt eronder terug", () => {
