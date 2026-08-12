@@ -35,6 +35,10 @@ import {
 } from "@/features/matches/matchDraft";
 import { useSmoesPrompt } from "@/features/matches/SmoesPromptProvider";
 import type { CourtType, MatchFormat, Profile, RoastIntensiteit } from "@/types";
+// Het sheet brengt zijn eigen stijlen mee (#1183). Stonden ze elders, dan
+// laadde de route die dit sheet opent ze niet per se mee — zie de kop van
+// NewMatchSheet.css.
+import "./NewMatchSheet.css";
 
 export type NewMatchMode = "score" | "plan";
 

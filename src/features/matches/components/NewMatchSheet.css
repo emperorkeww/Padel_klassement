@@ -1,0 +1,281 @@
+/* Stijlen van het match-sheet: stap 1 (spelers aantikken) en wat stap 2 eigen
+   is (teamoverzicht, tijdstip, wekelijks herhalen). De score-invoer zelf komt
+   van ScoreForm.css. Sinds #1183 wonen ze hier, naast de component die ze
+   rendert, en niet meer in Matches.css.
+
+   Dat was een bug, geen opruiming. Matches.css wordt alleen door
+   MatchesSectie geimporteerd, dus met cssCodeSplit belandde deze CSS in de
+   route-chunk van /spelen. Het sheet rendert ook vanaf de speeldagpagina en de
+   Vandaag-tab (via LossePartij), en daar viel het hele ding terug op de
+   UA-stijlen van <button>: het rooster was geen grid, de pillen liepen als
+   tekstregels door en de namen kleurden linkblauw. Binnen een sessie bleef een
+   al ingevoegde <link> staan, dus wie via /spelen binnenkwam zag niets; kapot
+   was het pas bij een directe load of refresh -- precies wat een PWA doet.
+
+   Verifieer dus op de gebouwde bundel en niet in de browser: dist/.vite/
+   manifest.json, transitief over "imports", moet deze CSS bij elke route
+   opleveren die het sheet kan openen. */
+
+/* De generieke sheet/dialoog-stijlen staan in components/ui.css. */
+
+/* ---------- Stap 1: spelers aantikken ---------- */
+/* Zoekveld boven het spelersrooster (alleen bij een lange vriendenlijst). */
+.pick-search {
+  margin-bottom: var(--sp-3);
+}
+.pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--sp-2);
+}
+/* Sinds #1083 dragen de spelerspillen het glasmateriaal (.glas
+   .glas--interactief .glas--pil): randlicht, binnengloed en een
+   indrukbeweging. Ze vullen het grootste deel van een glazen sheet, en als
+   dekkende witte pillen maakten ze van dat sheet één plaat met gewone UI erop.
+
+   Zelfde afweging als bij de "Jouw positie"-chip (Leaderboard.css): de vulling
+   blijft dekkend en gaat via --glas-laag, en de blur staat uit. Twee redenen.
+   Er staan er twintig-plus tegelijk in een scrollende lijst, en twintig
+   backdrop-filters op een telefoon is geen optie. En onder een dekkende
+   vulling zou je van die blur toch niets zien. Het glas zit hier dus in de
+   rand, het licht en de indrukbeweging — niet in de doorkijk.
+
+   De afronding komt van .glas--pil; de rand blijft --line-strong (Matches.css
+   laadt na glas.css), want die draagt hier de affordance én de teamkleur. */
+.pick-chip {
+  --glas-laag: linear-gradient(var(--surface) 0 0);
+  /* Twintig zwevende pillen naast elkaar is geen diepte maar ruis. */
+  --glas-schaduw: var(--shadow-sm);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  padding: var(--sp-2);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  cursor: pointer;
+  /* `background` stond hier ook in; de vulling wisselt nu via --glas-laag, en
+     een custom property gaat niet door een transition heen. De kleurwissel is
+     daarmee een sprong — bij deze tikdoelen is dat prima, en het is dezelfde
+     afspraak als op .me-chip. */
+  transition: border-color 0.15s, opacity 0.15s;
+}
+.pick-chip__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pick-chip__team {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--accent-ink);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+}
+/* De teamvulling wisselt via dezelfde laag als de rustkleur; een `background`
+   hier zou het hele materiaal eronder wegvegen. Dekkend, dus het contrast van
+   de naam op de chip verandert niet ten opzichte van vóór #1083. */
+.pick-chip--a {
+  border-color: var(--accent);
+  --glas-laag: linear-gradient(var(--accent-soft) 0 0);
+}
+.pick-chip--a .pick-chip__team {
+  background: var(--accent);
+}
+.pick-chip--b {
+  border-color: var(--lime-deep);
+  --glas-laag: linear-gradient(var(--lime-soft) 0 0);
+}
+.pick-chip--b .pick-chip__team {
+  background: var(--lime-deep);
+}
+/* Opacity naast glas is normaal de valkuil uit docs/liquid-glass.md — een
+   element met opacity < 1 is een backdrop root. Hier mag het: op deze chips
+   staat de blur uit, dus er is niets dat voorbij die grens hoeft te kijken. */
+.pick-chip.is-dim {
+  opacity: 0.45;
+}
+.pick-chip:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+/* Gastspeler zonder account: subtiel gestippelde rand + label. */
+.pick-chip--guest {
+  border-style: dashed;
+}
+.pick-chip__guest {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-soft-strong, var(--ink-soft));
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+/* Als een gast in een team zit, wint het team-bolletje de rechterplek. */
+.pick-chip--guest .pick-chip__team {
+  margin-left: var(--sp-1);
+}
+
+/* Gast toevoegen: naam-invoer + knop. */
+.guest-add {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+  margin-top: var(--sp-3);
+}
+/* Sinds #924 zit het invoerveld in een label (de uitleg stond eerst in de
+   placeholder en verdween zodra je typte). Daarmee is het lábel de flex-cel
+   naast de knop, en niet meer het veld zelf — maar de `flex: 1` bleef op het
+   veld staan, waar hij in een grid-label niets doet. Het gevolg: de naaminvoer
+   groeide niet mee. De klassenaam stond al in de JSX, alleen de regel ontbrak
+   (gevonden door de dekkingstest in #1183). */
+.guest-add__veld {
+  flex: 1;
+  min-width: 0;
+}
+.guest-add__input {
+  min-width: 0;
+}
+
+/* Teamoverzicht met wissel-knop. */
+.pick-teams {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+.pick-teams__team {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.pick-teams__label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+/* Teamvakken kleuren mee met de aangetikte chips: A smaragd, B lime. */
+.pick-teams__team--a {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+.pick-teams__team--b {
+  background: var(--lime-soft);
+  border-color: var(--lime-deep);
+}
+.pick-teams__players {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.pick-teams__names {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Interactieve teamzone (stap 1): gekozen spelers met een wissel-pijl. */
+.teamzone__list {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-1);
+}
+.teamzone__player {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.teamzone__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.teamzone__switch {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 800;
+  cursor: pointer;
+  line-height: 1;
+}
+.teamzone__switch:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Wekelijks herhalen bij het plannen. */
+.repeat-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+.repeat-row__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 600;
+  font-size: var(--fs-md);
+}
+.repeat-row__weeks {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.repeat-row__weeks .input {
+  width: 72px;
+}
+
+/* Plan-stap: de teams onder elkaar met een "vs" ertussen. */
+.pick-teams--stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--sp-1);
+  margin-top: 0;
+}
+.pick-teams__vs {
+  align-self: center;
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}

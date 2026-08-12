@@ -62,7 +62,9 @@ describe("'Jouw positie'-chip", () => {
 
 describe("spelerspillen in het match-sheet (#1083)", () => {
   const tsx = lees("src/features/matches/components/NewMatchSheet.tsx");
-  const css = lees("src/features/matches/Matches.css");
+  // Sinds #1183 wonen de sheet-stijlen naast de component in plaats van in
+  // Matches.css, zodat elke route die het sheet opent ze meelaadt.
+  const css = lees("src/features/matches/components/NewMatchSheet.css");
   const blok = css.match(/\n\.pick-chip \{([\s\S]*?)\n\}/)![1];
 
   it("draagt het interactieve materiaal in pilvorm", () => {
