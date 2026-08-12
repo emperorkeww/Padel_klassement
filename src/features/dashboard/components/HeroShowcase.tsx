@@ -242,6 +242,18 @@ export function HeroShowcase() {
         badges={BADGES}
       />
       <Kaart
+        titel="Alle zeven titels tegelijk (#1242)"
+        uitleg="De chip-rij kapt af op drie en telt de rest in de '+N'-knop; één tik klapt hem uit."
+        status={status("dictator", "inform", {
+          bigDaddy: true,
+          kampioen: true,
+          onFire: true,
+          pias: true,
+          piet: true,
+        })}
+        badges={BADGES}
+      />
+      <Kaart
         titel="Lange naam en lang coachbericht"
         uitleg="Stress-case voor clamp() en de wrap van de titelrij."
         status={status("dictator", "onfire", { pias: true })}
