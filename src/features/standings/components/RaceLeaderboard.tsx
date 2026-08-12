@@ -8,7 +8,6 @@ import {
 import { Link } from "react-router-dom";
 import { BIG_DADDY_EMOJI } from "@/features/dashboard/bigDaddy";
 import { TierBadge } from "@/features/rating/components/TierBadge";
-import { tierFor } from "@/features/rating/tiers";
 import { Avatar } from "@/ui/Avatar";
 import { useToast } from "@/ui/ToastProvider";
 import { prefersReducedMotion } from "@/lib/utils/motion";
@@ -20,14 +19,17 @@ import {
   detectRatingPacks,
   divisionCheckpoints,
   findCurrentUser,
-  getNearestCompetitors,
   getNextDivision,
   packThresholds,
   raceGoal,
+  raceSrSummary,
+  rankShiftLabel,
   type DivisionAxis,
   type RacePack,
   type RaceReplay,
 } from "../raceUtils";
+import { RaceDetailSheet } from "./RaceDetailSheet";
+import { RaceOverview } from "./RaceOverview";
 import "./RaceLeaderboard.css";
 
 type RaceStyle = CSSProperties & Record<`--${string}`, string | number>;
@@ -117,14 +119,26 @@ export function RaceLeaderboard({
   const doelVanaf =
     me?.rating != null ? (getNextDivision(me.rating)?.volgende?.vanaf ?? null) : null;
 
+  const selectedRow =
+    ratedRows.find((row) => row.key === openPlayer) ?? null;
+  const selectedPack = selectedRow
+    ? (packs.find((pack) =>
+        pack.rows.some((row) => row.key === selectedRow.key),
+      ) ?? null)
+    : null;
+
   return (
     <div className={`race-board${phase === "moving" ? " is-moving" : ""}`}>
       <RaceHeader rows={axisRows} packs={packs} replay={replay} phase={phase} onReplay={playReplay} />
+
+      {/* De strook is decor; dit is hetzelfde verhaal voor schermlezers. */}
+      <p className="sr-only">{raceSrSummary(axisRows, checkpoints)}</p>
 
       <div
         className="race-board__course"
         style={{ "--race-intervals": axis.ticks.length - 1 } as RaceStyle}
       >
+        <RaceOverview rows={axisRows} axis={axis} checkpoints={checkpoints} />
         <RaceAxis axis={axis} />
         <DivisionCheckpointLabels axis={axis} checkpoints={checkpoints} />
         <div className="race-board__lanes" role="list" aria-label="Raceklassement">
@@ -136,12 +150,17 @@ export function RaceLeaderboard({
             phase,
             checkpoints,
             doelVanaf,
-            openPlayer,
             onOpenPlayer: setOpenPlayer,
             playerPosition,
           })}
         </div>
       </div>
+
+      <RaceDetailSheet
+        row={selectedRow}
+        pack={selectedPack}
+        onClose={() => setOpenPlayer(null)}
+      />
 
       {rows.length > ratedRows.length && (
         <p className="race-board__unrated">
@@ -248,18 +267,26 @@ function DivisionCheckpointLabels({
   checkpoints: ReturnType<typeof divisionCheckpoints>;
 }) {
   return (
-    <div className="race-divisions" aria-label="Divisiecheckpoints">
+    <div className="race-divisions" role="list" aria-label="Divisiecheckpoints">
       <span className="race-axis__spacer" aria-hidden="true" />
       <div className="race-divisions__track">
         {checkpoints.map((checkpoint) => (
           <span
             key={checkpoint.naam}
+            role="listitem"
             className={`race-checkpoint-label tier-badge--${checkpoint.key}`}
             style={{ "--race-x": `${calculateRacePosition(checkpoint.min, axis)}%` } as RaceStyle}
             title={`${checkpoint.naam} vanaf ${checkpoint.min} rating`}
           >
             <span aria-hidden="true">{checkpoint.emoji}</span>
-            <span className="race-checkpoint-label__name">{checkpoint.naam}</span>
+            {/* De zichtbare naam verdwijnt op mobiel; de sr-tekst benoemt de
+                poort altijd volledig (en maar één keer). */}
+            <span className="race-checkpoint-label__name" aria-hidden="true">
+              {checkpoint.naam}
+            </span>
+            <span className="sr-only">
+              {checkpoint.naam} vanaf {checkpoint.min} rating
+            </span>
           </span>
         ))}
       </div>
@@ -279,7 +306,6 @@ function renderLanes({
   phase: ReplayPhase;
   checkpoints: ReturnType<typeof divisionCheckpoints>;
   doelVanaf: number | null;
-  openPlayer: string | null;
   onOpenPlayer: (key: string | null) => void;
   playerPosition: (row: Row & { rating: number }) => number;
 }) {
@@ -303,12 +329,12 @@ function renderLanes({
             <span className="race-pack__spread">{pack.rows.length} spelers binnen {pack.spread} rating</span>
           </div>
           {pack.rows.map((member) => (
-            <RaceLane key={member.key} row={member as Row & { rating: number }} pack={pack} {...laneProps} />
+            <RaceLane key={member.key} row={member as Row & { rating: number }} {...laneProps} />
           ))}
         </section>,
       );
     } else if (!packedKeys.has(row.key)) {
-      rendered.push(<RaceLane key={row.key} row={row} pack={null} {...laneProps} />);
+      rendered.push(<RaceLane key={row.key} row={row} {...laneProps} />);
     }
   }
   return rendered;
@@ -316,24 +342,20 @@ function renderLanes({
 
 function RaceLane({
   row,
-  pack,
   axis,
   replay,
   phase,
   checkpoints,
   doelVanaf,
-  openPlayer,
   onOpenPlayer,
   playerPosition,
 }: {
   row: Row & { rating: number };
-  pack: RacePack | null;
   axis: DivisionAxis;
   replay: RaceReplay | null;
   phase: ReplayPhase;
   checkpoints: ReturnType<typeof divisionCheckpoints>;
   doelVanaf: number | null;
-  openPlayer: string | null;
   onOpenPlayer: (key: string | null) => void;
   playerPosition: (row: Row & { rating: number }) => number;
 }) {
@@ -348,23 +370,7 @@ function RaceLane({
   // toon het echte getal met een richtingpijl.
   const offAxis =
     shownRating < axis.min ? "onder" : shownRating > axis.max ? "boven" : null;
-  const tier = tierFor(row.rating);
-  const latestDay = row.history.map((point) => point.played_at.slice(0, 10)).sort().at(-1);
-  const dayDelta = latestDay
-    ? row.history
-        .filter((point) => point.played_at.slice(0, 10) === latestDay)
-        .reduce((sum, point) => sum + point.delta, 0)
-    : null;
-  const competitorAbove = getNearestCompetitors(
-    pack?.rows ?? [row],
-    row.key,
-  ).above;
   const shiftLabel = rankShiftLabel(row, replayPlayer?.previousRank ?? null);
-  const previousRank =
-    replayPlayer?.previousRank ??
-    (typeof row.shift === "number" && row.rank != null ? row.rank + row.shift : null);
-  const tooltipId = `race-tip-${row.key}`;
-  const open = openPlayer === row.key;
   const laneStyle = {
     "--race-x": `${x}%`,
     "--race-rating-x": x,
@@ -372,7 +378,7 @@ function RaceLane({
 
   return (
     <div
-      className={`race-lane${row.isMe ? " is-me" : ""}${(row.rank ?? 0) === 1 ? " is-leader" : ""}${open ? " is-open" : ""}`}
+      className={`race-lane${row.isMe ? " is-me" : ""}${(row.rank ?? 0) === 1 ? " is-leader" : ""}`}
       role="listitem"
       data-flip-key={row.key}
       data-rank={shownRank}
@@ -441,10 +447,10 @@ function RaceLane({
               onClick={primeAvatarMorph}
               aria-label={`${row.name}, ${shownRating} rating — profiel bekijken`}
             >
-              <Avatar profile={row.profile} name={row.name} size={(row.rank ?? 0) === 1 ? 40 : 36} />
+              <Avatar profile={row.profile} name={row.name} size={(row.rank ?? 0) === 1 ? 36 : 30} />
             </Link>
           ) : (
-            <Avatar profile={row.profile} name={row.name} size={36} />
+            <Avatar profile={row.profile} name={row.name} size={30} />
           )}
           <span className="race-lane__rating">
             {offAxis === "onder" && <span aria-hidden="true">‹&#8202;</span>}
@@ -456,50 +462,14 @@ function RaceLane({
           type="button"
           className="race-lane__info"
           aria-label={`Details van ${row.name}`}
-          aria-expanded={open}
-          aria-describedby={open ? tooltipId : undefined}
-          onClick={() => onOpenPlayer(open ? null : row.key)}
+          aria-haspopup="dialog"
+          onClick={() => onOpenPlayer(row.key)}
         >
-          i
+          <span aria-hidden="true">›</span>
         </button>
-        <div className="race-lane__tooltip" role="tooltip" id={tooltipId}>
-          <strong>{row.name}</strong>
-          <span>#{row.rank} · {row.rating} rating</span>
-          {tier && <span>{tier.emoji} {tier.label}</span>}
-          {dayDelta != null && dayDelta !== 0 && <span>{dayDelta > 0 ? "+" : ""}{dayDelta} laatste speeldag</span>}
-          {shiftLabel && (
-            <span>
-              {previousRank != null && row.rank != null
-                ? `Van #${previousRank} naar #${row.rank} sinds vorige speeldag`
-                : `${shiftLabel} sinds vorige speeldag`}
-            </span>
-          )}
-          {competitorAbove && <span>{competitorAbove.gap} rating achter {competitorAbove.row.name}</span>}
-          {pack && (
-            <span className="race-lane__pack-gaps">
-              {pack.rows
-                .filter((competitor) => competitor.key !== row.key && competitor.rating != null)
-                .map((competitor) => `${Math.abs(row.rating - (competitor.rating ?? row.rating))} t.o.v. ${competitor.name}`)
-                .join(" · ")}
-            </span>
-          )}
-          {row.form.length > 0 && <span>Vorm: {row.form.join(" · ")}</span>}
-        </div>
       </div>
     </div>
   );
-}
-
-function rankShiftLabel(row: Row, previousRank: number | null): string | null {
-  if (row.shift === "nieuw") return "nieuw";
-  if (typeof row.shift === "number" && row.shift !== 0) {
-    return row.shift > 0 ? `▲${row.shift}` : `▼${-row.shift}`;
-  }
-  if (previousRank != null && row.rank != null && previousRank !== row.rank) {
-    const delta = previousRank - row.rank;
-    return delta > 0 ? `▲${delta}` : `▼${-delta}`;
-  }
-  return null;
 }
 
 function formatDay(isoDay: string): string {

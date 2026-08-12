@@ -15,6 +15,8 @@ import {
   PACK_NEIGHBOR_GAP,
   packThresholds,
   raceGoal,
+  raceSrSummary,
+  rankShiftLabel,
 } from "./raceUtils";
 
 const row = (key: string, rating: number | null, options: Partial<Row> = {}): Row => ({
@@ -208,6 +210,24 @@ describe("race-afleidingen", () => {
     expect(calculateRankingMovement(7, 5)).toBe(-2);
     expect(calculateRankingMovement(5, 5)).toBe(0);
     expect(calculateRankingMovement(5, null)).toBe("nieuw");
+  });
+
+  it("labelt rangwissels ook zonder shift-veld via de vorige rang", () => {
+    expect(rankShiftLabel(row("p1", 1000, { shift: "nieuw" }), null)).toBe("nieuw");
+    expect(rankShiftLabel(row("p1", 1000, { shift: 2 }), null)).toBe("▲2");
+    expect(rankShiftLabel(row("p3", 1000), 5)).toBe("▲2");
+    expect(rankShiftLabel(row("p3", 1000), 3)).toBeNull();
+  });
+
+  it("vat de baan samen voor schermlezers", () => {
+    const rows = [row("p1", 1120), row("p2", 1045), row("p3", 1045)];
+    const axis = calculateDivisionAxis(rows.map((r) => r.rating!));
+    const tekst = raceSrSummary(rows, divisionCheckpoints(axis));
+    expect(tekst).toContain("1. p1 (1120 rating)");
+    expect(tekst).toContain("2. p2 (1045 rating, 75 achter)");
+    expect(tekst).toContain("3. p3 (1045 rating, gelijk)");
+    expect(tekst).toContain("Divisiepoorten op de baan: Glazenwasser vanaf 1100 rating");
+    expect(raceSrSummary([], [])).toBe("");
   });
 });
 
