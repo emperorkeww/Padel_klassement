@@ -23,6 +23,7 @@ import { MeldingenPaneel } from "@/features/meldingen/components/MeldingenPaneel
 import { belLabel, tellerTekst } from "@/features/meldingen/bel";
 import { useMeldingen } from "@/features/meldingen/useMeldingen";
 import { useIsAdmin } from "@/features/admin/useIsAdmin";
+import { useAttentie } from "./useAttentie";
 import { OfflineBanner } from "@/ui/OfflineBanner";
 import { useGlasScrollLicht } from "@/lib/hooks/useGlasScrollLicht";
 import "@/ui/ui.css";
@@ -136,6 +137,18 @@ export function DashboardLayout() {
   // het item er gewoon niet. Deze layout mount één keer per sessie, dus dit is
   // de enige plek in de app die het vraagt.
   const isAdmin = useIsAdmin();
+  // Attentiestippen (#1214): de bel telt meldingen, maar de balk zelf was stil
+  // — wie de app opende op Klassement of Clubblad zag niet dat er een stem of
+  // een uitslag op hem wachtte. Deelt zijn bronnen met het overzicht en de hub.
+  const attentie = useAttentie(myId);
+  /** Verdient dit tabblad een stip, en wat hoort de screenreader dan? */
+  function stipVoor(item: NavItem): string | null {
+    if (item.to === AGENDA.to && attentie.agenda)
+      return "er wacht een speeldag op je";
+    if (item.to === SPELEN.to && attentie.spelen)
+      return "er wacht een uitslag op je";
+    return null;
+  }
   // Hooglicht op de vaste balken (#1083). Het aanwijzer-hooglicht bestaat op
   // een telefoon niet — geen muis, geen hover — terwijl dit een mobile-first
   // app is. Deze twee balken staan altijd in beeld en de pagina schuift
@@ -261,16 +274,22 @@ export function DashboardLayout() {
               )}
               {group.items.map((item) => {
                 const actief = isSectionActive(item, pathname);
+                const stip = stipVoor(item);
                 return (
                   <Link
                     key={item.to}
                     to={item.to}
                     viewTransition
                     aria-current={actief ? "page" : undefined}
+                    // De stip is kleur; de naam draagt de betekenis (#924).
+                    aria-label={stip ? `${item.label} — ${stip}` : undefined}
                     className={`sidebar__link ${actief ? "is-active" : ""}`}
                   >
                     <span className="sidebar__icon">{item.icon}</span>
                     <span className="sidebar__label">{item.label}</span>
+                    {stip && (
+                      <span className="nav-stip" aria-hidden="true" />
+                    )}
                   </Link>
                 );
               })}
@@ -353,16 +372,20 @@ export function DashboardLayout() {
       >
         {TABBAR.map((item) => {
           const actief = isSectionActive(item, pathname);
+          const stip = stipVoor(item);
           return (
             <Link
               key={item.to}
               to={item.to}
               viewTransition
-              aria-label={item.label}
+              aria-label={stip ? `${item.label} — ${stip}` : item.label}
               aria-current={actief ? "page" : undefined}
               className={`tabbar__link ${item.end ? "tabbar__link--home" : ""} ${actief ? "is-active" : ""}`}
             >
-              <span className="tabbar__icon">{item.icon}</span>
+              <span className="tabbar__icon">
+                {item.icon}
+                {stip && <span className="nav-stip" aria-hidden="true" />}
+              </span>
               <span className="tabbar__label">{item.label}</span>
             </Link>
           );
