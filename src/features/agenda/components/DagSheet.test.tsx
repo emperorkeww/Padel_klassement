@@ -3,6 +3,7 @@ import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import type { Profile } from "@/types";
+import type { DayAvailability } from "@/features/availability/api";
 import type { AgendaMarker } from "../agendaLogic";
 
 vi.mock("@/lib/supabase/client", async () => {
@@ -23,6 +24,25 @@ vi.mock("@/features/groups/pollsApi", async (orig) => ({
   ...(await orig<typeof import("@/features/groups/pollsApi")>()),
   setPollVote: (...args: unknown[]) => setPollVote(...(args as [])),
   clearPollVote: (...args: unknown[]) => clearPollVote(...(args as [])),
+}));
+
+// De baanbeschikbaarheid landt ná het openen; die vertraging is precies wat
+// #1233 in de hand houdt, dus hij is hier stuurbaar. Standaard blijft de
+// belofte hangen — dan staat het sheet in de toestand waarin je hem in het echt
+// het eerst ziet.
+let baanAntwoord: {
+  resolve: (d: DayAvailability) => void;
+  reject: (e: unknown) => void;
+} | null = null;
+const getClubAvailability = vi.fn(
+  () =>
+    new Promise<DayAvailability>((resolve, reject) => {
+      baanAntwoord = { resolve, reject };
+    }),
+);
+vi.mock("@/features/availability/api", async (orig) => ({
+  ...(await orig<typeof import("@/features/availability/api")>()),
+  getClubAvailability: () => getClubAvailability(),
 }));
 
 import { DagSheet } from "./DagSheet";
@@ -51,8 +71,28 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
     nietGestemdIds: [],
     courts: "3 & 4",
     accessCode: "4821",
+    courtsFree: null,
     changedAt: "2026-08-01T18:00:00.000Z",
     ...overrides,
+  };
+}
+
+/** Een dagantwoord van Playtomic met één vrije baan op 20:00 voor 90 minuten. */
+function dagMetVrijeBaan(): DayAvailability {
+  return {
+    open: "08:00",
+    close: "23:00",
+    timeZone: "Europe/Brussels",
+    courts: [
+      {
+        court: { id: "c1", name: "Baan 1", type: "indoor" },
+        free: new Map([
+          ["20:00", [{ duration: 90, price: "30 EUR", perPerson: "€ 7,50" }]],
+        ]),
+      },
+    ],
+    source: "live",
+    fetchedAt: null,
   };
 }
 
@@ -97,6 +137,8 @@ describe("<DagSheet />", () => {
     downloadIcs.mockClear();
     setPollVote.mockClear();
     clearPollVote.mockClear();
+    getClubAvailability.mockClear();
+    baanAntwoord = null;
     // Het sheet beoordeelt zelf of een moment al voorbij is, dus de klok moet
     // vastliggen: anders komt er een dag dat 13 augustus 2026 verleden tijd is
     // en de stemknoppen "terecht" verdwijnen. shouldAdvanceTime houdt
@@ -405,5 +447,86 @@ describe("<DagSheet /> — kop en opbouw (#1180)", () => {
     toon([marker()]);
     expect(document.querySelector(".dagsheet--meerdere")).not.toBeInTheDocument();
     expect(document.querySelector(".dagsheet__speeldag.glas")).not.toBeInTheDocument();
+  });
+
+  /* -------- De baanregel houdt zijn ruimte vast (#1233) --------
+
+     De vrije banen en de prijs komen van Playtomic en landen dus ná het
+     openen. Stonden ze tussen de chips van groep en club, dan sprong die rij
+     naar twee regels en groeide het sheet — dat onderaan verankerd staat —
+     omhoog weg onder je vinger. Hoogte valt in jsdom niet te meten; wat hier
+     getoetst wordt is de structuur die het mogelijk maakt: de regel staat er
+     vóór, tijdens en ná het antwoord, en de chips zitten er niet meer tussen. */
+
+  it("reserveert de baanregel vóór er baaninfo is", () => {
+    toon([marker({ status: "open", courts: null, accessCode: null })]);
+    expect(document.querySelector(".dagsheet__baan")).toBeInTheDocument();
+    // Nog niets ín die regel: het antwoord van Playtomic staat nog open.
+    expect(screen.queryByText(/vrij$/)).not.toBeInTheDocument();
+  });
+
+  it("houdt de regel staan als het antwoord binnenkomt", async () => {
+    toon([marker({ status: "open", courts: null, accessCode: null })]);
+    await act(async () => {
+      baanAntwoord?.resolve(dagMetVrijeBaan());
+    });
+    expect(document.querySelector(".dagsheet__baan")).toBeInTheDocument();
+    expect(screen.getByText("1 baan vrij")).toBeInTheDocument();
+    expect(screen.getByText("± € 7,50 p.p.")).toBeInTheDocument();
+    // En niet meer in de rij met groep en club: daar zat de sprong.
+    const chips = document.querySelector(".dagsheet__chips");
+    expect(chips?.textContent).toBe("Vamos!Padel De Panne");
+  });
+
+  it("houdt de regel óók staan als Playtomic niets teruggeeft", async () => {
+    toon([marker({ status: "open", courts: null, accessCode: null })]);
+    await act(async () => {
+      baanAntwoord?.reject(new Error("Playtomic plat"));
+    });
+    expect(document.querySelector(".dagsheet__baan")).toBeInTheDocument();
+    expect(screen.queryByText(/baan vrij/)).not.toBeInTheDocument();
+  });
+
+  it("zet de bewaarde telling neer zolang de live-telling onderweg is", async () => {
+    toon([
+      marker({ status: "open", courts: null, accessCode: null, courtsFree: 3 }),
+    ]);
+    expect(screen.getByText("3 banen vrij")).toBeInTheDocument();
+    // De live-telling vervangt hem stil: dezelfde regel, ander getal.
+    await act(async () => {
+      baanAntwoord?.resolve(dagMetVrijeBaan());
+    });
+    expect(screen.getByText("1 baan vrij")).toBeInTheDocument();
+    expect(screen.queryByText("3 banen vrij")).not.toBeInTheDocument();
+  });
+
+  it("laat de baantelling weg bij een geboekte speeldag naast een open poll", async () => {
+    // De opgehaalde data ligt op club en dag, niet op moment: zonder grens
+    // vond het geboekte blok de telling van de open poll ernaast en zette
+    // "1 baan vrij" neer bij een baan die allang geboekt was.
+    toon([
+      marker({ startTime: "18:00" }),
+      marker({
+        optionId: "opt-2",
+        pollId: "poll-2",
+        status: "open",
+        courts: null,
+        accessCode: null,
+      }),
+    ]);
+    await act(async () => {
+      baanAntwoord?.resolve(dagMetVrijeBaan());
+    });
+    const blokken = document.querySelectorAll(".dagsheet__speeldag");
+    expect(blokken[0].querySelector(".dagsheet__baan")).not.toBeInTheDocument();
+    expect(blokken[1].querySelector(".dagsheet__baan")).toBeInTheDocument();
+    expect(screen.getAllByText("1 baan vrij")).toHaveLength(1);
+  });
+
+  it("reserveert niets bij een dag waar geen baaninfo bij hoort", () => {
+    // Geboekt: dan is "is er nog een baan?" geen vraag meer, en er wordt dus
+    // ook niets opgehaald. Een lege regel zou daar alleen maar gat zijn.
+    toon([marker()]);
+    expect(document.querySelector(".dagsheet__baan")).not.toBeInTheDocument();
   });
 });

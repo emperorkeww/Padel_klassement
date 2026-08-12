@@ -584,6 +584,25 @@ describe("buildMarkers", () => {
     expect(markers.every((m) => m.status === "open")).toBe(true);
   });
 
+  it("neemt de bewaarde baantelling van het moment mee", () => {
+    // Het dag-sheet zet die telling meteen neer en laat de live-telling hem
+    // stil vervangen (#1233); zonder startwaarde kwam er een chipregel bij
+    // nadat het sheet al openstond.
+    const markers = buildMarkers(
+      venster({
+        polls: [poll()],
+        options: [
+          option({ id: "opt-1", courts_free: 4 }),
+          option({ id: "opt-2", date: "2026-08-20", courts_free: null }),
+        ],
+      }),
+      GROEPEN,
+      "me",
+      nu,
+    );
+    expect(markers.map((m) => m.courtsFree)).toEqual([4, null]);
+  });
+
   it("laat geannuleerde polls weg", () => {
     const markers = buildMarkers(
       venster({ polls: [poll({ status: "cancelled" })], options: [option()] }),
@@ -855,6 +874,7 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
     nietGestemdIds: [],
     courts: null,
     accessCode: null,
+    courtsFree: null,
     changedAt: "2026-08-01T10:00:00Z",
     ...overrides,
   };

@@ -65,6 +65,12 @@ export type AgendaMarker = {
   /** Geboekte banen (#802) en toegangscode (#675); null zolang onbekend. */
   courts: string | null;
   accessCode: string | null;
+  /** Vrije banen zoals ze bij het aanmaken van dit moment geteld werden — een
+   *  momentopname, geen live getal (#1233). Het dag-sheet zet 'm meteen neer en
+   *  laat de live-telling hem stil vervangen; zonder die startwaarde kwam er een
+   *  chipregel bij nádat het sheet al openstond, en groeide het sheet naar boven
+   *  weg onder je vinger. Dezelfde terugval als PollCard.liveFree(). */
+  courtsFree: number | null;
   /** Laatste wijziging aan deze speeldag — voedt de SEQUENCE van de .ics
    *  (#1099), zodat een herimport het bestaande event bijwerkt. */
   changedAt: string;
@@ -192,6 +198,7 @@ export function buildMarkers(
       ),
       courts: poll.courts,
       accessCode: poll.access_code,
+      courtsFree: option.courts_free,
       // Boeken is de laatste stap, vastleggen de stap ervoor; zonder beide is
       // de poll sinds het aanmaken niet meer van fase veranderd.
       changedAt: poll.booked_at ?? poll.locked_at ?? poll.created_at,
