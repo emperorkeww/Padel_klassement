@@ -410,6 +410,55 @@ describe("<GroupDetail />", () => {
     expect(screen.queryByText("6–3")).not.toBeInTheDocument();
   });
 
+  // ── #1212: één matchlijst per groep ─────────────────────────────────────
+  // De tab monteerde MatchHistory rechtstreeks: geen periodefilter, geen "Te
+  // spelen" — een armere kopie van /spelen?groep=<id>.
+
+  it("geeft de Historie-tab dezelfde sectie als de Spelen-hub", async () => {
+    renderPage("/groepen/g1?tab=matches");
+    await screen.findByRole("heading", { name: /gespeelde matches/i });
+
+    // Het periodefilter komt mee…
+    expect(screen.getByRole("combobox", { name: /periode/i })).toBeInTheDocument();
+    // …de groepskeuze niet: je zit al in een groep.
+    expect(
+      screen.queryByRole("combobox", { name: /^groep$/i }),
+    ).not.toBeInTheDocument();
+    // …en "Te spelen" zet je eigen openstaande match bovenaan.
+    expect(
+      await screen.findByRole("heading", { name: /^te spelen$/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("houdt de zwevende +Match-knop van die sectie buiten de groepspagina", async () => {
+    renderPage("/groepen/g1?tab=matches");
+    await screen.findByRole("heading", { name: /gespeelde matches/i });
+    // Loggen is binnen de groep de taak van de Vandaag-tab; twee zwevende
+    // ingangen naast elkaar zouden concurreren.
+    expect(
+      screen.queryByRole("button", { name: /^\+ ?match$/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("houdt de tab staan terwijl het periodefilter de URL bijwerkt", async () => {
+    renderPage("/groepen/g1?tab=matches");
+    await screen.findByRole("heading", { name: /gespeelde matches/i });
+
+    const periode = screen.getByRole("combobox", { name: /periode/i });
+    await userEvent.selectOptions(periode, "30d");
+
+    // Eén schrijver op de querystring (speelParams.ts): het filter patcht
+    // `?periode=` bovenop `?tab=matches` in plaats van de hele string te
+    // vervangen — anders klapte de pagina terug naar Vandaag.
+    expect(periode).toHaveValue("30d");
+    expect(
+      screen.getByRole("tab", { name: /^historie/i }),
+    ).toHaveAttribute("aria-selected", "true");
+    expect(
+      screen.getByRole("heading", { name: /gespeelde matches/i }),
+    ).toBeInTheDocument();
+  });
+
   // ── #917: de kop draagt de groep ────────────────────────────────────────
 
   it("toont in de kop de leden en de eerstvolgende speeldag", async () => {
