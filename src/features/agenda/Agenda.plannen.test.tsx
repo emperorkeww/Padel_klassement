@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -91,9 +91,9 @@ vi.mock("@/features/groups/pollsApi", async (orig) => ({
 
 import { Agenda } from "./Agenda";
 
-function toon() {
+function toon(url = "/agenda") {
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[url]}>
       <ToastProvider>
         <Agenda />
       </ToastProvider>
@@ -282,6 +282,53 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
     await userEvent.click(screen.getByText("do 13 aug · 20:00"));
     expect(
       await screen.findByRole("dialog", { name: /donderdag 13 augustus/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("opent de dag uit de link, inclusief het sheet", async () => {
+    // Een gedeelde /agenda?dag=…&open=1 moet bij de ander dezelfde dag tonen —
+    // niet zijn eigen vandaag (#1182).
+    toon("/agenda?dag=2026-08-13&open=1");
+    expect(
+      await screen.findByRole("dialog", { name: /donderdag 13 augustus/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Augustus 2026",
+    );
+  });
+
+  it("laat het sheet weer los zonder de dag kwijt te raken", async () => {
+    // Openen duwt een history-entry, sluiten gaat er weer vanaf. Wat blijft
+    // staan is de dag zelf — je was daar aan het kijken.
+    toon();
+    await openDag(/donderdag 13 augustus, speeldag geboekt/);
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole("heading", { name: /donderdag 13 augustus/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("opent de lijst uit de link", async () => {
+    toon("/agenda?weergave=lijst");
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Wat komt eraan" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Lijst" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("laat een dag uit een andere maand zien zonder te herschrijven", async () => {
+    // PageUp/PageDown kan de maand losmaken van de gekozen dag; die stand moet
+    // een refresh overleven.
+    toon("/agenda?dag=2026-08-13&maand=2026-09");
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "September 2026" }),
     ).toBeInTheDocument();
   });
 
