@@ -323,6 +323,48 @@ export function raceGoal(
     : { kop: divisieDoel, sub: inhaal };
 }
 
+/** ▲2/▼1/nieuw-label voor een rij; ook bruikbaar buiten de lane (detailsheet). */
+export function rankShiftLabel(row: Row, previousRank: number | null): string | null {
+  if (row.shift === "nieuw") return "nieuw";
+  if (typeof row.shift === "number" && row.shift !== 0) {
+    return row.shift > 0 ? `▲${row.shift}` : `▼${-row.shift}`;
+  }
+  if (previousRank != null && row.rank != null && previousRank !== row.rank) {
+    const delta = previousRank - row.rank;
+    return delta > 0 ? `▲${delta}` : `▼${-delta}`;
+  }
+  return null;
+}
+
+/**
+ * Het verhaal van de baan voor schermlezers (#1241): volgorde, onderlinge
+ * afstanden en de divisiepoorten. De visuele strook is puur decoratie; dit
+ * is de toegankelijke tegenhanger.
+ */
+export function raceSrSummary(
+  rows: readonly Row[],
+  checkpoints: readonly RaceCheckpoint[],
+): string {
+  const rated = rows.filter((r): r is Row & { rating: number } => r.rating != null);
+  if (rated.length === 0) return "";
+  const volgorde = rated
+    .map((r, i) => {
+      const boven = i > 0 ? rated[i - 1] : null;
+      const gap = boven ? boven.rating - r.rating : null;
+      const afstand =
+        gap == null ? "" : gap === 0 ? ", gelijk" : `, ${gap} achter`;
+      return `${r.rank ?? i + 1}. ${r.name} (${r.rating} rating${afstand})`;
+    })
+    .join("; ");
+  const poorten =
+    checkpoints.length > 0
+      ? ` Divisiepoorten op de baan: ${checkpoints
+          .map((c) => `${c.naam} vanaf ${c.min} rating`)
+          .join(", ")}.`
+      : "";
+  return `${volgorde}.${poorten}`;
+}
+
 export function calculateRankingMovement(
   currentRank: number,
   previousRank: number | null,

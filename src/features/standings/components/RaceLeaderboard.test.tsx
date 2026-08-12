@@ -54,7 +54,7 @@ describe("<RaceLeaderboard />", () => {
     expect(container.querySelector(".race-lane.is-me")).toHaveTextContent("jij");
   });
 
-  it("toont stijgen en dalen ook als tekst en maakt details klikbaar", () => {
+  it("toont stijgen en dalen ook als tekst en opent details in een sheet", () => {
     renderRace([
       row("p1", 1050, { shift: 2 }),
       row("p2", 1030, { shift: -1 }),
@@ -63,10 +63,37 @@ describe("<RaceLeaderboard />", () => {
 
     expect(screen.getByText("▲2")).toHaveClass("is-up");
     expect(screen.getByText("▼1")).toHaveClass("is-down");
-    const details = screen.getByRole("button", { name: "Details van Speler p1" });
-    fireEvent.click(details);
-    expect(details).toHaveAttribute("aria-expanded", "true");
-    expect(document.getElementById(details.getAttribute("aria-describedby")!)).toHaveTextContent("1050 rating");
+    fireEvent.click(screen.getByRole("button", { name: "Details van Speler p1" }));
+    const sheet = screen.getByRole("dialog", { name: "Speler p1" });
+    expect(sheet).toHaveTextContent("1050 rating");
+    expect(sheet).toHaveTextContent("Vorm: W · W · L");
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("tekent het hele veld als punten op de overzichtsstrook", () => {
+    const veld = [
+      row("p1", 1120),
+      row("p2", 1045),
+      row("p3", 1020, { isMe: true }),
+      row("p4", 1017),
+    ];
+    // De strook en de as volgen het volledige veld, ook als er gefilterd is.
+    const { container } = renderRace(veld.slice(0, 2), false, veld);
+    expect(container.querySelectorAll(".race-overview__punt")).toHaveLength(4);
+    expect(container.querySelector(".race-overview__punt.is-me")).not.toBeNull();
+    expect(container.querySelectorAll(".race-lane")).toHaveLength(2);
+  });
+
+  it("vertelt schermlezers volgorde, afstanden en poorten", () => {
+    const { container } = renderRace([
+      row("p1", 1120, { name: "Leider" }),
+      row("p2", 1045),
+    ]);
+    const summary = container.querySelector(".race-board > .sr-only");
+    expect(summary).toHaveTextContent("1. Leider (1120 rating)");
+    expect(summary).toHaveTextContent("2. Speler p2 (1045 rating, 75 achter)");
+    expect(summary).toHaveTextContent("Glazenwasser vanaf 1100 rating");
   });
 
   it("groepeert alleen een echt pack en benadrukt het pack van de gebruiker", () => {
