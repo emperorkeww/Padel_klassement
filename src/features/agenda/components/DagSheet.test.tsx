@@ -397,10 +397,13 @@ describe("<DagSheet /> — kop en opbouw (#1180)", () => {
   it("zet twee speeldagen op één dag in eigen vlakken", () => {
     toon([marker(), marker({ optionId: "opt-2", pollId: "poll-2" })]);
     expect(document.querySelector(".dagsheet--meerdere")).toBeInTheDocument();
+    // En dat vlak is glas, niet een dekkende kaart op een glazen sheet (#1207).
+    expect(document.querySelectorAll(".dagsheet__speeldag.glas")).toHaveLength(2);
   });
 
   it("houdt één speeldag randloos", () => {
     toon([marker()]);
     expect(document.querySelector(".dagsheet--meerdere")).not.toBeInTheDocument();
+    expect(document.querySelector(".dagsheet__speeldag.glas")).not.toBeInTheDocument();
   });
 });

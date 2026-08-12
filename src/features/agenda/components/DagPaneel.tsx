@@ -147,6 +147,10 @@ export function DagPaneel({
  * wedstrijden bij Vamos!"). Bij precies één wedstrijd gaat de link naar die
  * wedstrijd; bij meer naar het matchoverzicht van de groep, want een dagfilter
  * bestaat daar niet.
+ *
+ * Draagt precies dezelfde schil als een speeldagkaart (#1207). De eigen,
+ * vlakkere variant die hier stond las naast die kaarten als iets uit een andere
+ * app; het staafje links zegt al dat deze dag geweest is.
  */
 function WedstrijdRij({
   dag,
@@ -159,7 +163,7 @@ function WedstrijdRij({
   const naar =
     n === 1 ? `/matches/${dag.matchIds[0]}` : `/spelen?groep=${dag.groupId}`;
   return (
-    <Link className="speeldag speeldag--gespeeld" to={naar}>
+    <Link className="speeldag" to={naar}>
       <span className="speeldag__rail speeldag__rail--past" aria-hidden="true" />
       <span className="speeldag__body">
         <span className="speeldag__top">
