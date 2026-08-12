@@ -457,17 +457,30 @@
 
    De accenten zijn een stap gedempt: op zwart komt fel veel harder binnen
    dan op petrol. De inkt en randen zijn juist een stap ópgetild (hoog
-   contrast): wit haalt ~19:1 op de pagina. De zachte badge-vlakken (--*-soft)
-   liggen op ~L* 14-16, nét boven de kaart op 8,7 — een badge die donkerder
-   is dan zijn eigen kaart leest als een gat (les uit #1074). */
+   contrast): wit haalt ~19:1 op de pagina.
+
+   #1255 trok de ladder daarbovenop uit elkaar. De niveaus boven de kaart
+   lagen binnen 4,3 L* van elkaar (sheet, hover en subtiel vlak waren in de
+   praktijk hetzelfde vlak) omdat de check elk niveau tegen --surface mat en
+   nooit tegen het niveau eronder — sindsdien eist contrast-check.mjs ≥3 L*
+   per ópeenvolgende stap. De --*-soft-vlakken verhuisden als familie naar
+   ~L* 22, bóven het hover-niveau: een badge moet boven élke drager liggen,
+   ook in een subtiel of verhoogd vlak — donkerder dan zijn drager leest als
+   een gat (les uit #1074). Hun chroma kreeg een bodem (C* ≥ 8, ook bewaakt):
+   op dit lichtheidsniveau leest minder chroma als grijs en draagt de tint
+   zijn kleurfamilie niet meer. De neutralen (vlakken, randen) liggen
+   allemaal op C* ≈ 4-6 rond h 270 — vóór #1255 liep de chroma onbedoeld op
+   naar boven (--line-strong was met C* 9,3 de blauwste "neutraal" in de
+   app, pal naast smaragd- en lime-content). */
 :root[data-theme="dark"] {
-  /* Canvas → kaart → verhoogd: zwart als bodem, daarna stappen ≥ 4 L*. */
+  /* Canvas → kaart → verhoogd: zwart als bodem, daarna stappen ≥ 3 L* per
+     opeenvolgend niveau (#1255). */
   --bg: #000000; /* puur zwart — OLED laat deze pixels uit */
   --surface: #16191e; /* kaarten */
   --surface-2: #1e2228; /* subtiel vlak / tracks */
-  --surface-elevated: #22262d; /* hero, sheets, popovers */
-  --surface-hover: #262b33; /* hover op kaarten, nav-items, knoppen */
-  --surface-active: #123527; /* gekozen nav-item — smaragd getint */
+  --surface-elevated: #25292f; /* hero, sheets, popovers */
+  --surface-hover: #2c3038; /* hover op kaarten, nav-items, knoppen */
+  --surface-active: #16372a; /* gekozen nav-item — smaragd getint */
   /* Segmentbalk (#1255): de track zakt ónder het kaartniveau (L* 5,8 — een
      verzonken goot, waar hij ook op ligt: pagina, kaart of sheet), het gekozen
      segment ligt er ruim bovenop (L* 17,4, het hover-niveau). Vóór dit paar
@@ -486,25 +499,30 @@
   --ink-soft: #b0b7c1;
   --ink-soft-strong: #c8cfd8;
   /* Randen dragen op donker de hiërarchie mee, dus ze mogen gezien worden:
-     op zwart doet een schaduw niets, de rand moet het vlak dragen. */
-  --line: #343b46;
-  --line-strong: #4a5361;
-  --divider: #252a31;
+     op zwart doet een schaduw niets, de rand moet het vlak dragen. Sinds
+     #1255 net zo neutraal als de vlakken (C* ≈ 4-5); de divider zit ónder
+     het subtiele vlak — hij scheidt binnen een kaart en moet zwakker blijven
+     dan élke rand. */
+  --line: #373b41;
+  --line-strong: #4e535a;
+  --divider: #1c2127;
 
-  /* Smaragd, een stap dieper dan vóór #1243 (#1fb47e): op bijna-zwart is
-     minder helderheid nodig om te lezen. Het knellendste harde paar is
-     accent op een verhoogd vlak (5,2:1); knoppen houden donkere tekst
-     (--accent-ink), ruim boven AA op elke knopstand. */
-  --accent: #1dab77;
-  --accent-hover: #27bb85;
+  /* Smaragd, gedempt t.o.v. vóór #1243 (#1fb47e) maar sinds #1255 weer een
+     fractie lichter (L* 62→65): de vlakken waar hij als tekst op staat —
+     verhoogd, hover en de opgetilde soft-badges — zijn opgetild en anders
+     zakt het paar onder AA. Knellendste harde paren nu: accent op
+     --accent-soft (4,6:1) en op --surface-hover (4,6:1); knoppen houden
+     donkere tekst (--accent-ink), ruim boven AA op elke knopstand. */
+  --accent: #28b37e;
+  --accent-hover: #37c18b;
   --accent-strong: #189a6a;
-  --accent-soft: #11251d;
+  --accent-soft: #243930;
   --accent-line: #24513f;
   --accent-ink: #02120c;
 
   /* Coach Rudy — warm amber, gedempt op bijna-zwart. */
   --coach: #d9964a;
-  --coach-soft: #2e2618;
+  --coach-soft: #3c3425;
   --coach-line: #4a3c26;
   --coach-ink: #201305;
   --coach-diep: #ecbc7f;
@@ -512,7 +530,7 @@
   /* Open poll (#1112) — op donker moet hij juist oplichten in plaats van
      inzakken; zelfde omkering als --lime-deep en --dorst. */
   --poll: #dda254;
-  --poll-soft: #302413;
+  --poll-soft: #403321;
   --poll-diep: #ecbf82;
 
   /* Lime (padelbal). Sinds #1243 gedempt: hij blijft het enige token dat
@@ -523,23 +541,23 @@
      donkere leesbare variant is. */
   --lime: #9ccf4a;
   --lime-deep: #b3dd63;
-  --lime-soft: #28301a;
+  --lime-soft: #303821;
 
   /* Lef-violet, licht genoeg voor leesbare tekst op donkere vlakken. */
   --lef: #ab97d9;
-  --lef-soft: #2b2438;
+  --lef-soft: #393146;
   --lef-line: #453b58;
   --lef-ink: #120e1c;
 
   /* Dorst-amber, licht genoeg voor leesbare tekst op donkere vlakken. */
   --dorst: #d9a44c;
-  --dorst-soft: #2f2718;
+  --dorst-soft: #3c3424;
   --dorst-line: #4c3e2c;
   --dorst-ink: #190f05;
 
   /* Jokerblauw, licht genoeg voor leesbare tekst op donkere vlakken. */
   --joker: #67aed8;
-  --joker-soft: #1f2b34;
+  --joker-soft: #263743;
   --joker-line: #344857;
   --joker-ink: #081420;
 
@@ -568,47 +586,47 @@
 
   /* Statuskleuren gedempt: duidelijk, niet fluorescerend. */
   --success: #43bd7f;
-  --success-soft: #14291f;
+  --success-soft: #24392f;
   --success-line: #275c40;
   --danger: #e5878e;
-  --danger-soft: #33211f;
+  --danger-soft: #44302e;
   --danger-line: #5c3a3d;
   --warn: #ddb852;
-  --warn-soft: #2e2717;
+  --warn-soft: #3c3423;
   --warn-line: #57482a;
 
   /* Tiers op donker (#664): zelfde materiaalladder, gedempt maar licht
      genoeg voor leesbare badge-tekst op de donkere soft-vlakken. */
   --slof: #9e9585;
-  --slof-soft: #2b2822;
+  --slof-soft: #3a3426;
   --karton: #bd9459;
-  --karton-soft: #2f281c;
+  --karton-soft: #3c3426;
   --hout: #b58351;
-  --hout-soft: #302620;
+  --hout-soft: #413228;
   --gold: #b5923f;
-  --gold-soft: #2e2715;
+  --gold-soft: #3c3421;
   --silver: #9aa4af;
-  --silver-soft: #232830;
+  --silver-soft: #2c3543;
   --bronze: #c07b41;
-  --bronze-soft: #362419;
+  --bronze-soft: #443125;
   --platina: #6cbfd8;
-  --platina-soft: #16292f;
+  --platina-soft: #21383f;
   --diamant: #87a2e8;
-  --diamant-soft: #20263c;
+  --diamant-soft: #2e344b;
   --meester: #b6a5f2;
-  --meester-soft: #2b2540;
+  --meester-soft: #37314d;
   --legende: #ef7c95;
-  --legende-soft: #3a222a;
+  --legende-soft: #472e36;
   /* El Padelissimo (#527): warm goud op diepbordeaux (zie light-blok). */
   --dictator: #dcab4a;
-  --dictator-soft: #40202a;
+  --dictator-soft: #4c2b35;
   /* De Troon (#528): warm goud op nog dieper bordeaux (zie light-blok). */
   --dictator-gold: #e8c05f;
   --dictator-wine: #6d172e;
   --dictator-deep: #1f0a11;
   /* Big Daddy (#1 van het klassement): zacht pastelroze (zie light-blok). */
   --bigdaddy: #ee82b6;
-  --bigdaddy-soft: #3a2135;
+  --bigdaddy-soft: #462c41;
   --bigdaddy-ink: #310e1c;
   --bigdaddy-text: #f2abcc;
 
@@ -620,17 +638,17 @@
 
   /* Avatar-tinten op donker (#74): zelfde hue-families, gedempte donkere
      vlakken + lichte initialen (zie licht-blok). */
-  --avatar-h0-bg: #1d2f23; --avatar-h0-fg: #a2cfab;
-  --avatar-h1-bg: #1a2439; --avatar-h1-fg: #a4bff2;
-  --avatar-h2-bg: #302217; --avatar-h2-fg: #e0b485;
-  --avatar-h3-bg: #251f37; --avatar-h3-fg: #c1b1e9;
-  --avatar-h4-bg: #301c28; --avatar-h4-fg: #e5a7c6;
-  --avatar-h5-bg: #132a30; --avatar-h5-fg: #8ecddb;
-  --avatar-h6-bg: #2d2716; --avatar-h6-fg: #dac182;
-  --avatar-h7-bg: #20252c; --avatar-h7-fg: #b4bfcc;
+  --avatar-h0-bg: #25382b; --avatar-h0-fg: #a2cfab;
+  --avatar-h1-bg: #2a334a; --avatar-h1-fg: #a4bff2;
+  --avatar-h2-bg: #403125; --avatar-h2-fg: #e0b485;
+  --avatar-h3-bg: #373049; --avatar-h3-fg: #c1b1e9;
+  --avatar-h4-bg: #432d3a; --avatar-h4-fg: #e5a7c6;
+  --avatar-h5-bg: #20373d; --avatar-h5-fg: #8ecddb;
+  --avatar-h6-bg: #3a3321; --avatar-h6-fg: #dac182;
+  --avatar-h7-bg: #2b3441; --avatar-h7-fg: #b4bfcc;
 
   --placeholder: #929aa4;
-  --skeleton-hi: #232830;
+  --skeleton-hi: #2c3038;
 
   /* Op donker dragen randen de hiërarchie; schaduwen kleiner en dieper —
      op bijna-zwart doet spreiding toch niets meer. */
@@ -695,8 +713,8 @@
   --paneel-om-ink: var(--ink);
   --paneel-om-ink-soft: var(--ink-soft);
   --paneel-om-label: var(--ink-soft);
-  --paneel-om-vlak: #262b33; /* gelijk aan surface-hover — een stap hoger */
-  --paneel-om-lijn: #333a44;
+  --paneel-om-vlak: #2c3038; /* gelijk aan surface-hover — een stap hoger */
+  --paneel-om-lijn: #3a3f46;
 
   /* Lime als focuskleur (#1074): op donker springt hij van élk vlak af (≥9:1
      op de kaart), waar het smaragd van de knoppen op een gekozen nav-item juist
