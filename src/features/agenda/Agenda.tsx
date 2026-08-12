@@ -48,6 +48,7 @@ import { useAgendaUrl, type Weergave } from "./agendaParams";
 import { AgendaLijst } from "./components/AgendaLijst";
 import { ActieStrook } from "./components/ActieStrook";
 import { PageTabs } from "@/ui/PageTabs";
+import { Sheet } from "@/ui/Sheet";
 import "./Agenda.css";
 
 const LEEG_VENSTER: PollWindow = { polls: [], options: [], votes: [] };
@@ -104,6 +105,10 @@ export function Agenda() {
     readFlag(GROEP_FILTER),
   );
   const [nieuwClub, setNieuwClub] = useState<Club>(globaleClub);
+  // Het abonneer-sheet (#1197). Bewust géén URL-state zoals de gekozen dag: dit
+  // is een instelling die je één keer doet, geen plek in de agenda om naar te
+  // linken of op terug te komen.
+  const [aboOpen, setAboOpen] = useState(false);
 
   const groepen = useAsync(getMyGroups, []);
   const profielen = useAsync(getProfilesMap, []);
@@ -479,16 +484,32 @@ export function Agenda() {
 
           {/* Twee manieren om te kijken, één manier om te handelen: beide
               weergaven tonen dezelfde kaart en openen hetzelfde dag-sheet. */}
-          <PageTabs
-            variant="segment"
-            ariaLabel="Weergave"
-            value={weergave}
-            onChange={(w) => zet({ weergave: w })}
-            tabs={[
-              { id: "maand" as Weergave, label: "Maand" },
-              { id: "lijst" as Weergave, label: "Lijst" },
-            ]}
-          />
+          <div className="agenda-weergave">
+            <PageTabs
+              variant="segment"
+              ariaLabel="Weergave"
+              value={weergave}
+              onChange={(w) => zet({ weergave: w })}
+              tabs={[
+                { id: "maand" as Weergave, label: "Maand" },
+                { id: "lijst" as Weergave, label: "Lijst" },
+              ]}
+            />
+            {/* Abonneren stond tot #1197 als laatste blok onderaan de pagina,
+                onder raster, paneel én suggesties. Hier staat het boven de
+                vouw en in beide weergaven — en niet in de maandkop, want die
+                knoppenrij verdwijnt in de lijst en is op telefoonbreedte al
+                vol. */}
+            <button
+              type="button"
+              className="agenda-abo-knop"
+              aria-label="Abonneren op je agenda"
+              aria-haspopup="dialog"
+              onClick={() => setAboOpen(true)}
+            >
+              <IconAbo />
+            </button>
+          </div>
 
           {weergave === "lijst" ? (
             <AgendaLijst
@@ -566,9 +587,20 @@ export function Agenda() {
             onGestart={herlaad}
           />
 
-          {/* Onder het raster: eerst zien wat er gepland staat, dan pas de
-              vraag of je het in je eigen agenda wil (#1099). */}
-          <AgendaAbonnement />
+          {/* Wat hier stond was het hele abonneerblok (#1099): permanent
+              uitgeklapt, met link, drie knoppen en twee alinea's uitleg, voor
+              iets wat je één keer instelt. Nu één regel die hetzelfde sheet
+              opent als de knop bovenaan — wie doorscrolt komt het nog steeds
+              tegen, maar het eet geen half scherm meer (#1197). */}
+          <button
+            type="button"
+            className="agenda-abo-teaser"
+            aria-haspopup="dialog"
+            onClick={() => setAboOpen(true)}
+          >
+            <span>Zet je speeldagen in je eigen agenda</span>
+            <IconChevron kant="rechts" />
+          </button>
         </>
       )}
 
@@ -633,6 +665,17 @@ export function Agenda() {
           }}
         />
       )}
+
+      {/* Buiten de geenGroepen-tak: de knop die dit opent staat er alleen mét
+          groepen, maar het sheet hoort bij de pagina en niet bij het raster.
+          Sheet regelt focus, Escape, scroll-lock en het naar beneden vegen. */}
+      <Sheet
+        open={aboOpen}
+        onClose={() => setAboOpen(false)}
+        title="Zet je speeldagen in je eigen agenda"
+      >
+        <AgendaAbonnement zonderKop />
+      </Sheet>
     </div>
   );
 }
@@ -651,6 +694,29 @@ function IconChevron({ kant }: { kant: "links" | "rechts" }) {
       aria-hidden="true"
     >
       <path d={kant === "links" ? "M15 5 8 12l7 7" : "M9 5l7 7-7 7"} />
+    </svg>
+  );
+}
+
+/** Kalenderblad met een plusje: "zet dit in je eigen agenda" (#1197). Hetzelfde
+ *  stroke-gewicht als de chevrons ernaast, anders leest hij als een ander soort
+ *  bediening. */
+function IconAbo() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3.5" y="4.5" width="17" height="16" rx="2.5" />
+      <path d="M3.5 9.5h17M8 2.5v4M16 2.5v4" />
+      <path d="M12 12.5v5M9.5 15h5" />
     </svg>
   );
 }
