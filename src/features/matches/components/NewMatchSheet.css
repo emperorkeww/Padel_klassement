@@ -19,9 +19,58 @@
 /* De generieke sheet/dialoog-stijlen staan in components/ui.css. */
 
 /* ---------- Stap 1: spelers aantikken ---------- */
-/* Zoekveld boven het spelersrooster (alleen bij een lange vriendenlijst). */
-.pick-search {
+
+/* De kop van de kiezer (#1183): teamvakken, teller en zoekveld in één blok dat
+   bovenaan blijft plakken. Ze stonden verspreid onder het rooster, en met
+   twintig spelers zag je bij het aantikken dus niet wat je aan het vullen was
+   en waar de knop stond.
+
+   Bewust geen eigen scrollcontainer om de lijst: .sheet is zelf de scroller
+   (overflow-y: auto), en een geneste scroller daarbinnen geeft op mobiel
+   scroll-chaining. Een plakkende kop en voet lossen hetzelfde op met de
+   structuur die er al is. Zelfde recept als .wizard-footer bij de poll-wizard:
+   van rand tot rand tegen de zijpadding van .sheet in, en een eigen
+   scheidingslijn omdat het witte licht van .glas--balk op het lichte thema
+   onzichtbaar is. */
+.pick-kop {
+  position: sticky;
+  top: 0;
+  z-index: 2; /* boven de pillen die eronderdoor scrollen */
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-5) var(--sp-3);
+  margin-inline: calc(var(--sp-5) * -1);
   margin-bottom: var(--sp-3);
+  --glas-schaduw: var(--shadow-sm);
+  /* Dekkend, en dus zonder blur. Frosten is hier het verkeerde effect: er
+     scrollen pillen vlak achterlangs, en die schemerden als vegen door de
+     teamvakken heen. Dezelfde afweging als op .pick-chip en .me-chip — het
+     glas zit in de rand, het licht en de schaduw, niet in de doorkijk. De
+     vulling gaat via --glas-laag omdat dat de laag ís die .glas daarvoor
+     openhoudt. */
+  --glas-laag: linear-gradient(var(--surface-elevated) 0 0);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.sheet .pick-kop {
+  /* Moet .glas overstemmen: bovenaan een sheet hoort geen bovenrand, en de
+     onderrand draagt hier de scheiding met de lijst. */
+  border-top: 0;
+  border-bottom: 1px solid rgb(var(--glas-diep) / 0.08);
+}
+.pick-kop__stand {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.pick-kop__teller {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  color: var(--ink);
+}
+/* Zoekveld boven het spelersrooster (alleen bij een langere vriendenlijst). */
+.pick-search {
+  margin-bottom: 0;
 }
 /* Eén kolom, ook op een breed scherm (#1183). Dit stond op
    `repeat(auto-fill, minmax(150px, 1fr))`, en dat gaf op een telefoon twee
@@ -169,7 +218,12 @@
   margin-left: var(--sp-1);
 }
 
-/* Gast toevoegen: naam-invoer + knop. */
+/* Gast toevoegen: in rust één knop, uitgeklapt een naam-invoer + knop. Een gast
+   is de uitzondering; als vast invoerblok stond hij tussen het rooster en de
+   knop waar je heen wilt (#1183). */
+.guest-add__opener {
+  margin-top: var(--sp-3);
+}
 .guest-add {
   display: flex;
   gap: var(--sp-2);
@@ -190,12 +244,26 @@
   min-width: 0;
 }
 
-/* Teamoverzicht met wissel-knop. */
+/* Teamoverzicht met wissel-knop. In de plakkende kop van stap 1 (zonder
+   bovenmarge, die zit al in .pick-kop), in stap 2 als los blok. */
 .pick-teams {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
   margin-top: var(--sp-4);
+}
+.pick-kop .pick-teams {
+  margin-top: 0;
+  /* Gelijke vakken, ook als team A al twee spelers heeft en B er nog één. Met
+     `center` (de waarde die stap 2 aanhoudt) hingen ze op verschillende hoogte
+     en las de kop als twee losse kaartjes in plaats van als één balk. */
+  align-items: stretch;
+}
+/* De wisselknop hoort bij de twee vakken ernaast: niet meegroeien, en in het
+   midden blijven staan nu de vakken zich uitrekken. */
+.pick-teams__swap {
+  flex-shrink: 0;
+  align-self: center;
 }
 .pick-teams__team {
   flex: 1;
@@ -316,4 +384,37 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--ink-soft);
+}
+
+/* ---------- De voetbalk plakt (#1183) ---------- */
+/* Met twintig spelers onder elkaar viel "Naar de score →" ver onder de vouw.
+   Hetzelfde recept als .wizard-footer bij de poll-wizard (Proposals.css): het
+   sheet geeft zijn onderpadding op, de balk neemt de safe-area over en loopt
+   tegen de zijpadding in van rand tot rand. Afronden hoeft niet — .sheet heeft
+   overflow-y: auto en klipt hem al op zijn eigen hoeken. */
+.sheet--match {
+  padding-bottom: 0;
+  /* Ook bovenaan geen padding van het sheet zelf: anders blijft er boven de
+     plakkende kop een strook van 20px over waar de pillen doorheen scrollen —
+     precies wat #1083 aan de onderkant van de wizard oploste. De kop van het
+     sheet neemt die ruimte over. */
+  padding-top: 0;
+}
+.sheet--match .sheet__head {
+  padding-top: var(--sp-5);
+}
+.sheet--match .sheet__foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: var(--sp-4);
+  padding: var(--sp-3) var(--sp-5) calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
+  margin-inline: calc(var(--sp-5) * -1);
+  /* Omhoog, richting de inhoud die eronder wegschuift — zelfde keuze als de
+     onderbalk van de app en de wizard-voet. */
+  --glas-schaduw: var(--shadow-up);
+  /* .glas--balk laat als scheiding alleen een wit bovenlicht achter, en dat is
+     op het lichte thema onzichtbaar. */
+  border-top: 1px solid rgb(var(--glas-diep) / 0.08);
+  border-bottom: 0;
 }
