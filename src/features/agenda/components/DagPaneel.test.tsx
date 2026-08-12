@@ -59,12 +59,35 @@ function toon(props: Partial<Parameters<typeof DagPaneel>[0]> = {}) {
 describe("<DagPaneel />", () => {
   it("benoemt de dag en telt wat erop staat", () => {
     toon({
-      markers: [marker(), marker({ optionId: "opt-2", startTime: "11:00" })],
+      markers: [
+        marker(),
+        marker({ pollId: "poll-2", optionId: "opt-2", startTime: "11:00" }),
+      ],
     });
     expect(
       screen.getByRole("heading", { name: /zaterdag 8 augustus/i }),
     ).toBeInTheDocument();
     expect(screen.getByText("2 activiteiten")).toBeInTheDocument();
+  });
+
+  it("maakt van twee voorstellen van dezelfde poll één kaart", () => {
+    // Een open poll die twee tijden op dezelfde dag voorstelt is één speeldag
+    // om over te beslissen, geen twee afspraken (#1182).
+    toon({
+      markers: [
+        marker({ status: "open", yesVoterIds: ["a", "b"] }),
+        marker({
+          optionId: "opt-2",
+          startTime: "21:30",
+          status: "open",
+          yesVoterIds: ["b", "c"],
+        }),
+      ],
+    });
+    expect(screen.getByText("1 activiteit")).toBeInTheDocument();
+    expect(screen.getByText("20:00 of 21:30")).toBeInTheDocument();
+    // En wie op één van beide kan, telt mee: a, b en c — b niet dubbel.
+    expect(screen.getByText("3 van 4 kunnen")).toBeInTheDocument();
   });
 
   it("zet vandaag ervoor als de gekozen dag vandaag is", () => {

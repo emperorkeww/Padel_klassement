@@ -2,12 +2,16 @@ import { Avatar } from "@/ui/Avatar";
 import { courtsLabel, longDay, shortDay } from "@/features/groups/planPollHelpers";
 import type { Profile } from "@/types";
 import {
+  dagItems,
   duurLabel,
+  kannersOpDag,
   metHoofdletter,
   statusChip,
   statusLabel,
+  tijdenLabel,
   volgendeStap,
   type AgendaMarker,
+  type DagItem,
 } from "../agendaLogic";
 import { StatusGlyph } from "@/ui/StatusGlyph";
 
@@ -54,6 +58,9 @@ export function DagPaneel({
   onKiesDag: (date: string) => void;
 }) {
   const isVandaag = datum === vandaag;
+  // Per speeldag, niet per moment (#1182): een poll met twee kandidaat-tijden op
+  // deze dag is één kaart met beide tijden erop.
+  const items = dagItems(markers);
   return (
     <section className="dagpaneel" aria-label={`Speeldagen op ${longDay(datum)}`}>
       <header className="dagpaneel__kop">
@@ -69,9 +76,9 @@ export function DagPaneel({
             metHoofdletter(longDay(datum))
           )}
         </h2>
-        {markers.length > 0 && (
+        {items.length > 0 && (
           <p className="dagpaneel__telling">
-            {markers.length} {markers.length === 1 ? "activiteit" : "activiteiten"}
+            {items.length} {items.length === 1 ? "activiteit" : "activiteiten"}
           </p>
         )}
       </header>
@@ -105,11 +112,11 @@ export function DagPaneel({
         </>
       ) : (
         <ul className="dagpaneel__lijst">
-          {markers.map((m) => (
-            <li key={m.optionId}>
+          {items.map((item) => (
+            <li key={item.eerste.pollId}>
               <SpeeldagKaart
-                marker={m}
-                leden={ledenPerGroep[m.groupId] ?? 0}
+                item={item}
+                leden={ledenPerGroep[item.eerste.groupId] ?? 0}
                 profielen={profielen}
                 onOpen={onOpen}
               />
@@ -185,23 +192,30 @@ function IconChevron() {
 }
 
 function SpeeldagKaart({
-  marker,
+  item,
   leden,
   profielen,
   onOpen,
 }: {
-  marker: AgendaMarker;
+  item: DagItem;
   leden: number;
   profielen: Record<string, Profile>;
   onOpen: () => void;
 }) {
+  const marker = item.eerste;
   const status = marker.past ? "past" : marker.status;
-  const kanners = marker.yesVoterIds;
+  const kanners = kannersOpDag(item.momenten);
+  // Eén duur onder de tijden zeggen kan alleen als ze allemaal even lang zijn;
+  // anders hoort die regel bij een tijd die er niet meer los staat.
+  const gelijkeDuur = item.momenten.every((m) => m.duration === marker.duration);
+  // Op deze dag stemmen telt als stemmen: wie op 20:00 "ik kan" zei, hoeft van
+  // 21:30 niets meer te vinden om zijn antwoord kwijt te zijn.
+  const mijnStem = item.momenten.find((m) => m.myVote != null)?.myVote ?? null;
   // Waar deze speeldag op wacht (#1121). De Plannen-tab zei dit in een balk
   // bovenaan, over precies één speeldag; hier hoort het bij de kaart waar het
   // over gaat — er kunnen er drie tegelijk lopen, elk in een andere fase.
-  const stap = volgendeStap(marker);
-  const opJou = marker.status === "open" && !marker.past && marker.myVote == null;
+  const stap = volgendeStap(mijnStem === marker.myVote ? marker : { ...marker, myVote: mijnStem });
+  const opJou = marker.status === "open" && !marker.past && mijnStem == null;
   return (
     <button type="button" className="speeldag" onClick={onOpen}>
       {/* Het staafje links draagt dezelfde status als de stip in het raster —
@@ -209,8 +223,10 @@ function SpeeldagKaart({
       <span className={`speeldag__rail speeldag__rail--${status}`} aria-hidden="true" />
       <span className="speeldag__body">
         <span className="speeldag__top">
-          <span className="speeldag__tijd">{marker.startTime}</span>
-          <span className="speeldag__duur">{duurLabel(marker.duration)}</span>
+          <span className="speeldag__tijd">{tijdenLabel(item.momenten)}</span>
+          {gelijkeDuur && (
+            <span className="speeldag__duur">{duurLabel(marker.duration)}</span>
+          )}
           <span className={`speeldag__chip speeldag__chip--${status}`}>
             {statusChip(marker.status, marker.past)}
           </span>
@@ -224,7 +240,9 @@ function SpeeldagKaart({
                 <Avatar key={id} profile={profielen[id]} size={24} short />
               ))}
             </span>
-            <span className="speeldag__telling">{spelersLabel(marker, leden)}</span>
+            <span className="speeldag__telling">
+              {spelersLabel(marker, leden, kanners.length)}
+            </span>
           </span>
         )}
         {stap && (
@@ -250,9 +268,11 @@ function plek(m: AgendaMarker): string {
 /**
  * Wie er meedoet. Bij een open poll is dat een tússenstand — "2 van 4 kunnen" —
  * en bij een vastgelegde of geboekte dag zijn het gewoon de spelers.
+ *
+ * `n` komt van buiten: bij een gebundelde speeldag telt iedereen mee die op
+ * mínstens één moment van die dag kan (#1182).
  */
-function spelersLabel(m: AgendaMarker, leden: number): string {
-  const n = m.yesVoterIds.length;
+function spelersLabel(m: AgendaMarker, leden: number, n: number): string {
   if (m.status === "open" && !m.past) {
     return leden > 0 ? `${n} van ${leden} kunnen` : `${n} kunnen`;
   }

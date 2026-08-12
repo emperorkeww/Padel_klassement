@@ -244,6 +244,66 @@ export function markersByDay(
 }
 
 /**
+ * Wat er op één dag staat, geteld in speeldagen in plaats van in momenten
+ * (#1182).
+ *
+ * Een open poll levert één marker per kandidaat-moment, en twee van die
+ * kandidaten kunnen op dezelfde dag vallen ("20:00 of 21:30, zeg het maar").
+ * In het raster blijven dat twee stippen — daar zijn het antwoorden op een
+ * vraag — maar in het dagpaneel is het één speeldag waar je één keer op tikt.
+ * Twee kaarten die alleen in tijd verschillen lezen als twee afspraken.
+ */
+export type DagItem = {
+  /** Het eerste moment; draagt groep, club, status en de gedeelde tekst. */
+  eerste: AgendaMarker;
+  /** Alle momenten van dezelfde poll op déze dag, op tijd. */
+  momenten: AgendaMarker[];
+};
+
+/** Markers van één dag, gebundeld per poll. Volgorde blijft die van de dag
+ *  zelf: de bundel staat waar zijn vroegste moment stond. */
+export function dagItems(markers: AgendaMarker[]): DagItem[] {
+  const perPoll = new Map<string, AgendaMarker[]>();
+  for (const m of markers) {
+    const lijst = perPoll.get(m.pollId);
+    if (lijst) lijst.push(m);
+    else perPoll.set(m.pollId, [m]);
+  }
+  return [...perPoll.values()].map((momenten) => ({
+    eerste: momenten[0],
+    momenten,
+  }));
+}
+
+/** De tijden van een gebundelde speeldag: "20:00" of "20:00, 21:30 of 22:00".
+ *  Het zijn keuzes, geen opeenvolgende blokken — vandaar "of". */
+export function tijdenLabel(momenten: AgendaMarker[]): string {
+  const tijden = momenten.map((m) => m.startTime);
+  if (tijden.length === 1) return tijden[0];
+  return `${tijden.slice(0, -1).join(", ")} of ${tijden[tijden.length - 1]}`;
+}
+
+/**
+ * Wie er op deze dag kan: iedereen die op minstens één van de momenten "ik kan"
+ * zei. Bij één moment is dat gewoon zijn eigen lijst.
+ *
+ * Per moment optellen zou dubbeltellen (dezelfde speler kan op allebei), en de
+ * hoogste lijst nemen verzwijgt wie alleen op het andere tijdstip kan.
+ */
+export function kannersOpDag(momenten: AgendaMarker[]): string[] {
+  const uit: string[] = [];
+  const gezien = new Set<string>();
+  for (const m of momenten) {
+    for (const id of m.yesVoterIds) {
+      if (gezien.has(id)) continue;
+      gezien.add(id);
+      uit.push(id);
+    }
+  }
+  return uit;
+}
+
+/**
  * De eerstvolgende speeldagen ná een datum (#1112) — de "Hierna"-lijst onder een
  * lege dag.
  *
@@ -361,10 +421,16 @@ export const zelfdeMaand = (a: Maand, b: Maand) =>
  *
  * Telt op de máánd en niet op het venster: het raster toont ook de randdagen van
  * de buurmaanden, en die horen niet mee in "3 activiteiten deze maand".
+ *
+ * Telt polls en geen markers (#1182): een open poll met drie voorstellen is één
+ * vraag om te spelen, niet drie activiteiten. Een poll die over een maandgrens
+ * heen loopt telt in beide maanden mee — in allebei staat er iets.
  */
 export function telInMaand(markers: AgendaMarker[], m: Maand): number {
   const prefix = `${m.jaar}-${pad(m.maand)}-`;
-  return markers.filter((x) => x.date.startsWith(prefix)).length;
+  const polls = new Set<string>();
+  for (const x of markers) if (x.date.startsWith(prefix)) polls.add(x.pollId);
+  return polls.size;
 }
 
 /** "augustus 2026" — de kop boven het raster. */
