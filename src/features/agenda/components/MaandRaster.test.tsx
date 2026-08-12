@@ -43,6 +43,10 @@ function stippenVan(dag: HTMLElement): string[] {
   );
 }
 
+/** Het tijdstip doet er in het raster niet toe: de verdeling over speeldagen is
+ *  al gemaakt voordat dit component iets ziet (#1221). */
+const wed = (...ids: string[]) => ids.map((id) => ({ id, atMs: 0 }));
+
 function toon(props: Partial<Parameters<typeof MaandRaster>[0]> = {}) {
   const onFocusDag = vi.fn();
   const onPick = vi.fn();
@@ -165,7 +169,10 @@ describe("<MaandRaster />", () => {
     toon({
       perDag: {},
       wedstrijdenPerDag: {
-        "2026-08-05": [{ date: "2026-08-05", groupId: "g1", matchIds: ["m1", "m2"] }],
+        "2026-08-05": [{ date: "2026-08-05", groupId: "g1", matches: wed("m1", "m2") }],
+      },
+      losPerDag: {
+        "2026-08-05": [{ date: "2026-08-05", groupId: "g1", matches: wed("m1", "m2") }],
       },
     });
     const dag = screen.getByRole("button", { name: /woensdag 5 augustus/ });
@@ -184,11 +191,31 @@ describe("<MaandRaster />", () => {
         ],
       },
       wedstrijdenPerDag: {
-        "2026-08-13": [{ date: "2026-08-13", groupId: "g1", matchIds: ["m1"] }],
+        "2026-08-13": [{ date: "2026-08-13", groupId: "g1", matches: wed("m1") }],
+      },
+      losPerDag: {
+        "2026-08-13": [{ date: "2026-08-13", groupId: "g1", matches: wed("m1") }],
       },
     });
     const dag = screen.getByRole("button", { name: /donderdag 13 augustus/ });
     expect(stippenVan(dag)).toEqual(["booked", "booked", "played"]);
+  });
+
+  it("geeft een speeldag met wedstrijden maar één glyph (#1221)", () => {
+    // Dezelfde avond droeg de stip van de speeldag én de ruit van "gespeeld".
+    // De wedstrijden horen bij die speeldag, dus `losPerDag` blijft leeg en de
+    // ruit hoort weg te blijven.
+    toon({
+      perDag: { "2026-08-13": [marker({ past: true })] },
+      wedstrijdenPerDag: {
+        "2026-08-13": [{ date: "2026-08-13", groupId: "g1", matches: wed("m1", "m2") }],
+      },
+      losPerDag: {},
+    });
+    const dag = screen.getByRole("button", { name: /donderdag 13 augustus/ });
+    expect(stippenVan(dag)).toEqual(["past"]);
+    // De naam vertelt nog steeds wat er die dag gebeurd is.
+    expect(dag).toHaveAccessibleName(/2 wedstrijden gespeeld/);
   });
 
   it("houdt de stippenrij ook leeg op zijn plek", () => {

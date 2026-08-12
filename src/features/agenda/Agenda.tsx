@@ -28,6 +28,7 @@ import {
   schuifMaand,
   statusChip,
   telInMaand,
+  verdeelWedstrijden,
   volgendeSpeeldagen,
   wachtOpJou,
   wedstrijdDagen,
@@ -188,6 +189,13 @@ export function Agenda() {
     [alleMarkers, groepFilter],
   );
   const perDag = useMemo(() => markersByDay(markers), [markers]);
+  // Wat er gespeeld is hoort bij de speeldag waarop het gespeeld is (#1221).
+  // Alleen wat bij geen enkele speeldag hoort — los gelogd, zonder poll — blijft
+  // een eigen rij; de rest is een teller op de speeldagkaart.
+  const indeling = useMemo(
+    () => verdeelWedstrijden(perDag, wedstrijdenPerDag),
+    [perDag, wedstrijdenPerDag],
+  );
   // Dezelfde bewerking op het vooruitblik-venster: dat voedt de lijst, de
   // actiestrook, én het dag-sheet als je vanuit de lijst iets opent.
   const lijstMarkers = useMemo(
@@ -277,12 +285,14 @@ export function Agenda() {
     return (["booked", "locked", "open"] as const).filter((s) => aanwezig.has(s));
   }, [markers, raster.from, raster.to]);
 
+  // De ruit staat sinds #1221 alleen nog voor losse partijen: wat bij een
+  // speeldag hoort draagt de stip van die speeldag al.
   const wedstrijdenInBeeld = useMemo(
     () =>
-      Object.keys(wedstrijdenPerDag).some(
+      Object.keys(indeling.losPerDag).some(
         (d) => d >= raster.from && d <= raster.to,
       ),
-    [wedstrijdenPerDag, raster.from, raster.to],
+    [indeling.losPerDag, raster.from, raster.to],
   );
 
   /**
@@ -531,6 +541,7 @@ export function Agenda() {
                   weeks={weeks}
                   perDag={perDag}
                   wedstrijdenPerDag={wedstrijdenPerDag}
+                  losPerDag={indeling.losPerDag}
                   bezig={verversen}
                   vandaag={vandaag}
                   gekozenDag={gekozenDag}
@@ -567,7 +578,8 @@ export function Agenda() {
                   datum={gekozenDag}
                   vandaag={vandaag}
                   markers={perDag[gekozenDag] ?? []}
-                  wedstrijden={wedstrijdenPerDag[gekozenDag] ?? []}
+                  wedstrijden={indeling.losPerDag[gekozenDag] ?? []}
+                  wedstrijdenPerPoll={indeling.perPoll}
                   groepNamen={groepNamen}
                   volgende={volgende}
                   ledenPerGroep={ledenPerGroep}

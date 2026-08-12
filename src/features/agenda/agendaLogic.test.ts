@@ -21,6 +21,7 @@ import {
   perMaand,
   telInMaand,
   telWedstrijden,
+  verdeelWedstrijden,
   tijdenLabel,
   tijdvak,
   toetsStap,
@@ -346,7 +347,12 @@ describe("wedstrijdDagen (#1182)", () => {
     );
     expect(Object.keys(uit).sort()).toEqual(["2026-08-08", "2026-08-09"]);
     expect(uit["2026-08-08"]).toHaveLength(2);
-    expect(uit["2026-08-08"][0].matchIds).toEqual(["m1", "m2"]);
+    expect(uit["2026-08-08"][0].matches.map((m) => m.id)).toEqual(["m1", "m2"]);
+    // Het tijdstip gaat mee (#1221): zonder dat valt een wedstrijd niet aan een
+    // speeldagmoment te hangen.
+    expect(uit["2026-08-08"][0].matches[0].atMs).toBe(
+      Date.parse("2026-08-08T18:00:00Z"),
+    );
     expect(telWedstrijden(uit["2026-08-08"])).toBe(3);
   });
 
@@ -937,5 +943,91 @@ describe("buildMarkers — twijfelaars en stille leden (#1121)", () => {
     expect(markers[0].maybeVoterIds).toEqual(["p2"]);
     // p3 en p4 zeiden niets — dat is per poll, niet per moment.
     expect(markers[0].nietGestemdIds).toEqual(["p3", "p4"]);
+  });
+});
+
+/* ---- #1221: wat bij een speeldag hoort, en wat los is ---- */
+
+describe("verdeelWedstrijden (#1221)", () => {
+  // 8 augustus 2026, clubtijd Europe/Brussels (UTC+2). De speeldag begint om
+  // 20:00 clubtijd, dus om 18:00Z.
+  const DAG = "2026-08-08";
+  const speeldag = (over: Partial<AgendaMarker> = {}) =>
+    marker({ date: DAG, startTime: "20:00", status: "booked", past: true, ...over });
+  const wed = (id: string, iso: string) => ({ id, atMs: Date.parse(iso) });
+  const dag = (matches: { id: string; atMs: number }[], groupId = "g1") => ({
+    [DAG]: [{ date: DAG, groupId, matches }],
+  });
+
+  it("hangt de wedstrijden van die avond aan de speeldag", () => {
+    const uit = verdeelWedstrijden(
+      { [DAG]: [speeldag()] },
+      dag([wed("m1", "2026-08-08T18:10:00Z"), wed("m2", "2026-08-08T19:00:00Z")]),
+    );
+    expect(uit.perPoll).toEqual({ "poll-1": 2 });
+    // Niets meer over voor een eigen rij: dat was de verdubbeling.
+    expect(uit.losPerDag).toEqual({});
+  });
+
+  it("laat wedstrijden zonder speeldag gewoon los staan", () => {
+    const uit = verdeelWedstrijden({}, dag([wed("m1", "2026-08-08T18:10:00Z")]));
+    expect(uit.perPoll).toEqual({});
+    expect(uit.losPerDag[DAG][0].matches.map((m) => m.id)).toEqual(["m1"]);
+  });
+
+  it("telt een open poll niet als speeldag", () => {
+    // Een vraag waar niets van kwam is geen avond om wedstrijden aan te hangen.
+    const uit = verdeelWedstrijden(
+      { [DAG]: [speeldag({ status: "open" })] },
+      dag([wed("m1", "2026-08-08T18:10:00Z")]),
+    );
+    expect(uit.perPoll).toEqual({});
+    expect(uit.losPerDag[DAG][0].matches.map((m) => m.id)).toEqual(["m1"]);
+  });
+
+  it("houdt een partij van 's middags buiten de speeldag van 's avonds", () => {
+    // 12:00Z is 14:00 clubtijd: zes uur vóór het slot van 20:00, en dus geen
+    // wedstrijd van die speeldag. Dít is waarvoor de losse rij bestaat.
+    const uit = verdeelWedstrijden(
+      { [DAG]: [speeldag()] },
+      dag([wed("middag", "2026-08-08T12:00:00Z"), wed("avond", "2026-08-08T18:10:00Z")]),
+    );
+    expect(uit.perPoll).toEqual({ "poll-1": 1 });
+    expect(uit.losPerDag[DAG][0].matches.map((m) => m.id)).toEqual(["middag"]);
+  });
+
+  it("verdeelt een ochtend- en een avondsessie over hun eigen poll", () => {
+    const ochtend = speeldag({
+      pollId: "poll-ochtend",
+      optionId: "opt-ochtend",
+      startTime: "10:00",
+    });
+    const avond = speeldag({ pollId: "poll-avond", optionId: "opt-avond" });
+    const uit = verdeelWedstrijden(
+      { [DAG]: [avond, ochtend] },
+      dag([
+        wed("o1", "2026-08-08T08:00:00Z"), // 10:00
+        wed("o2", "2026-08-08T09:30:00Z"), // 11:30 — uitloop van de ochtend
+        wed("a1", "2026-08-08T18:20:00Z"), // 20:20
+      ]),
+    );
+    expect(uit.perPoll).toEqual({ "poll-ochtend": 2, "poll-avond": 1 });
+    expect(uit.losPerDag).toEqual({});
+  });
+
+  it("houdt de groepen uit elkaar", () => {
+    // De speeldag van g1 mag de losse partij van g2 niet opslokken.
+    const uit = verdeelWedstrijden(
+      { [DAG]: [speeldag()] },
+      {
+        [DAG]: [
+          { date: DAG, groupId: "g1", matches: [wed("m1", "2026-08-08T18:10:00Z")] },
+          { date: DAG, groupId: "g2", matches: [wed("m2", "2026-08-08T18:10:00Z")] },
+        ],
+      },
+    );
+    expect(uit.perPoll).toEqual({ "poll-1": 1 });
+    expect(uit.losPerDag[DAG]).toHaveLength(1);
+    expect(uit.losPerDag[DAG][0].groupId).toBe("g2");
   });
 });

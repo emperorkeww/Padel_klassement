@@ -34,6 +34,7 @@ export function MaandRaster({
   weeks,
   perDag,
   wedstrijdenPerDag = {},
+  losPerDag = {},
   bezig = false,
   vandaag,
   gekozenDag,
@@ -43,9 +44,13 @@ export function MaandRaster({
 }: {
   weeks: RasterDag[][];
   perDag: Record<string, AgendaMarker[]>;
-  /** Gespeelde wedstrijden per dag (#1182). Een dag kan wedstrijden dragen
-   *  zonder speeldag: loggen kan zonder poll. */
+  /** Alles wat er die dag gespeeld is (#1182) — voedt de toegankelijke naam van
+   *  de cel, ook als het bij een speeldag hoort. */
   wedstrijdenPerDag?: Record<string, WedstrijdDag[]>;
+  /** Alleen de losse partijen (#1221): wedstrijden zonder speeldag eromheen.
+   *  Die dragen de ruit; wat bij een speeldag hoort staat al in diens stip, en
+   *  twee glyphs voor één avond was precies de verdubbeling die weg moest. */
+  losPerDag?: Record<string, WedstrijdDag[]>;
   /** De maand staat er al, maar de speeldagen zijn nog onderweg (#1182). De
    *  stippen die je dan ziet horen bij het vorige venster. */
   bezig?: boolean;
@@ -104,12 +109,13 @@ export function MaandRaster({
             {week.map((dag) => {
               const markers = perDag[dag.date] ?? [];
               const wedstrijden = wedstrijdenPerDag[dag.date] ?? [];
-              // De ruit van de wedstrijden krijgt zijn eigen plek, dus de
+              const los = losPerDag[dag.date] ?? [];
+              // De ruit van de losse partijen krijgt zijn eigen plek, dus de
               // speeldagen leveren er één in: vier glyphs is wat er in een cel
               // van deze maat nog naast elkaar past.
               const { shown } = splitMarkers(
                 markers,
-                wedstrijden.length > 0 ? MAX_STIPPEN - 1 : MAX_STIPPEN,
+                los.length > 0 ? MAX_STIPPEN - 1 : MAX_STIPPEN,
               );
               const isVandaag = dag.date === vandaag;
               const isGekozen = dag.date === gekozenDag;
@@ -160,7 +166,7 @@ export function MaandRaster({
                       {shown.map((m) => (
                         <StatusGlyph key={m.optionId} status={m.status} past={m.past} />
                       ))}
-                      {wedstrijden.length > 0 && <StatusGlyph status="played" />}
+                      {los.length > 0 && <StatusGlyph status="played" />}
                     </span>
                   </button>
                 </div>
