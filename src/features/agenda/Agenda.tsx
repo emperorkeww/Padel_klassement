@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
@@ -32,7 +32,6 @@ import {
   windowFor,
   zelfdeMaand,
   type AgendaMarker,
-  type Maand,
 } from "./agendaLogic";
 import { MaandRaster } from "./components/MaandRaster";
 import { DagPaneel } from "./components/DagPaneel";
@@ -43,6 +42,7 @@ import { StatusGlyph } from "@/ui/StatusGlyph";
 import { AgendaAbonnement } from "./components/AgendaAbonnement";
 import { GroepFilter } from "./components/GroepFilter";
 import { AgendaSuggesties } from "./components/AgendaSuggesties";
+import { useAgendaUrl, type Weergave } from "./agendaParams";
 import { AgendaLijst } from "./components/AgendaLijst";
 import { ActieStrook } from "./components/ActieStrook";
 import { PageTabs } from "@/ui/PageTabs";
@@ -53,8 +53,6 @@ const LEEG_VENSTER: PollWindow = { polls: [], options: [], votes: [] };
 /** Hoe ver de lijstweergave vooruit kijkt. Een kwartaal: verder dan iemand
  *  plant, en klein genoeg om één query te blijven (#1182). */
 const LIJST_DAGEN = 90;
-
-type Weergave = "maand" | "lijst";
 
 /** Onthoudt voor welke groep je het laatst plande — bij drie groepen scheelt
  *  dat elke keer dezelfde keuze opnieuw maken. */
@@ -80,14 +78,19 @@ export function Agenda() {
   // toestel: om 00:30 in een andere zone is het hier nog gisteren (#783).
   const vandaag = dateInZone(globaleClub.timezone);
 
-  const [weergave, setWeergave] = useState<Weergave>("maand");
-  const [maand, setMaand] = useState<Maand>(() => maandVan(vandaag));
-  // De dag waar het paneel onder het raster over gaat (#1112). Los van
-  // `focusDag`: met de pijltjes loop je door het raster zonder telkens iets te
-  // kiezen, precies zoals je met de muis kunt rondkijken zonder te klikken.
-  const [gekozenDag, setGekozenDag] = useState(vandaag);
+  // Wat je bekijkt staat in de URL (#1182): deelbaar, refresh-bestendig, en de
+  // terugknop sluit het sheet in plaats van de pagina te verlaten. De gekozen
+  // dag is los van `focusDag`: met de pijltjes loop je door het raster zonder
+  // telkens iets te kiezen, precies zoals je met de muis kunt rondkijken zonder
+  // te klikken — en dát is een tab-stop, geen stand om te delen.
+  const navigate = useNavigate();
+  const { stand, zet } = useAgendaUrl(vandaag);
+  const { maand, dag: gekozenDag, open, weergave } = stand;
   const [focusDag, setFocusDag] = useState(vandaag);
-  const [open, setOpen] = useState<string | null>(null);
+  // Het openen van het sheet duwde een history-entry: dan sluit de terugknop
+  // hem. Kwam je met een `?open=1`-link binnen, dan is er niets om op terug te
+  // gaan en vervangen we de entry — anders verlaat "sluiten" de app.
+  const geduwd = useRef(false);
   // De aangetikte lege dag; los van `open`, want het plan-sheet geeft het stokje
   // door aan de wizard en moet die dag ondertussen vasthouden.
   const [planDag, setPlanDag] = useState<string | null>(null);
@@ -249,7 +252,7 @@ export function Agenda() {
    */
   function verplaatsFocus(date: string) {
     setFocusDag(date);
-    if (date < raster.from || date > raster.to) setMaand(maandVan(date));
+    if (date < raster.from || date > raster.to) zet({ maand: maandVan(date) });
   }
 
   /**
@@ -263,17 +266,39 @@ export function Agenda() {
    * een dag die je meteen daarna niet meer ziet staan.
    */
   function kiesDag(date: string) {
-    if (!zelfdeMaand(maandVan(date), maand)) setMaand(maandVan(date));
     if (date === gekozenDag) openDag(date);
-    else setGekozenDag(date);
+    // Dag en maand in één schrijfbeurt: twee losse calls in dezelfde tick
+    // overschrijven elkaar (zie agendaParams.ts).
+    else zet({ dag: date, maand: maandVan(date) });
   }
 
   /** Het sheet bij een dag met speeldagen, het plan-sheet bij een lege dag die
    *  nog komt. Een lege dag die geweest is heeft niets te openen — het paneel
    *  zegt daar al dat er niet gespeeld is. */
   function openDag(date: string) {
-    if (dagMarkers(date).length > 0) setOpen(date);
+    if (dagMarkers(date).length > 0) openSheet(date);
     else if (date >= vandaag) setPlanDag(date);
+  }
+
+  /** Het dag-sheet openen. Dit is de enige stap die een history-entry duwt: op
+   *  Android hoort de terugknop het sheet te sluiten en niet de agenda te
+   *  verlaten. De dag schuift mee, zodat het paneel eronder over dezelfde dag
+   *  gaat als het sheet erboven. */
+  function openSheet(date: string) {
+    geduwd.current = true;
+    zet({ dag: date, maand: maandVan(date), open: date }, { push: true });
+  }
+
+  /** Sluiten via de knop of Escape. Duwden we de entry zelf, dan is teruggaan de
+   *  eerlijke weg: anders blijft er een stap in je geschiedenis staan die het
+   *  sheet weer opent. */
+  function sluitSheet() {
+    if (geduwd.current) {
+      geduwd.current = false;
+      navigate(-1);
+    } else {
+      zet({ open: null });
+    }
   }
 
   /** De speeldagen van een dag, uit welk venster ze ook komen. Een dag uit de
@@ -286,22 +311,23 @@ export function Agenda() {
   /** Vanuit de actiestrook: naar de dag toe én hem meteen openen. De strook
    *  belooft dat je kunt stemmen, dus daar moet je in één tik staan. */
   function gaNaarDag(date: string) {
-    setWeergave("maand");
-    springNaar(date);
-    setOpen(date);
+    setFocusDag(date);
+    geduwd.current = true;
+    zet(
+      { weergave: "maand", dag: date, maand: maandVan(date), open: date },
+      { push: true },
+    );
   }
 
   /** Naar een dag springen vanuit "Hierna": de maand schuift mee en de tab-stop
    *  blijft niet achter in de maand die je verlaat. */
   function springNaar(date: string) {
-    if (!zelfdeMaand(maandVan(date), maand)) setMaand(maandVan(date));
-    setGekozenDag(date);
     setFocusDag(date);
+    zet({ dag: date, maand: maandVan(date) });
   }
 
   function naarMaand(delta: number) {
     const nieuw = schuifMaand(maand, delta);
-    setMaand(nieuw);
     // De tab-stop mag niet achterblijven in een maand die je niet meer ziet.
     const doel = zelfdeMaand(nieuw, maandVan(vandaag))
       ? vandaag
@@ -313,7 +339,7 @@ export function Agenda() {
     // speeldagen niet meer en meldt het "Nog niets gepland" voor een dag die
     // wél iets draagt. Een paneel dat over een dag praat die je niet ziet
     // staan is bovendien sowieso raar — het staat er pal onder.
-    setGekozenDag(doel);
+    zet({ maand: nieuw, dag: doel });
   }
 
   return (
@@ -359,9 +385,8 @@ export function Agenda() {
                 : undefined
             }
             onClick={() => {
-              setMaand(maandVan(vandaag));
               setFocusDag(vandaag);
-              setGekozenDag(vandaag);
+              zet({ maand: maandVan(vandaag), dag: vandaag });
             }}
           >
             Vandaag
@@ -422,7 +447,7 @@ export function Agenda() {
             variant="segment"
             ariaLabel="Weergave"
             value={weergave}
-            onChange={setWeergave}
+            onChange={(w) => zet({ weergave: w })}
             tabs={[
               { id: "maand" as Weergave, label: "Maand" },
               { id: "lijst" as Weergave, label: "Lijst" },
@@ -435,7 +460,7 @@ export function Agenda() {
               laadt={lijstVenster.loading && lijstVenster.data == null}
               ledenPerGroep={ledenPerGroep}
               profielen={profielen.data ?? {}}
-              onOpenDag={setOpen}
+              onOpenDag={openSheet}
             />
           ) : (
             <>
@@ -476,7 +501,7 @@ export function Agenda() {
                   volgende={volgende}
                   ledenPerGroep={ledenPerGroep}
                   profielen={profielen.data ?? {}}
-                  onOpen={() => setOpen(gekozenDag)}
+                  onOpen={() => openSheet(gekozenDag)}
                   onPlan={
                     gekozenDag >= vandaag ? () => setPlanDag(gekozenDag) : undefined
                   }
@@ -516,12 +541,12 @@ export function Agenda() {
         onPlan={
           open != null && open >= vandaag
             ? () => {
-                setOpen(null);
+                sluitSheet();
                 setPlanDag(open);
               }
             : undefined
         }
-        onClose={() => setOpen(null)}
+        onClose={sluitSheet}
       />
 
       <PlanDagSheet
