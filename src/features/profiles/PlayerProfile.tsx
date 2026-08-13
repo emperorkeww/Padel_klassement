@@ -38,7 +38,6 @@ import { PageTabs, TabPanel } from "@/ui/PageTabs";
 import { OverflowMenu } from "@/ui/OverflowMenu";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
-import { useBackTo } from "@/lib/hooks/useBackTo";
 import {
   recentForm,
   winRate,
@@ -113,12 +112,6 @@ export function PlayerProfile() {
   // Tabtitel op de spelersnaam (#910); zolang die laadt blijft de titel staan
   // in plaats van naar een tussenstand te flitsen.
   usePageTitle(profile.data ? displayName(profile.data) : null);
-  // Bij een deeplink uit een pushbericht is er geen vorige pagina — dan naar
-  // het klassement in plaats van de app uit (#910). Op je eigen profiel is dat
-  // sinds #1211 het overzicht: dit is nu de landing van "Ik", en wie hier via
-  // de tab binnenkomt hoort terug te vallen op zijn startpagina en niet in een
-  // ranglijst waar hij niet vandaan kwam.
-  const terug = useBackTo(isMe ? "/" : "/klassement");
   const standing = useAsync(() => getPlayerStanding(id), [id]);
   // Volledige stand voor de klassementpositie (#N), net als het dashboard.
   const standings = useAsync(getPlayerStandings, []);
@@ -589,15 +582,13 @@ export function PlayerProfile() {
   return (
     <div>
       <header className="page-head profile-head">
-        {/* Terug naar waar je vandaan kwam (klassement, vrienden, …). */}
-        <button type="button" className="btn btn--sm" onClick={terug}>
-          ← Terug
-        </button>
+        {/* De terugweg zit sinds #1299 in de shell (topbalk op mobiel, boven de
+            inhoud op desktop). */}
         <div className="profile-head__tools">
           {/* Zes bedieningselementen naast elkaar werden op telefoonbreedte een
-              blok knoppen boven de inhoud (#918). Terug en Delen blijven staan;
-              de rest — die er bovendien alleen sóms is — zit in het menu. Alleen
-              renderen als er iets in zit: een lege ⋯ is erger dan geen ⋯. */}
+              blok knoppen boven de inhoud (#918). Delen blijft staan; de rest —
+              die er bovendien alleen sóms is — zit in het menu. Alleen renderen
+              als er iets in zit: een lege ⋯ is erger dan geen ⋯. */}
           {heeftMenu && (
             <OverflowMenu label="Meer op dit profiel">
               {(sluit) => (

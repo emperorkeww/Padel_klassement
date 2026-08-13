@@ -50,7 +50,12 @@ describe("<App /> onbekend pad (#910)", () => {
     expect(
       screen.getByRole("link", { name: "Naar het overzicht" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^terug$/i })).toBeInTheDocument();
+    // De weg naar wáár je vandaan kwam draagt de shell sinds #1299 — in de
+    // topbalk op mobiel en boven de inhoud op desktop, allebei uit dezelfde
+    // component. Dit scherm zette daar zijn eigen knop naast.
+    expect(
+      screen.getAllByRole("button", { name: /^terug$/i }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("houdt de navigatie van de shell eromheen staan", async () => {

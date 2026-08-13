@@ -416,12 +416,10 @@ function GroepPagina() {
 
   return (
     <div>
-      {/* Terugnavigatie hoort bóven de kop (#946); als knop naast "Leden
-          uitnodigen" stond de weg omhoog ónder de groepstitel, tussen de
-          acties van deze pagina. */}
-      <Link className="terug-link" to="/spelen">
-        <span aria-hidden="true">←</span> Alle groepen
-      </Link>
+      {/* Terugnavigatie hoort bóven de kop (#946) — sinds #1299 draagt de shell
+          hem: de topbalk op mobiel, boven de inhoud op desktop. De losse
+          "← Alle groepen"-link die hier stond was de vierde eigen terugvorm in
+          de app en is daarmee vervallen. */}
       {/* De kop droeg alleen naam plus eigenaar-badge, terwijl de groepskaart
           op de hub wél avatar, ledenrij en reisstatus toont (#917) — de
           groepspagina voelde daardoor minder "van de groep" dan het overzicht

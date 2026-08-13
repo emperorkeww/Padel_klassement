@@ -364,13 +364,14 @@ describe("<PlayerProfile />", () => {
     const menuKnop = () =>
       screen.getByRole("button", { name: /meer op dit profiel/i });
 
-    it("houdt alleen Terug en Delen zichtbaar; de rest zit in het menu", async () => {
+    it("houdt alleen Delen zichtbaar; de rest zit in het menu", async () => {
       setTables("p2");
       renderProfile("p2");
       await screen.findByRole("heading", { name: /bob boers/i, level: 1 });
 
-      // Zichtbaar zonder het menu te openen.
-      expect(screen.getByRole("button", { name: /terug/i })).toBeInTheDocument();
+      // Zichtbaar zonder het menu te openen. De terugknop stond hier tot #1299
+      // naast; die draagt de shell nu, in één vorm voor de hele app.
+      expect(screen.queryByRole("button", { name: /^terug$/i })).toBeNull();
       expect(
         screen.getByRole("button", { name: /deel profiel/i }),
       ).toBeInTheDocument();
