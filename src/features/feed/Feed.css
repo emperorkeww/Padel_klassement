@@ -889,10 +889,19 @@
 }
 .feed__filters {
   position: relative;
-  margin-bottom: 0;
   background: transparent;
   border: 0;
-  padding: 0;
+  /* De verticale padding is de clip-marge van de scroller, geen lucht (#1309).
+     overflow-x maakt de rij per spec óók verticaal een clippende doos, en zonder
+     die padding zat een chip van 44px in een clip-box van precies 44px: op iOS
+     viel de afronding daar net verkeerd uit en werd de bovenkant van de actieve
+     pil plat afgesneden, terwijl schaduw en focusring er altijd al helemaal
+     afvielen. 8px omdat de focusring tot 4px buiten de knop reikt. De marge
+     neemt het weer weg, zodat de rij even hoog blijft — en haalt meteen de
+     margin-bottom van .tabs eraf, die deze rij nooit hoorde te dragen.
+     Zelfde afweging als bij .agenda-filter. */
+  padding: var(--sp-2) 0;
+  margin-block: calc(var(--sp-2) * -1);
   max-width: 100%;
   flex-wrap: nowrap;
   overflow-x: auto;
