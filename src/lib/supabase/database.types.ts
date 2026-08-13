@@ -3022,6 +3022,10 @@ export type Database = {
         Returns: string
       }
       delete_match: { Args: { p_match_id: string }; Returns: undefined }
+      delete_round: {
+        Args: { p_dag: string; p_group_id: string; p_round_number: number }
+        Returns: number
+      }
       expire_point_appeals: { Args: never; Returns: number }
       first_match_date: { Args: never; Returns: string }
       generate_americano_round: {
