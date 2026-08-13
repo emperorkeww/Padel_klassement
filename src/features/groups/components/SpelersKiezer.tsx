@@ -39,6 +39,7 @@ export function SpelersKiezer({
   profielen,
   gekozen,
   moment,
+  dagLabel,
   herkomst,
   onToggle,
   onAlles,
@@ -52,6 +53,9 @@ export function SpelersKiezer({
   gekozen: ReadonlySet<string>;
   /** Starttijd van het moment ("20:00"), of null zonder speeldag-poll. */
   moment: string | null;
+  /** Welke dag dit is, bv. "Vandaag" of "vrijdag 4 september" (#1271). De kop
+   *  zei hardgecodeerd "Vandaag", ook op een speeldag over drie weken. */
+  dagLabel?: string;
   /** Waar deze selectie vandaan komt (poll van vandaag, of alle leden). Staat
    *  niet in de handoff, maar het antwoord op "waarom staan déze namen aan?"
    *  hoort bij de lijst en nergens anders. */
@@ -76,7 +80,8 @@ export function SpelersKiezer({
       <div className="kiezer__kop">
         <div>
           <p className="kiezer__eyebrow">
-            Vandaag{moment ? ` · ${moment}` : ""}
+            {dagLabel ?? "Vandaag"}
+            {moment ? ` · ${moment}` : ""}
           </p>
           <h2 className="card__title kiezer__titel" id="kiezer-titel">
             Wie speelt er mee?

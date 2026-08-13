@@ -157,9 +157,12 @@ describe("<PollCard /> — speeldag uit de agenda halen (#1099)", () => {
     const knop = await screen.findByRole("button", {
       name: /annuleer speeldag/i,
     });
-    await userEvent.click(knop); // eerste tik = bevestigen
+    await userEvent.click(knop);
+    // Bevestigen gaat sinds #1271 via de ConfirmDialog die op deze kaart al
+    // stond, in plaats van via een two-tap die op `onBlur` reset — op touch
+    // telt een scroll of een tik ernaast namelijk als blur.
     await userEvent.click(
-      screen.getByRole("button", { name: /zeker\? tik nogmaals/i }),
+      await screen.findByRole("button", { name: /^annuleren$/i }),
     );
 
     await waitFor(async () =>
