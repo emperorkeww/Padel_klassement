@@ -1092,15 +1092,87 @@
   min-height: 44px;
 }
 
+/* De voetbalk van het dag-sheet (#1308), naar het model van het match-sheet
+   (#1144): plakkend onderaan, van rand tot rand, met het glas als scheiding.
+   Hiervoor stonden de acties middenin het sheet — de enige accentknop stond
+   onder twee namenlijsten, en dat is nu juist de knop die je wégstuurt. */
+.sheet--dag {
+  padding-bottom: 0;
+}
+.sheet--dag .dagsheet__voet {
+  position: sticky;
+  bottom: 0;
+  z-index: 2; /* boven de inhoud die eronderdoor scrolt */
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  padding: var(--sp-3) var(--sp-5) calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
+  /* Tegen de zijpadding van .sheet in, zodat de balk van rand tot rand loopt. */
+  margin-inline: calc(var(--sp-5) * -1);
+  /* Omhoog, richting de inhoud die eronder wegschuift — zelfde keuze als de
+     onderbalk van de app, de wizard-voet en het match-sheet. */
+  --glas-schaduw: var(--shadow-up);
+  /* .glas--balk laat als scheiding alleen een wit bovenlicht achter, en dat is
+     op het lichte thema onzichtbaar. */
+  border-top: 1px solid rgb(var(--glas-diep) / 0.08);
+  border-bottom: 0;
+}
+
 /* Onder de speeldagen, los van hun eigen acties: dit gaat over de dag, niet
-   over één speeldag erop. Zwakker dan "Open speeldag" — een tweede speeldag op
-   dezelfde dag is de uitzondering, geen suggestie. */
+   over één speeldag erop. Een tweede speeldag op dezelfde dag is de
+   uitzondering, geen suggestie — sinds #1308 dus een stille tekstknop en niet
+   een gestippelde knop die even breed en even zwaar is als de hoofdactie.
+   Zelfde register als `.dagsheet__meer`: streep en gewicht dragen dat het een
+   knop is, de kleur blijft van de tekst. */
 .dagsheet__ookplannen {
-  justify-content: center;
+  justify-self: center;
+  padding: var(--sp-2) var(--sp-3);
   min-height: 44px;
+  border: 0;
+  background: none;
+  font: inherit;
   font-size: var(--fs-sm);
   color: var(--ink-soft-strong);
-  border-style: dashed;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Wie doet er mee: de telling en de gezichten staan altijd, de namen erachter
+   (#1308). Geen driehoekje van het systeem — de rij zelf zegt genoeg, en een
+   marker naast een avatarrij leest als een tweede lijstje. */
+.dagsheet__deelname > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  /* Raakdoel: de hele rij is de knop (#374). */
+  min-height: 44px;
+  list-style: none;
+  cursor: pointer;
+}
+.dagsheet__deelname > summary::-webkit-details-marker {
+  display: none;
+}
+/* Eigen chevron rechts, die opendraait — zelfde patroon als de suggestiekaart
+   (.suggestions__summary, #342). Zonder hem verraadt niets dat er namen achter
+   deze rij zitten. */
+.dagsheet__deelname > summary::after {
+  content: "⌄";
+  margin-left: auto;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--ink-soft);
+  transition: transform 0.15s ease;
+}
+.dagsheet__deelname[open] > summary::after {
+  transform: rotate(180deg);
+}
+.dagsheet__deelname[open] > summary {
+  margin-bottom: var(--sp-2);
+}
+.dagsheet__namen {
+  display: grid;
+  gap: var(--sp-2);
 }
 
 /* ---- Lege dag: plan een speeldag ---- */

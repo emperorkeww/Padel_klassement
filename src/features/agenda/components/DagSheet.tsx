@@ -46,6 +46,7 @@ import {
 // (StemRij.css + Proposals.css voor de `seg`-knoppen). Die regels hier kopiëren
 // zou ze uit het zicht van de contrast- en glascheck halen.
 import { StemRij } from "@/features/groups/components/StemRij";
+import { AfmeldRegel } from "@/features/groups/components/AfmeldRegel";
 
 /** Hoeveel avatars de stemmersrij toont voordat de rest een telling wordt. */
 const MAX_AVATARS = 6;
@@ -246,6 +247,10 @@ export function DagSheet({
       open={datum != null}
       onClose={onClose}
       title={datum ? longDay(datum) : "Dag"}
+      // Eigen klasse omdat de voetbalk hier plakt (#1308): dat vraagt de
+      // onderpadding van het sheet zelf. Zelfde constructie als `.sheet--match`
+      // (#1144) en `.sheet--wizard` bij de poll.
+      className="sheet--dag"
     >
       {datum && (
         <div
@@ -322,10 +327,23 @@ export function DagSheet({
               kiesDag stuurde 'm hierheen en hier stond geen uitweg. Twee
               groepen die los van elkaar plannen weten niet van elkaar, dus een
               bezette donderdag is juist een dag waar je naar kijkt (#1104). */}
+          {/* Een stille tekstknop sinds #1308: dit is de uitzondering (twee
+              groepen die los van elkaar dezelfde donderdag plannen), en hij
+              stond even breed en even zwaar als de hoofdactie eronder. */}
           {onPlan && markers.length > 0 && (
-            <button type="button" className="btn dagsheet__ookplannen" onClick={onPlan}>
+            <button type="button" className="dagsheet__ookplannen" onClick={onPlan}>
               Plan hier ook een speeldag
             </button>
+          )}
+
+          {/* De voetbalk van het sheet (#1308), met dezelfde vorm als in het
+              match-sheet: hij plakt onderaan, dus hij hoort ná alles wat
+              eronderdoor scrolt. Alleen bij één speeldag — anders staan de
+              acties in hun eigen blok, bij de speeldag waar ze over gaan. */}
+          {markers.length === 1 && (
+            <footer className="dagsheet__voet sheet__foot glas glas--sterk glas--balk">
+              <Acties marker={markers[0]} />
+            </footer>
           )}
         </div>
       )}
@@ -527,6 +545,22 @@ function Speeldag({
         </span>
       </header>
 
+      {/* Jouw stem, meteen onder de kop (#1308).
+          Dit is het enige wat je hier zelf kunt afmaken, en het stond onder
+          twee namenlijsten: in een groep van twintig lag het onder de vouw,
+          terwijl de twee knoppen die je níét nodig had de onderrand vulden. */}
+      {stembaar && (
+        <div className="dagsheet__stemmen">
+          <StemRij
+            titel="Jouw stem"
+            omschrijving={`${longDay(marker.date)} ${marker.startTime}`}
+            aantal={null}
+            mine={stemVan(marker)}
+            onVote={(s) => onStem(marker, s)}
+          />
+        </div>
+      )}
+
       {/* Groep, club en wat er gespeeld is zijn ingangen, geen etiketten
           (#1308). Ze zagen eruit als aantikbare pillen en waren het niet,
           terwijl de groepsnaam elders in de app juist wél de weg naar die
@@ -627,6 +661,18 @@ function Speeldag({
         </div>
       ) : null}
 
+      {/* Je afmelden voor een vastgelegde speeldag (#1271, hier sinds #1308).
+          Stemmen kan alleen zolang de poll open is, dus dit sheet meldde "Nog 2
+          bevestigde spelers nodig" zonder enige manier om er een te worden: die
+          knop stond alleen op de speeldagpagina. */}
+      {!marker.past && marker.status !== "open" && (
+        <AfmeldRegel
+          optionId={marker.optionId}
+          groupId={marker.groupId}
+          myId={myId}
+        />
+      )}
+
       {/* Wie doet er mee (#1308) — één blok met alle vier de antwoorden.
           Hiervoor stonden er drie tellingen over dezelfde groep: "Ik kan — 2
           van 6", "+4 nog niet" (leden min ja-stemmers, dus mét de twijfelaars
@@ -637,108 +683,133 @@ function Speeldag({
           Nu telt elk lid één keer, in de bak waar hij zelf voor koos. Wie nog
           niets zei staat er alleen zolang er te stemmen valt: op een geboekte
           dag is dat geen open vraag meer. */}
-      <div className="dagsheet__deelname">
-        <span className="dagsheet__tegel-label">
-          Wie doet er mee{leden > 0 ? ` — ${deelname.ja.length} van ${leden}` : ""}
-        </span>
-        {deelname.ja.length > 0 && (
-          <p className="dagsheet__avatars">
-            {deelname.ja.slice(0, MAX_AVATARS).map((id) => (
-              <Avatar key={id} profile={profielen[id]} size={28} short />
-            ))}
-            {/* Boven de zes viel de rest stilletjes weg: de telling erboven
-                zei "8 van 20" en er stonden er zes. */}
-            {deelname.ja.length > MAX_AVATARS && (
-              <span className="dagsheet__rest">
-                +{deelname.ja.length - MAX_AVATARS}
-              </span>
-            )}
-          </p>
-        )}
-        {deelname.ja.length === 0 && (
-          <p className="dagsheet__leeg">Nog niemand zei "ik kan".</p>
-        )}
+      {/* Ingeklapt (#1308): de telling en de gezichten staan er altijd, de
+          namen erachter. In een groep van twintig duwden drie namenrijen alles
+          waar je voor kwam onder de vouw; wie wil weten wie hij nog kan porren,
+          tikt hem open. Zonder namen valt er niets te vouwen. */}
+      <details className="dagsheet__deelname">
+        <summary className="dagsheet__deelname-kop">
+          <span className="dagsheet__tegel-label">
+            Wie doet er mee{leden > 0 ? ` — ${deelname.ja.length} van ${leden}` : ""}
+          </span>
+          {deelname.ja.length > 0 ? (
+            <span className="dagsheet__avatars">
+              {deelname.ja.slice(0, MAX_AVATARS).map((id) => (
+                <Avatar key={id} profile={profielen[id]} size={28} short />
+              ))}
+              {/* Boven de zes viel de rest stilletjes weg: de telling erboven
+                  zei "8 van 20" en er stonden er zes. */}
+              {deelname.ja.length > MAX_AVATARS && (
+                <span className="dagsheet__rest">
+                  +{deelname.ja.length - MAX_AVATARS}
+                </span>
+              )}
+            </span>
+          ) : (
+            <span className="dagsheet__leeg">Nog niemand zei "ik kan".</span>
+          )}
+        </summary>
         {/* Twijfelaars, afmelders en stille leden bij naam (#1121, #1308).
             Juist bij "nog één speler nodig" is dat de vraag: wie kan ik nog
             porren — en wie hoef ik niet meer te vragen? */}
-        {deelname.misschien.length > 0 && (
-          <NamenRij label="Misschien" namen={deelname.misschien.map(naam)} />
-        )}
-        {deelname.nee.length > 0 && (
-          <NamenRij label="Kan niet" namen={deelname.nee.map(naam)} />
-        )}
-        {marker.status === "open" &&
-          !marker.past &&
-          deelname.stil.length > 0 && (
-            <NamenRij label="Nog niets gezegd" namen={deelname.stil.map(naam)} />
+        <div className="dagsheet__namen">
+          {deelname.misschien.length > 0 && (
+            <NamenRij label="Misschien" namen={deelname.misschien.map(naam)} />
           )}
-      </div>
+          {deelname.nee.length > 0 && (
+            <NamenRij label="Kan niet" namen={deelname.nee.map(naam)} />
+          )}
+          {marker.status === "open" &&
+            !marker.past &&
+            deelname.stil.length > 0 && (
+              <NamenRij
+                label="Nog niets gezegd"
+                namen={deelname.stil.map(naam)}
+              />
+            )}
+          {deelname.misschien.length === 0 &&
+            deelname.nee.length === 0 &&
+            deelname.stil.length === 0 && (
+              <p className="dagsheet__leeg">
+                Iedereen heeft geantwoord{deelname.ja.length > 0 ? " — dit is de hele ploeg." : "."}
+              </p>
+            )}
+        </div>
+      </details>
 
-      {stembaar && (
+      {stembaar && andere.length > 0 && (
         <div className="dagsheet__stemmen">
-          <StemRij
-            titel="Jouw stem"
-            omschrijving={`${longDay(marker.date)} ${marker.startTime}`}
-            aantal={null}
-            mine={stemVan(marker)}
-            onVote={(s) => onStem(marker, s)}
-          />
           {/* Een poll is meer dan deze dag: zonder de rest lijkt één tik de
               hele vraag te beantwoorden. Wat hier staat komt uit het
               maandvenster — een moment daarbuiten zit in de poll zelf. */}
-          {andere.length > 0 && (
-            <>
-              <span className="dagsheet__tegel-label">
-                Andere momenten in deze poll
-              </span>
-              {andere.map((m) => {
-                const anderVrij = baanInfo(m).vrij;
-                const anderHaalbaar = markerHaalbaarheid(m, anderVrij);
-                return (
-                  <StemRij
-                    key={m.optionId}
-                    titel={`${shortDay(m.date)} · ${m.startTime}`}
-                    omschrijving={`${longDay(m.date)} ${m.startTime}`}
-                    aantal={m.yesVoterIds.length}
-                    banen={anderVrij}
-                    // Dezelfde ring als op de speeldagpagina (#1308): zonder
-                    // die zei "0 mee" niets over de vier spelers die er nog bij
-                    // moeten, en stond er bij een moment zonder banendata
-                    // helemaal niets.
-                    meter={anderHaalbaar.state}
-                    tekort={anderHaalbaar.tekort}
-                    mine={stemVan(m)}
-                    onVote={(s) => onStem(m, s)}
-                  />
-                );
-              })}
-            </>
-          )}
+          <span className="dagsheet__tegel-label">
+            Andere momenten in deze poll
+          </span>
+          {andere.map((m) => {
+            const anderVrij = baanInfo(m).vrij;
+            const anderHaalbaar = markerHaalbaarheid(m, anderVrij);
+            return (
+              <StemRij
+                key={m.optionId}
+                titel={`${shortDay(m.date)} · ${m.startTime}`}
+                omschrijving={`${longDay(m.date)} ${m.startTime}`}
+                aantal={m.yesVoterIds.length}
+                banen={anderVrij}
+                // Dezelfde ring als op de speeldagpagina (#1308): zonder die
+                // zei "0 mee" niets over de vier spelers die er nog bij moeten,
+                // en stond er bij een moment zonder banendata helemaal niets.
+                meter={anderHaalbaar.state}
+                tekort={anderHaalbaar.tekort}
+                mine={stemVan(m)}
+                onVote={(s) => onStem(m, s)}
+              />
+            );
+          })}
         </div>
       )}
 
-      <div className="dagsheet__acties">
-        <Link
-          className="btn btn--primary dagsheet__actie"
-          to={pollSharePath(marker.pollId)}
-        >
-          Open speeldag
-        </Link>
-        {/* Een geboekte speeldag is precies hetzelfde soort event als een
-            match (MatchCalendarButton/WinnerCard) — dus dezelfde helper. Een
-            open poll krijgt deze knop niet: er valt nog niets in je agenda te
-            zetten. */}
-        {!marker.past && marker.status !== "open" && (
-          <button
-            type="button"
-            className="btn dagsheet__actie"
-            onClick={() => downloadSpeeldagIcs(marker)}
-          >
-            Zet in je agenda
-          </button>
-        )}
-      </div>
+      {/* Bij meerdere speeldagen op één dag horen de acties ín het blok: één
+          plakbalk kan niet over twee speeldagen gaan. Als enige speeldag staan
+          ze onderaan het sheet, in de voetbalk (#1308) — zie `Acties`. */}
+      {eigenVlak && (
+        <div className="dagsheet__acties">
+          <Acties marker={marker} />
+        </div>
+      )}
     </article>
+  );
+}
+
+/**
+ * Wat je met deze speeldag kunt doen (#1308).
+ *
+ * Volgorde en vorm van de rest van de app (#1144, `sheet__foot`): het
+ * secundaire links, het primaire rechts. Hiervoor stond "Open speeldag" als
+ * enige accentknop middenin het sheet, onder twee namenlijsten — en dat is de
+ * knop die je juist wégstuurt.
+ */
+function Acties({ marker }: { marker: AgendaMarker }) {
+  return (
+    <>
+      {/* Een geboekte speeldag is precies hetzelfde soort event als een match
+          (MatchCalendarButton/WinnerCard) — dus dezelfde helper. Een open poll
+          krijgt deze knop niet: er valt nog niets in je agenda te zetten. */}
+      {!marker.past && marker.status !== "open" && (
+        <button
+          type="button"
+          className="btn dagsheet__actie"
+          onClick={() => downloadSpeeldagIcs(marker)}
+        >
+          Zet in je agenda
+        </button>
+      )}
+      <Link
+        className="btn btn--primary dagsheet__actie"
+        to={pollSharePath(marker.pollId)}
+      >
+        Open speeldag
+      </Link>
+    </>
   );
 }
 
