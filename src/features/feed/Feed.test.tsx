@@ -231,6 +231,27 @@ describe("<Feed />", () => {
     }
   });
 
+  // #1272: Rudy's identiteitskop stond 34 keer op één pagina en was daarmee 29%
+  // van de itemhoogte. De quips blijven allemaal; de signatuur eronder niet.
+  it("stelt Rudy één keer per dagblok voor en houdt daarna alleen de quip", async () => {
+    const { container } = renderPage();
+    await screen.findByRole("list", { name: /recente gebeurtenissen/i });
+
+    const quips = container.querySelectorAll(".coach-comment");
+    expect(quips.length).toBeGreaterThan(0);
+
+    for (const dag of container.querySelectorAll(".feed__dag")) {
+      const inDag = dag.querySelectorAll(".coach-comment");
+      const koppen = dag.querySelectorAll(".coach-comment__head");
+      // Hoogstens één kop per dagblok, en alleen als er iets te zeggen valt.
+      expect(koppen.length).toBe(inDag.length ? 1 : 0);
+      // De rest van de quips staat er nog, alleen zonder signatuur.
+      expect(dag.querySelectorAll(".coach-comment--compact").length).toBe(
+        Math.max(0, inDag.length - 1),
+      );
+    }
+  });
+
   // #912: "Toon meer" schoof de knop naar beneden en zette de nieuwe items
   // eronder, zonder je leespositie mee te nemen — je moest zelf terugzoeken.
   it("verplaatst de focus naar het eerste nieuw geladen item", async () => {

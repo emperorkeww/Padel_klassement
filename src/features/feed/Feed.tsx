@@ -407,10 +407,27 @@ export function Feed() {
   // de zichtbare feed (anti-herhaling, #201). Deterministisch dankzij de vaste
   // feed-volgorde.
   const gebruiktCoach = new Set<string>();
+  /** Dagen waarin Rudy zich al voorgesteld heeft. De eerste quip van een dag
+   *  draagt avatar, naam en ⓘ; de rest is alleen de regel (#1272). Vult zich in
+   *  leesvolgorde, net als de anti-herhaling hierboven. */
+  const coachKopGetoond = new Set<string>();
 
   /** Eén feed-rij als <li>. Als functie i.p.v. inline JSX, zodat een
    *  samengevatte vriendschapsbundel (#944) dezelfde rijen kan uitklappen. */
-  const feedRij = ({ event, index }: { event: FeedEvent; index: number }) => (
+  const feedRij = ({ event, index }: { event: FeedEvent; index: number }) => {
+    const coachTekst = coachOpmerking(event, {
+      intensiteitVoor,
+      profiles: pmap,
+      teams: tmap,
+      gebruikt: gebruiktCoach,
+      matches: matches.data ?? [],
+      naamVoor,
+      piasWeeks: piasWeeksFlat,
+    });
+    const dag = feedDay(event);
+    const metKop = coachTekst !== null && !coachKopGetoond.has(dag);
+    if (metKop) coachKopGetoond.add(dag);
+    return (
     <li
       className="feed__item"
       key={eventKey(event)}
@@ -469,22 +486,16 @@ export function Feed() {
                             }
                           />
                           <CoachComment
-                            tekst={coachOpmerking(event, {
-                              intensiteitVoor,
-                              profiles: pmap,
-                              teams: tmap,
-                              gebruikt: gebruiktCoach,
-                              matches: matches.data ?? [],
-                              naamVoor,
-                              piasWeeks: piasWeeksFlat,
-                            })}
+                            tekst={coachTekst}
                             mood={coachStemming(event, intensiteitVoor)}
+                            compact={!metKop}
                             onInfo={() => setCoachAboutOpen(true)}
                           />
                         </>
                       )}
     </li>
-  );
+    );
+  };
 
   // Coach Rudy's avondverslag (#204): 2-3 zinnen bij een speelavond-item,
   // afgeleid uit de eveningSummary van díe groep + dag (uit de al geladen

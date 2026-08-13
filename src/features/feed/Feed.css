@@ -140,6 +140,12 @@
 .coach-comment__face {
   margin-top: 1px;
 }
+/* Vervolgquip binnen hetzelfde dagblok (#1272): alleen de regel, ingesprongen
+   tot waar de tekst van de kop-variant begint (avatar 34px + de gap), zodat
+   Rudy's kolom doorloopt zonder dat zijn signatuur zich herhaalt. */
+.coach-comment--compact {
+  margin-left: calc(var(--sp-5) + 34px + var(--sp-2));
+}
 .coach-comment__bubble {
   display: flex;
   flex-direction: column;
