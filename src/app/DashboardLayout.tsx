@@ -310,10 +310,11 @@ export function DashboardLayout() {
           <TopbarTitel />
         </div>
         <div className="topbar__acties">
-          {/* Jokerstatus (#1003): ligt je kaart van deze maand er nog? Vast in
-              de shell, want daarop plan je je speeldag — niet iets waarvoor je
-              eerst een wedstrijdkaart moet openen. */}
-          <JokerKnop myId={myId || null} />
+          {/* Jokerstatus stond hier tot #1299 als vierde cirkel (#1003). Vier
+              even zware knoppen voor vier heel ongelijke dingen: de joker is
+              een stand van zaken, de bel en de ? zijn ingangen. Hij woont nu op
+              /profiel#jokers en op desktop in de zijbalkvoet; de balk houdt de
+              drie dingen over waar je iets mee doet. */}
           {/* Meldingen (#1090): om dezelfde reden hoort de bel hier en niet in
               de onderbalk. Op desktop is deze balk verborgen en staat dezelfde
               ingang in de zijbalk. */}
@@ -402,9 +403,10 @@ export function DashboardLayout() {
         </nav>
 
         <div className="sidebar__foot">
-          {/* Dezelfde status op desktop, zodat de voorraad geen mobiel-only
-              kennis wordt — net als de ?-knop, die hierboven in de navigatie
-              staat. */}
+          {/* De jokerstatus op desktop. Hier is ruimte in de voet en concurreert
+              hij met niets; op mobiel verdween hij uit de topbalk (#1299) en
+              loopt de weg erheen via je profiel (/profiel#jokers), waar de
+              jokers zelf ook staan. */}
           <JokerKnop myId={myId || null} className="sidebar__joker" />
           <Link to={mijnProfiel} className="sidebar__user">
             <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={36} />
