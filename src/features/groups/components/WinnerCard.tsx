@@ -270,7 +270,14 @@ export function WinnerCard({
         {/* Sinds #1308 gedeeld met het agenda-dag-sheet, dat dezelfde geboekte
             speeldag toont en er geen enkele handeling bij had. */}
         {!compact && (
-          <AfmeldRegel optionId={o.id} groupId={poll.group_id} myId={myId} />
+          <AfmeldRegel
+            optionId={o.id}
+            groupId={poll.group_id}
+            myId={myId}
+            // Zelfde regel als in het dag-sheet (#1308): de indeling begint bij
+            // wie "ik kan" stemde.
+            standaardMee={t.yes.includes(myId)}
+          />
         )}
 
         {/* Fase-secties (#349): kiezen → boeken → klaarzetten; alleen de
