@@ -138,6 +138,12 @@
   --accent-soft: #e6f5ee; /* licht groen vlak */
   --accent-line: #bce4d1;
   --accent-ink: #ffffff; /* tekst op smaragd */
+  /* Accent als lópende tekst op de paginabodem of een kaart (#1272). --accent
+     zelf haalt daar op licht 4,0:1 — genoeg als merkteken, te weinig als woord.
+     Dezelfde waarde als de hover- en ingedrukte stand, maar bewust een eigen
+     rol: een interactiestand hergebruiken als tekstkleur is precies wat #1255
+     uit elkaar trok. */
+  --accent-tekst: #0a744f;
 
   /* Coach Rudy — eigen warm amber-accent, los van het groene --accent. */
   --coach: #e0821c;
@@ -148,6 +154,13 @@
      er --coach-ink op het zachte vlak: in het donkere thema is dat bijna-zwart
      op donkerbruin. Zelfde rol als --lime-deep voor lime. */
   --coach-diep: #5a3410;
+  /* Rudy's naam als tekst op de kale paginabodem of een gewone kaart (#1272).
+     De familie had wél een tekstrol voor de vólle coach-kleur en voor het
+     zachte vlak, maar niet voor de bodem en de kaart — daar stond --coach zelf,
+     en dat is 2,6:1. --coach-diep zou het gat dichten maar maakt Rudy
+     donkerbruin; dit blijft herkenbaar amber en haalt AA op bodem, kaart én
+     hover. */
+  --coach-tekst: #a8500a;
 
   /* Open poll in de agenda (#1112). Amber, want het is de enige status die iets
      van je vraagt — maar bewust niet het coach-amber (dat is de stem van Rudy)
@@ -591,6 +604,9 @@
   --accent-soft: rgba(40, 179, 126, 0.13);
   --accent-line: #24513f;
   --accent-ink: #02120c;
+  /* Op donker is het accent zelf de leesbare stand (10,4:1 op de bodem); de
+     tekstrol hoeft hier dus niets om te klappen. */
+  --accent-tekst: var(--accent);
 
   /* Coach Rudy — gebrand oranje (h≈52). Vóór #1255 deelden acht rollen
      (coach, poll, dorst, warn, dictator, cat-champ, effect-inzet,
@@ -605,6 +621,9 @@
   --coach-line: #52382a;
   --coach-ink: #211207;
   --coach-diep: #fdaf81;
+  /* Idem voor Rudy: op donker haalt --coach zelf 7,3:1 op de bodem, dus de
+     tekstrol volgt hem en houdt de laan uit #1255 intact. */
+  --coach-tekst: var(--coach);
 
   /* Open poll (#1112) — op donker moet hij juist oplichten in plaats van
      inzakken; zelfde omkering als --lime-deep en --dorst. De warme hueband

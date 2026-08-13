@@ -138,7 +138,9 @@
   font-size: var(--fs-xs);
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: var(--coach);
+  /* Rudy's naam is tekst, geen merkteken: --coach zelf haalt op licht 2,6:1 op
+     de kale feed-bodem (#1272). */
+  color: var(--coach-tekst);
 }
 .coach-comment__text {
   font-size: var(--fs-sm);
@@ -186,7 +188,9 @@
   display: block;
   font-size: var(--fs-xs);
   font-weight: 700;
-  color: var(--accent);
+  /* "Bekijk ze" is 12px tekst op de bodem én in een gehoverde rij; --accent
+     haalt daar op licht 4,0 resp. 3,9:1 (#1272). */
+  color: var(--accent-tekst);
 }
 .feed-bundel__leden {
   list-style: none;
@@ -530,7 +534,12 @@
 .feed__filters .tab__dot[data-cat="match"] { background: var(--cat-match); }
 .feed__filters .tab__dot[data-cat="rank"] { background: var(--cat-rank); }
 .feed__filters .tab__dot[data-cat="roast"] { background: var(--cat-roast); }
-.feed__filters .tab.is-active .tab__dot { background: rgba(255, 255, 255, 0.9); }
+/* Op de actieve chip is de stip de inkt van die chip (#1272); de 0.8 hierboven
+   zou hem als merkteken onder 3:1 duwen. */
+.feed__filters .tab.is-active .tab__dot {
+  background: var(--accent-ink);
+  opacity: 1;
+}
 
 /* ===== Rijk speelavond-blok (#232 PR C) =====
    Zwaar gewichtsniveau: deelt de --cat-taal met de highlight-kaarten (#380). */
@@ -899,10 +908,13 @@
 .feed__filters .tab:hover:not(.is-active) {
   border-color: var(--accent-line);
 }
+/* De actieve chip stond op letterlijk wit-op-accent: 4,4:1 op licht en 2,0:1 op
+   donker, terwijl de check groen bleef omdat het token er niet in stond (#1272).
+   Nu de knoppentaal van de app: accent-inkt op de ingedrukte accentstand. */
 .feed__filters .tab.is-active {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
+  background: var(--accent-strong);
+  color: var(--accent-ink);
+  border-color: var(--accent-strong);
 }
 
 /* ===== #232: mockup-typografie (ronde display-font) + fijnslijp ===== */

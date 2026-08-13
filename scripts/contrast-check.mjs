@@ -183,6 +183,14 @@ const PAIRS = [
   ["ink-soft", "track", 4.5, "inactieve tab op de segmentbalk (#1255)"],
   ["ink", "track-actief", 4.5, "actieve tab, segment-variant (#1255)"],
   ["accent", "track-actief", 4.5, "actieve tab, pill-variant (#1255)"],
+  // Clubblad (#1272): de feed heeft geen kaart onder zich, dus Rudy's naam en
+  // de bundel-hint staan direct op de paginabodem — en de hint zit in een rij
+  // die hovert. Deze paren stonden er niet, en daardoor bleef de check groen
+  // terwijl het scherm 2,6 resp. 4,0:1 rendeerde.
+  ["coach-tekst", "bg", 4.5, "Rudy's naam op de feed-achtergrond (#1272)"],
+  ["coach-tekst", "surface", 4.5, "Rudy's naam op de smoes- en avondkaart (#1272)"],
+  ["accent-tekst", "bg", 4.5, "bundel-hint op de feed-achtergrond (#1272)"],
+  ["accent-tekst", "surface-hover", 4.5, "bundel-hint in een gehoverde rij (#1272)"],
 ];
 
 // Licht is de bestaande huisstijl: tekorten daar zijn bekend en rapporteren we
