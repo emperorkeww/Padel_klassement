@@ -223,11 +223,35 @@ export function DagSheet({
           className={`dagsheet${markers.length > 1 ? " dagsheet--meerdere" : ""}`}
         >
           {markers.length === 0 ? (
-            // Alleen een dag in het verleden komt hier terecht: een lege dag
-            // vanaf vandaag opent het plan-sheet.
-            <EmptyState icon="🎾" title="Niets gespeeld">
-              Deze dag is geweest en er stond geen speeldag op.
-            </EmptyState>
+            // Tot #1270 stond hier alleen het verleden-verhaal, met de aanname
+            // dat een lege dag vanaf vandaag het plan-sheet opent. Dat klopt
+            // voor een tik in het raster, maar niet voor een link:
+            // `/agenda?dag=<volgende week>&open=1` kwam hier gewoon uit en zei
+            // "Deze dag is geweest" over een dag die nog moet komen. Hetzelfde
+            // pad ontstaat als het groepsfilter de speeldagen van die dag
+            // wegzeeft — en de URL is sinds #1182 juist bedoeld om te delen.
+            //
+            // `onPlan` is precies het onderscheid: die krijgt dit sheet alleen
+            // voor een dag die nog te plannen valt. Dezelfde tweedeling als in
+            // DagPaneel, zodat de twee lege staten niet uit elkaar lopen.
+            onPlan ? (
+              <EmptyState
+                icon="📅"
+                title="Nog niets gepland"
+                action={
+                  <button type="button" className="btn btn--primary" onClick={onPlan}>
+                    Speeldag plannen
+                  </button>
+                }
+              >
+                Op deze dag staat nog geen speeldag. Zet er een op en laat je
+                groep stemmen.
+              </EmptyState>
+            ) : (
+              <EmptyState icon="🎾" title="Niets gespeeld">
+                Deze dag is geweest en er stond geen speeldag op.
+              </EmptyState>
+            )
           ) : (
             markers.map((m) => (
               <Speeldag

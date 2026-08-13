@@ -36,7 +36,15 @@ export function PlanDagSheet({
 }) {
   const buitenVenster = datum != null && datum > vensterEinde;
   const eenGroep = groepen.length === 1;
-  const actief = gekozenGroep ?? (eenGroep ? groepen[0].id : null);
+  // De onthouden keuze eerst langs de groepen die je nú hebt (#1270). Zonder
+  // die zeef bleef een groep die je verliet "gekozen": er stond geen rij
+  // aangevinkt, "Kies momenten →" was tóch actief, en de klik sloot alles
+  // zonder iets te openen — de wizard kreeg een id die niet meer bestaat.
+  // Dezelfde schoonmaak die de agenda al doet voor het filter (leesGroepKeuze)
+  // en voor `planGroepId`.
+  const actief =
+    groepen.find((g) => g.id === gekozenGroep)?.id ??
+    (eenGroep ? groepen[0].id : null);
 
   return (
     <Sheet
@@ -87,14 +95,14 @@ export function PlanDagSheet({
             </fieldset>
           )}
 
+          {/* De clubnaam stond hier twee keer: links als tekst, en rechts in de
+              knop waarmee je hem verandert. Op 390px hield die linkerkant
+              "LAG…" over naast een knop die dezelfde naam er voluit naast zette
+              (#1270). De knop wint — dat is de plek waar je hem ook aanpast. */}
           <div className="plandag__veld">
             <span className="dagsheet__tegel-label">Club</span>
             <div className="plandag__club">
-              <span className="plandag__tekst">
-                <span className="plandag__naam">{club.name}</span>
-                <span className="plandag__meta">je huidige clubkeuze</span>
-              </span>
-              <ClubPicker value={club} onPick={onClub} allowManual align="right" />
+              <ClubPicker value={club} onPick={onClub} allowManual />
             </div>
           </div>
 

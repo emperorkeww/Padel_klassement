@@ -253,6 +253,30 @@ export function leesGroepKeuze(
   return bewaard.split(",").filter((id) => bekend.has(id));
 }
 
+/**
+ * Waarover een telling gaat zolang er chips aanstaan (#1270) — de staart achter
+ * "3 speeldagen deze maand".
+ *
+ * Het filter was in de koppen onzichtbaar: met één chip aan kon er "Geen
+ * speeldagen deze maand" staan terwijl de maand vol stond, en niets in die zin
+ * verwees naar de chiprij erboven.
+ *
+ * Eén groep krijgt zijn naam, meer krijgen een telling: drie namen achter elkaar
+ * passen niet op 390px, en dan is "waar gaat dit getal over" nuttiger dan "welke
+ * precies" — dat zeggen de chips zelf al. Alles aan is hetzelfde als niets aan,
+ * en daar valt niets te vermelden.
+ */
+export function filterLabel(
+  gekozenIds: string[],
+  groepen: { id: string; name: string }[],
+): string | null {
+  if (gekozenIds.length === 0 || gekozenIds.length >= groepen.length) return null;
+  if (gekozenIds.length === 1) {
+    return groepen.find((g) => g.id === gekozenIds[0])?.name ?? null;
+  }
+  return `${gekozenIds.length} van je ${groepen.length} groepen`;
+}
+
 /** Volgorde binnen een dag: op tijd, dan op groep — stabiel tussen renders. */
 function byTime(a: AgendaMarker, b: AgendaMarker): number {
   return (

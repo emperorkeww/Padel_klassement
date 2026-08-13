@@ -1107,8 +1107,7 @@
   gap: var(--sp-2);
 }
 
-.plandag__keuze,
-.plandag__club {
+.plandag__keuze {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
@@ -1117,6 +1116,23 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
+}
+
+/* De clubregel draagt sinds #1270 alleen nog de picker: de naam stond er ook
+   links, en die kopie kortte op 390px in tot "LAG…". Geen eigen kader meer —
+   de knop heeft er zelf een, en twee kaders om één ding is er een te veel. */
+.plandag__club {
+  display: flex;
+}
+.plandag__club .club-picker {
+  margin-top: 0;
+  flex: 1;
+  min-width: 0;
+}
+.plandag__club .club-picker__toggle {
+  width: 100%;
+  justify-content: flex-start;
+  min-height: 44px;
 }
 
 .plandag__keuze {
