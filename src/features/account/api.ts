@@ -66,6 +66,15 @@ export interface NotificationPrefs {
   notify_match_reminder: boolean;
   /** Promotie/degradatie in het groepsklassement (#302). */
   notify_rank_change: boolean;
+  /** Alles rond een speeldag-poll (#1273): nieuwe poll, laatste kans, gekozen
+   *  moment, geboekte baan, afgelasting, de dag zelf en de por van een
+   *  groepslid. Zeven van de negentien verstuurmomenten. */
+  notify_poll: boolean;
+  /** De VAR: een betwist punt en de uitspraak erover (#1273). */
+  notify_var: boolean;
+  /** Stille uren (#1273), in clubtijd. Null = geen stille uren. */
+  notify_stil_van: string | null;
+  notify_stil_tot: string | null;
 }
 
 /** Haalt de notificatie-voorkeuren op (default = alles aan). */
@@ -75,7 +84,7 @@ export async function getNotificationPrefs(
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "notify_new_round, notify_result, notify_friend_request, notify_match_reminder, notify_rank_change",
+      "notify_new_round, notify_result, notify_friend_request, notify_match_reminder, notify_rank_change, notify_poll, notify_var, notify_stil_van, notify_stil_tot",
     )
     .eq("id", userId)
     .maybeSingle();
@@ -86,6 +95,12 @@ export async function getNotificationPrefs(
     notify_friend_request: data?.notify_friend_request ?? true,
     notify_match_reminder: data?.notify_match_reminder ?? true,
     notify_rank_change: data?.notify_rank_change ?? true,
+    notify_poll: data?.notify_poll ?? true,
+    notify_var: data?.notify_var ?? true,
+    // Standaard aan (23:00–07:30), net als de kolomdefault: de nachtelijke push
+    // is geen keuze die iemand ooit gemaakt heeft.
+    notify_stil_van: data?.notify_stil_van ?? "23:00",
+    notify_stil_tot: data?.notify_stil_tot ?? "07:30",
   };
 }
 

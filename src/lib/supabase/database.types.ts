@@ -2031,6 +2031,10 @@ export type Database = {
           notify_friend_request: boolean
           notify_match_reminder: boolean
           notify_new_round: boolean
+          notify_poll: boolean
+          notify_stil_tot: string | null
+          notify_stil_van: string | null
+          notify_var: boolean
           notify_rank_change: boolean
           notify_result: boolean
           owner_id: string | null
@@ -2058,6 +2062,10 @@ export type Database = {
           notify_friend_request?: boolean
           notify_match_reminder?: boolean
           notify_new_round?: boolean
+          notify_poll?: boolean
+          notify_stil_tot?: string | null
+          notify_stil_van?: string | null
+          notify_var?: boolean
           notify_rank_change?: boolean
           notify_result?: boolean
           owner_id?: string | null
@@ -2085,6 +2093,10 @@ export type Database = {
           notify_friend_request?: boolean
           notify_match_reminder?: boolean
           notify_new_round?: boolean
+          notify_poll?: boolean
+          notify_stil_tot?: string | null
+          notify_stil_van?: string | null
+          notify_var?: boolean
           notify_rank_change?: boolean
           notify_result?: boolean
           owner_id?: string | null

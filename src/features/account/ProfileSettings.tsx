@@ -448,7 +448,8 @@ function NameCard({
 // X gebeurt, krijg je bericht" — dat las als "anders hoor je het niet", en dat
 // klopt niet meer.
 const NOTIFY_OPTIES: {
-  key: keyof NotificationPrefs;
+  key: "notify_new_round" | "notify_result" | "notify_friend_request" |
+    "notify_match_reminder" | "notify_rank_change" | "notify_poll" | "notify_var";
   label: string;
   hint: string;
 }[] = [
@@ -477,7 +478,88 @@ const NOTIFY_OPTIES: {
     label: "Promotie & degradatie",
     hint: "Push als je stijgt of zakt in het klassement (troon, top-3, kelder).",
   },
+  // #1273: poll en VAR waren samen tien van de negentien verstuurmomenten en
+  // hadden geen enkele knop. Wie ze wilde temperen kon alleen de hele app
+  // afzetten.
+  {
+    key: "notify_poll",
+    label: "Speeldagen plannen",
+    hint: "Push rond een poll: een nieuwe, de laatste kans om te stemmen, het gekozen moment, de geboekte baan, een afgelasting en de dag zelf.",
+  },
+  {
+    key: "notify_var",
+    label: "VAR",
+    hint: "Push als er een punt betwist wordt en als de VAR gesproken heeft.",
+  },
 ];
+
+/**
+ * Stille uren (#1273).
+ *
+ * De app pusht op tijden die niemand gekozen heeft: een speeldag om 08:00
+ * levert een "vandaag spelen jullie" om 03:05, een ochtendmatch een herinnering
+ * om 06:00. Standaard staat dit dus áán (23:00–07:30) — uitzetten kan, en dan
+ * gaan beide tijden op null.
+ *
+ * Alleen de bezorging zwijgt; de melding zelf staat 's ochtends gewoon in je
+ * inbox. Dat is dezelfde afspraak als bij de schakelaars hierboven.
+ */
+function StilleUren({
+  van,
+  tot,
+  bezig,
+  onZet,
+}: {
+  van: string | null;
+  tot: string | null;
+  bezig: boolean;
+  onZet: (van: string | null, tot: string | null) => void;
+}) {
+  const aan = !!van && !!tot;
+  // Postgres geeft "23:00:00" terug, <input type="time"> wil "23:00".
+  const kort = (t: string | null, terugval: string) =>
+    (t ?? terugval).slice(0, 5);
+
+  return (
+    <div className="stille-uren">
+      <Toggle
+        label="Stille uren"
+        hint="Tussen deze tijden piept je toestel niet. De meldingen zelf blijven gewoon in de app staan."
+        checked={aan}
+        disabled={bezig}
+        onChange={(nieuw) =>
+          nieuw
+            ? onZet(kort(van, "23:00"), kort(tot, "07:30"))
+            : onZet(null, null)
+        }
+      />
+      {aan && (
+        <p className="stille-uren__tijden">
+          <label>
+            <span>Van</span>
+            <input
+              type="time"
+              className="input"
+              value={kort(van, "23:00")}
+              disabled={bezig}
+              onChange={(e) => onZet(e.target.value, kort(tot, "07:30"))}
+            />
+          </label>
+          <label>
+            <span>tot</span>
+            <input
+              type="time"
+              className="input"
+              value={kort(tot, "07:30")}
+              disabled={bezig}
+              onChange={(e) => onZet(kort(van, "23:00"), e.target.value)}
+            />
+          </label>
+        </p>
+      )}
+    </div>
+  );
+}
 
 function NotificationsCard({ userId }: { userId: string }) {
   const toast = useToast();
@@ -604,6 +686,16 @@ function NotificationsCard({ userId }: { userId: string }) {
               onChange={(aan) => setPref({ [o.key]: aan })}
             />
           ))}
+          {/* Rudy's roast heeft bewust geen schakelaar hier: die luistert naar
+              het roast-schild op het tabblad hiernaast. */}
+          <StilleUren
+            van={np.notify_stil_van}
+            tot={np.notify_stil_tot}
+            bezig={prefsBusy}
+            onZet={(van, tot) =>
+              setPref({ notify_stil_van: van, notify_stil_tot: tot })
+            }
+          />
         </div>
       )}
     </section>
