@@ -43,6 +43,9 @@ export const CACHE_PREFIXES: Record<string, string[]> = {
   // play_polls zit hij al in de brede "play-poll"-prefix.
   play_poll_options: ["play-poll-options", "play-poll-agenda"],
   play_poll_votes: ["play-poll-votes", "play-poll-agenda"],
+  // Wie er écht komt (#1271). Raakt het agendavenster niet: dat toont de
+  // stemming, en aanwezigheid is de correctie erop op de speeldag zelf.
+  play_poll_presence: ["play-poll-presence"],
   match_smoesjes: ["smoesjes"],
   // Rudy's VAR (#1025). Een uitspraak kan de uitslag verschuiven, dus een
   // wijziging aan een beroep raakt álles wat aan een match hangt — vandaar de
