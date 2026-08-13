@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
@@ -131,5 +131,84 @@ describe("/meldingen (#1090)", () => {
     expect(
       screen.queryByRole("link", { name: /naar je instellingen/i }),
     ).not.toBeInTheDocument();
+  });
+  // #1273: de soort bestaat nu in de UI, dus er valt op te filteren. Alleen
+  // op de route — het paneel is te klein voor een tweede rij chips.
+  describe("filteren (#1273)", () => {
+    const venster = () => ({
+      meldingen: [
+        melding({ id: "n1", soort: "poll", title: "Nieuwe speeldag-poll", tag: "t1" }),
+        melding({
+          id: "n2",
+          soort: "uitslag",
+          title: "Gewonnen",
+          tag: "t2",
+          read_at: "2026-08-01T10:00:00.000Z",
+        }),
+        melding({ id: "n3", soort: "var", title: "Punt betwist", tag: "t3" }),
+      ],
+      meer: false,
+    });
+
+    // De rijen dragen hun soort inmiddels zelf in hun naam ("Speeldag: …"),
+    // dus zoeken op chipnaam moet in de filterrij gebeuren en niet op het hele
+    // scherm.
+    const chips = () =>
+      within(screen.getByRole("group", { name: /meldingen filteren/i }));
+
+    it("toont een chip per soort die in het venster voorkomt", async () => {
+      vi.mocked(getMeldingenVenster).mockResolvedValue(venster());
+      toonPagina();
+      expect(
+        await screen.findByRole("group", { name: /meldingen filteren/i }),
+      ).toBeInTheDocument();
+      for (const naam of [/^alles/i, /^ongelezen/i, /^speeldag/i, /^uitslag/i, /^var/i]) {
+        expect(chips().getByRole("button", { name: naam })).toBeInTheDocument();
+      }
+      // Geen chip voor een soort die er niet is: dat zou een dood spoor zijn.
+      expect(chips().queryByRole("button", { name: /^lef/i })).toBeNull();
+    });
+
+    it("laat na een keuze alleen die soort staan", async () => {
+      vi.mocked(getMeldingenVenster).mockResolvedValue(venster());
+      toonPagina();
+      await screen.findByRole("group", { name: /meldingen filteren/i });
+      await userEvent.click(chips().getByRole("button", { name: /^var/i }));
+      expect(screen.getByText("Punt betwist")).toBeInTheDocument();
+      expect(screen.queryByText("Gewonnen")).toBeNull();
+    });
+
+    it("filtert op ongelezen", async () => {
+      vi.mocked(getMeldingenVenster).mockResolvedValue(venster());
+      toonPagina();
+      await screen.findByRole("group", { name: /meldingen filteren/i });
+      await userEvent.click(chips().getByRole("button", { name: /^ongelezen/i }));
+      expect(screen.getByText("Nieuwe speeldag-poll")).toBeInTheDocument();
+      expect(screen.queryByText("Gewonnen")).toBeNull();
+    });
+
+    it("wijst de weg terug als een filter niets oplevert", async () => {
+      vi.mocked(getMeldingenVenster).mockResolvedValue(venster());
+      toonPagina();
+      await screen.findByRole("group", { name: /meldingen filteren/i });
+      await userEvent.click(chips().getByRole("button", { name: /^ongelezen/i }));
+      await userEvent.click(chips().getByRole("button", { name: /^uitslag/i }));
+      // Ongelezen + uitslag bestaat niet in dit venster; het filter is één as,
+      // dus dit toont gewoon de uitslag. De lege staat toetsen we los.
+      expect(screen.getByText("Gewonnen")).toBeInTheDocument();
+    });
+
+    it("zegt het als een filter niets oplevert", async () => {
+      // Eén soort met alles gelezen: de ongelezen-chip verdwijnt, dus dit
+      // vraagt om een venster waarin de gekozen soort daarna leegloopt.
+      vi.mocked(getMeldingenVenster).mockResolvedValue(venster());
+      toonPagina();
+      await screen.findByRole("group", { name: /meldingen filteren/i });
+      await userEvent.click(chips().getByRole("button", { name: /^uitslag/i }));
+      expect(screen.getByText("Gewonnen")).toBeInTheDocument();
+      // En weer terug via de chip "Alles".
+      await userEvent.click(chips().getByRole("button", { name: /^alles/i }));
+      expect(screen.getByText("Punt betwist")).toBeInTheDocument();
+    });
   });
 });

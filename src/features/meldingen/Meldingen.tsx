@@ -11,6 +11,8 @@ import { Skeleton } from "@/ui/Skeleton";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { getMeldingenVenster, markeerAllesGelezen } from "./api";
 import { MeldingenLijst } from "./components/MeldingenLijst";
+import { MeldingenFilter } from "./components/MeldingenFilter";
+import { FILTER_ALLES, filterMeldingen } from "./filteren";
 import { PUSH_BELOFTE } from "./pushBelofte";
 import "./Meldingen.css";
 
@@ -44,8 +46,10 @@ export function Meldingen() {
   useRealtime("notifications", opWijziging, filter);
 
   const [bezig, setBezig] = useState(false);
+  const [filterKeuze, setFilterKeuze] = useState(FILTER_ALLES);
   const meldingen = venster.data?.meldingen ?? [];
   const ongelezen = meldingen.filter((m) => !m.read_at).length;
+  const zichtbaar = filterMeldingen(meldingen, filterKeuze);
 
   async function allesGelezen() {
     setBezig(true);
@@ -87,7 +91,25 @@ export function Meldingen() {
           <LegeStaat />
         ) : (
           <>
-            <MeldingenLijst meldingen={meldingen} onVeranderd={herlaad} />
+            <MeldingenFilter
+              meldingen={meldingen}
+              actief={filterKeuze}
+              onKies={setFilterKeuze}
+            />
+            {zichtbaar.length === 0 ? (
+              <p className="meldingen-pagina__leeg">
+                Geen meldingen in dit filter.{" "}
+                <button
+                  type="button"
+                  className="btn btn--sm"
+                  onClick={() => setFilterKeuze(FILTER_ALLES)}
+                >
+                  Toon alles
+                </button>
+              </p>
+            ) : (
+              <MeldingenLijst meldingen={zichtbaar} onVeranderd={herlaad} />
+            )}
             {venster.data?.meer && (
               <div className="meldingen-pagina__meer">
                 <button
