@@ -4,6 +4,18 @@
   margin: 0;
   padding: 0;
 }
+/* Leesmaat (#1272). De schil begrenst de kolom op 1184px, maar de feed zelf had
+   geen maat: op 1280 werd een regel 984px breed en op 1600 zelfs 1120px, met
+   titels tot 115 tekens op één regel. Dit is een tijdlijn die je leest, geen
+   tabel — 720px houdt een regel rond de 70-80 tekens. Links uitgelijnd, in lijn
+   met de paginakop; centreren zou de as laten verspringen zodra een filter de
+   kolom leegmaakt. */
+.feed-scherm .feed,
+.feed-scherm .feed__more,
+.feed-scherm .feed__filterbar,
+.feed-scherm .coach-intro {
+  max-width: 720px;
+}
 /* Eén dagblok = kop + items. Sinds #912 een echt element: een sticky kop kan
    zijn containing block niet verlaten, en in de vroegere platte grid was dat
    precies de rij van de kop zelf — hij kon dus geen millimeter meebewegen. */
@@ -33,7 +45,6 @@
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin-top: var(--sp-4);
   font-size: var(--fs-xs);
   font-weight: 700;
   text-transform: uppercase;
@@ -46,8 +57,11 @@
   height: 1px;
   background: var(--line);
 }
-.feed__dag:first-child .feed__day {
-  margin-top: 0;
+/* De lucht tussen dagen hing aan de kop zelf; sinds die op stille dagen
+   wegblijft (#1272) hangt hij aan het dagblok, anders plakken twee koploze
+   dagen aan elkaar. */
+.feed__dag + .feed__dag {
+  margin-top: var(--sp-4);
 }
 /* Het item dat na "toon meer" focus krijgt is geen bedienbaar element; een
    focusring eromheen zou suggereren dat je er iets mee kunt (#912). */
@@ -95,9 +109,11 @@
 .feed-line__text strong {
   color: var(--ink);
 }
-/* Klok-tijd rechts op een feedregel; het dag-kopje geeft de dag al. */
+/* Klok-tijd achter de regeltekst; het dag-kopje geeft de dag al. Stond hiervóór
+   met margin-left:auto tegen de rechterrand: op desktop lag er dan 545px (1280)
+   tot 681px (1600) leegte tussen "Baan geboekt — Groep" en "11:40", zonder lijn
+   die de twee verbindt (#1272). De tijd hoort bij de zin, niet bij de rand. */
 .feed-line__time {
-  margin-left: auto;
   padding-left: var(--sp-2);
   font-size: var(--fs-xs);
   color: var(--ink-soft);
@@ -770,12 +786,18 @@
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
+/* Twee teamkolommen met de uitslag ertussen. Zonder maat werden die kolommen op
+   1280 elk 439px breed met een score-eiland van 64px ertussen: de namen stonden
+   zó ver uit elkaar dat de uitslag niet meer bij één duel hoorde (#1272). Op
+   390px klopte diezelfde kaart al — de begrenzing houdt hem overal hetzelfde. */
 .fmatch__board {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: var(--sp-2);
   padding: var(--sp-3) var(--sp-3) var(--sp-2);
+  max-width: 520px;
+  margin-inline: auto;
 }
 .fmatch__team {
   display: flex;

@@ -510,7 +510,7 @@ export function Feed() {
   };
 
   return (
-    <div>
+    <div className="feed-scherm">
       <header className="page-head">
         <h1 className="page-title">Clubblad</h1>
         <p className="page-subtitle">
@@ -596,14 +596,21 @@ export function Feed() {
         <>
           {!coachIntroWeg && <CoachIntro onDismiss={dismissCoachIntro} />}
           <ol className="feed" aria-label="Recente gebeurtenissen">
-            {dagen.map((dag) => (
+            {dagen.map((dag) => {
+              const rijen = bundelVriendschappen(dag.items, (i) => i.event);
+              return (
               <li className="feed__dag" key={dag.day}>
-                {/* Decoratief: de dag staat al in elk item zelf (#232). */}
-                <div className="feed__day" aria-hidden="true">
-                  {dag.label}
-                </div>
+                {/* Decoratief: de dag staat al in elk item zelf (#232). Boven
+                    één regel is de kop hoger dan wat eronder staat, en dan
+                    leest de tijdlijn als een lijst kopjes met af en toe nieuws
+                    ertussen (#1272) — vandaar pas vanaf twee rijen. */}
+                {rijen.length > 1 && (
+                  <div className="feed__day" aria-hidden="true">
+                    {dag.label}
+                  </div>
+                )}
                 <ol className="feed__items">
-                  {bundelVriendschappen(dag.items, (i) => i.event).map((rij) =>
+                  {rijen.map((rij) =>
                     "bundel" in rij ? (
                       // Acht keer "X en Y zijn nu vrienden" met hetzelfde
                       // tijdstip is een muur; één regel met de gezichten erbij
@@ -624,7 +631,8 @@ export function Feed() {
                   )}
                 </ol>
               </li>
-            ))}
+              );
+            })}
           </ol>
           {remaining > 0 && (
             <div className="feed__more">
