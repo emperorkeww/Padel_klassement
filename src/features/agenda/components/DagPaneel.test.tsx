@@ -41,6 +41,10 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
  *  is al gemaakt voordat DagPaneel iets te zien krijgt (#1221). */
 const wed = (...ids: string[]) => ids.map((id) => ({ id, atMs: 0 }));
 
+/** Eén marker als speeldag met één moment — de vorm die "Hierna" sinds #1270
+ *  krijgt. */
+const item = (m: ReturnType<typeof marker>) => ({ eerste: m, momenten: [m] });
+
 function toon(props: Partial<Parameters<typeof DagPaneel>[0]> = {}) {
   const onOpen = vi.fn();
   const onPlan = vi.fn();
@@ -140,8 +144,8 @@ describe("<DagPaneel />", () => {
     const { onKiesDag } = toon({
       markers: [],
       volgende: [
-        marker({ optionId: "v1", date: "2026-08-15", startTime: "11:00" }),
-        marker({ optionId: "v2", date: "2026-08-22", status: "open" }),
+        item(marker({ optionId: "v1", date: "2026-08-15", startTime: "11:00" })),
+        item(marker({ optionId: "v2", date: "2026-08-22", status: "open" })),
       ],
     });
     const rij = screen.getByRole("button", { name: /za 15 aug, 11:00/ });
@@ -154,9 +158,31 @@ describe("<DagPaneel />", () => {
     expect(onKiesDag).toHaveBeenCalledWith("2026-08-15");
   });
 
+  it("geeft twee voorstellen van dezelfde poll één rij (#1270)", () => {
+    // Twee kandidaat-tijden op dezelfde zaterdag vulden twee van de drie rijen:
+    // twee wegwijzers naar dezelfde speeldag.
+    toon({
+      markers: [],
+      volgende: [
+        {
+          eerste: marker({ optionId: "v1", date: "2026-08-15", startTime: "20:00" }),
+          momenten: [
+            marker({ optionId: "v1", date: "2026-08-15", startTime: "20:00" }),
+            marker({ optionId: "v2", date: "2026-08-15", startTime: "21:30" }),
+          ],
+        },
+      ],
+    });
+    const rijen = screen.getAllByRole("button", { name: /za 15 aug/ });
+    expect(rijen).toHaveLength(1);
+    expect(rijen[0]).toHaveAccessibleName(
+      "za 15 aug, 20:00 of 21:30, Vrijdagavond Padel, geboekt",
+    );
+  });
+
   it("houdt hierna weg zodra de dag zelf iets draagt", () => {
     // Anders staat er van alles onder elkaar dat over verschillende dagen gaat.
-    toon({ volgende: [marker({ optionId: "v1", date: "2026-08-15" })] });
+    toon({ volgende: [item(marker({ optionId: "v1", date: "2026-08-15" }))] });
     expect(screen.queryByText("Hierna")).not.toBeInTheDocument();
   });
 
