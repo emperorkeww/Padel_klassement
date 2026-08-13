@@ -1,10 +1,10 @@
 import {
   deleteMatch,
-  setMatchResult,
   updateMatchScore,
   updatePlannedMatchTime,
   type SetScore,
 } from "@/features/matches/api";
+import { saveMatchResult } from "@/features/matches/outbox";
 import {
   corrigeerUitslag,
   verplaatsMatch,
@@ -53,6 +53,11 @@ export function slaCorrectieOp(
  * speeltijd van een geplande match, dus overschrijven verplaatst hem naar een
  * andere speeldag. Geef `playedAt` mee vanaf de kaart. Wil je hem echt
  * verzetten, dan is daar `verzetTijdstip` voor.
+ *
+ * Het spelerspad loopt sinds #1271 langs de offline-wachtrij: dit is precies de
+ * handeling die je in een kooi zonder bereik doet, en de uitlegpagina beloofde
+ * dat al. Het beheerderspad niet — die vult achteraf in, vanaf een bank met
+ * wifi, en gaat langs de edge function met zijn auditrij.
  */
 export function vulUitslagIn(
   params: {
@@ -66,7 +71,7 @@ export function vulUitslagIn(
   },
   alsBeheerder: boolean,
 ): Promise<void> {
-  if (!alsBeheerder) return setMatchResult(params);
+  if (!alsBeheerder) return saveMatchResult(params).then(() => {});
   return corrigeerUitslag({
     matchId: params.matchId,
     scoreA: params.scoreA,

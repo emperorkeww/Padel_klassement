@@ -23,6 +23,24 @@ function Host() {
   );
 }
 
+// Zelfde gastheer, maar met een veld dat de focus hoort te krijgen (#1271).
+function HostMetVeld() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button onClick={() => setOpen(true)}>Open</button>
+      <Sheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Score"
+        initialFocus=".input--score"
+      >
+        <input aria-label="Score" className="input--score" />
+      </Sheet>
+    </>
+  );
+}
+
 describe("<Sheet />", () => {
   it("rendert niets zolang hij dicht is", () => {
     render(
@@ -321,5 +339,35 @@ describe("<Sheet /> — veeg omlaag om te sluiten (#1180)", () => {
     // Scrollen in de sheet mag niet doorslaan naar pull-to-refresh: dat is
     // hetzelfde gebaar als wegvegen.
     expect(css).toMatch(/\.sheet \{[^}]*overscroll-behavior: contain/);
+  });
+});
+
+describe("<Sheet /> initiële focus (#1271)", () => {
+  it("legt de focus op initialFocus in plaats van op de dialoog", () => {
+    // Met autoFocus op het veld gebeurde er niets: React zet die in de
+    // commit-fase, waarna dit passive effect hem stil terugpakte naar de
+    // dialoog. In de score-sheet betekende dat: geen toetsenbord op de baan, en
+    // altijd een extra tik voordat je kon typen.
+    render(<HostMetVeld />);
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    expect(screen.getByRole("textbox", { name: "Score" })).toHaveFocus();
+  });
+
+  it("valt terug op de dialoog als niemand erom vraagt", () => {
+    render(<Host />);
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    expect(screen.getByRole("dialog", { name: "Titel" })).toHaveFocus();
+  });
+
+  it("geeft de focus daarna gewoon terug aan de opener", () => {
+    // Dit was het risico van de andere oplossing: had React het veld al
+    // gefocust, dan was de opener niet meer te vinden en bleef de focus na
+    // sluiten in het niets hangen.
+    render(<HostMetVeld />);
+    const opener = screen.getByRole("button", { name: "Open" });
+    opener.focus();
+    fireEvent.click(opener);
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(opener).toHaveFocus();
   });
 });

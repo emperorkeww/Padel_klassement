@@ -13,6 +13,16 @@ const matchesApi = vi.hoisted(() => ({
   updatePlannedMatchTime: vi.fn(async () => {}),
 }));
 
+// Het spelerspad loopt sinds #1271 langs de offline-wachtrij: in de kooi zonder
+// bereik hoort de uitslag in de queue te landen in plaats van te falen.
+const outbox = vi.hoisted(() => ({
+  saveMatchResult:
+    vi.fn<(p: Record<string, unknown>) => Promise<{ status: string }>>(
+      async () => ({ status: "saved" }),
+    ),
+}));
+vi.mock("@/features/matches/outbox", () => outbox);
+
 // Met expliciete parameters, zodat `mock.calls[0][0]` getypeerd is en de test
 // de payload kan uitpluizen in plaats van alleen "is aangeroepen".
 const adminApi = vi.hoisted(() => ({
@@ -103,17 +113,19 @@ describe("matchBeheer (#1159)", () => {
     expect(payload).not.toHaveProperty("played_at");
   });
 
-  it("gebruikt setMatchResult voor een gewone deelnemer", () => {
+  it("gebruikt de offline-wachtrij voor een gewone deelnemer (#1271)", () => {
+    // Niet rechtstreeks setMatchResult: dat faalt zonder bereik, terwijl de
+    // uitlegpagina belooft dat je invoer in een wachtrij landt.
     vulUitslagIn(CORRECTIE, false);
-    expect(matchesApi.setMatchResult).toHaveBeenCalledWith(CORRECTIE);
+    expect(outbox.saveMatchResult).toHaveBeenCalledWith(CORRECTIE);
     expect(adminApi.corrigeerUitslag).not.toHaveBeenCalled();
   });
 
-  it("reikt de geplande speeltijd door aan setMatchResult (#1271)", () => {
+  it("reikt de geplande speeltijd door (#1271)", () => {
     // Zonder dit zet setMatchResult played_at op nu en verhuist een 's ochtends
     // ingevulde ronde naar vandaag — weg van zijn eigen speeldagpagina.
     vulUitslagIn({ ...CORRECTIE, playedAt: "2026-08-12T18:00:00Z" }, false);
-    expect(matchesApi.setMatchResult).toHaveBeenCalledWith(
+    expect(outbox.saveMatchResult).toHaveBeenCalledWith(
       expect.objectContaining({ playedAt: "2026-08-12T18:00:00Z" }),
     );
   });

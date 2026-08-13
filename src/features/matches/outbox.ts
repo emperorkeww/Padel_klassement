@@ -7,8 +7,11 @@
 import {
   createCompletedMatch,
   createPlannedMatch,
+  setMatchResult,
+  UitslagAlIngevuld,
   type CreateCompletedMatchParams,
   type CreatePlannedMatchParams,
+  type SetScore,
 } from "@/features/matches/api";
 
 const KEY = "vamos:outbox";
@@ -27,7 +30,34 @@ export type OutboxItem =
       kind: "plannedMatch";
       params: CreatePlannedMatchParams;
       createdAt: string;
+    }
+  | {
+      token: string;
+      kind: "matchResult";
+      params: MatchResultParams;
+      createdAt: string;
     };
+
+/**
+ * De uitslag van een al geplande match (#1271).
+ *
+ * Dit ontbrak in de wachtrij, terwijl het precies de handeling is die je in een
+ * kooi zonder bereik doet — de uitlegpagina beloofde het zelfs met zoveel
+ * woorden. Loggen en plannen zaten er wél in; het invullen van een klaargezette
+ * ronde liep langs een kale update en faalde gewoon.
+ *
+ * `playedAt` wordt vastgelegd op het moment van *invoeren*, niet van versturen:
+ * anders krijgt een match die je om 21:00 invulde de tijd van de volgende
+ * ochtend mee, met alle gevolgen voor zijn speeldag en de Elo-volgorde.
+ */
+export type MatchResultParams = {
+  matchId: string;
+  winnerTeamId: string | null;
+  scoreA: number;
+  scoreB: number;
+  setScores?: SetScore[] | null;
+  playedAt?: string | null;
+};
 
 export type SaveResult =
   | { status: "saved"; matchId: string }
@@ -93,15 +123,25 @@ export function enqueue(
   kind: "plannedMatch",
   params: CreatePlannedMatchParams,
 ): string;
+export function enqueue(kind: "matchResult", params: MatchResultParams): string;
 export function enqueue(
   kind: OutboxItem["kind"],
-  params: CreateCompletedMatchParams | CreatePlannedMatchParams,
+  params:
+    | CreateCompletedMatchParams
+    | CreatePlannedMatchParams
+    | MatchResultParams,
 ): string {
-  const token = params.clientToken ?? crypto.randomUUID();
+  // Een uitslag heeft geen client_token: hij muteert een bestaande rij in
+  // plaats van er een aan te maken. De idempotentie komt daar van de
+  // `.neq("status","completed")`-guard op de update zelf.
+  const token =
+    ("clientToken" in params ? params.clientToken : null) ??
+    crypto.randomUUID();
   const item = {
     token,
     kind,
-    params: { ...params, clientToken: token },
+    params:
+      kind === "matchResult" ? { ...params } : { ...params, clientToken: token },
     createdAt: new Date().toISOString(),
   } as OutboxItem;
   write([...read(), item]);
@@ -130,8 +170,17 @@ function isTransient(error: unknown): boolean {
 async function replay(item: OutboxItem): Promise<void> {
   if (item.kind === "completedMatch") {
     await createCompletedMatch(item.params);
-  } else {
+  } else if (item.kind === "plannedMatch") {
     await createPlannedMatch(item.params);
+  } else {
+    try {
+      await setMatchResult(item.params);
+    } catch (err) {
+      // "Al ingevuld" is voor de wachtrij geen fout maar het doel: de match ís
+      // afgerond. Zonder deze uitzondering droppen we het item als poison en
+      // melden we een fout die er geen is.
+      if (!(err instanceof UitslagAlIngevuld)) throw err;
+    }
   }
 }
 
@@ -209,5 +258,33 @@ export async function savePlannedMatch(
     }
   }
   const token = enqueue("plannedMatch", withToken);
+  return { status: "queued", token };
+}
+
+/**
+ * Vult de uitslag van een geplande match in: online direct, offline in de
+ * wachtrij (#1271).
+ *
+ * De speeltijd wordt hier vastgeklikt, niet bij het versturen — zie
+ * {@link MatchResultParams}.
+ */
+export async function saveMatchResult(
+  params: MatchResultParams,
+): Promise<SaveResult> {
+  const metTijd = {
+    ...params,
+    playedAt: params.playedAt ?? new Date().toISOString(),
+  };
+  if (typeof navigator === "undefined" || navigator.onLine) {
+    try {
+      await setMatchResult(metTijd);
+      return { status: "saved", matchId: params.matchId };
+    } catch (err) {
+      // Nog online? Dan is het een echte fout (al ingevuld, rechten) →
+      // doorgeven, zodat de sheet openblijft met je invoer erin.
+      if (typeof navigator === "undefined" || navigator.onLine) throw err;
+    }
+  }
+  const token = enqueue("matchResult", metTijd);
   return { status: "queued", token };
 }
