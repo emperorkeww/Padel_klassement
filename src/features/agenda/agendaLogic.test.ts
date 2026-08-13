@@ -223,26 +223,36 @@ describe("ophaalVenster (#1112)", () => {
 });
 
 describe("volgendeSpeeldagen (#1112)", () => {
+  // Elke marker een eigen poll, tenzij de test er expliciet één deelt: dat is
+  // sinds #1270 het verschil tussen twee speeldagen en twee antwoorden op
+  // dezelfde vraag.
   const m = (date: string, extra: Partial<AgendaMarker> = {}) =>
-    ({ date, optionId: date, startTime: "20:00", groupName: "A", past: false, ...extra }) as AgendaMarker;
+    ({
+      date,
+      pollId: `poll-${date}`,
+      optionId: date,
+      startTime: "20:00",
+      groupName: "A",
+      past: false,
+      ...extra,
+    }) as AgendaMarker;
+
+  const dagen = (uit: ReturnType<typeof volgendeSpeeldagen>) =>
+    uit.map((x) => x.eerste.date);
 
   it("geeft de eerstvolgende drie, op volgorde", () => {
     const uit = volgendeSpeeldagen(
       [m("2026-09-01"), m("2026-08-20"), m("2026-08-25"), m("2026-08-30")],
       "2026-08-10",
     );
-    expect(uit.map((x) => x.date)).toEqual([
-      "2026-08-20",
-      "2026-08-25",
-      "2026-08-30",
-    ]);
+    expect(dagen(uit)).toEqual(["2026-08-20", "2026-08-25", "2026-08-30"]);
   });
 
   it("laat de gekozen dag zelf weg", () => {
     // Die staat al in het paneel erboven; twee keer tonen leest als twee
     // verschillende afspraken.
     const uit = volgendeSpeeldagen([m("2026-08-10"), m("2026-08-20")], "2026-08-10");
-    expect(uit.map((x) => x.date)).toEqual(["2026-08-20"]);
+    expect(dagen(uit)).toEqual(["2026-08-20"]);
   });
 
   it("laat wat geweest is weg, ook als de datum later valt", () => {
@@ -252,18 +262,49 @@ describe("volgendeSpeeldagen (#1112)", () => {
       [m("2026-08-20", { past: true }), m("2026-08-25")],
       "2026-08-10",
     );
-    expect(uit.map((x) => x.date)).toEqual(["2026-08-25"]);
+    expect(dagen(uit)).toEqual(["2026-08-25"]);
   });
 
   it("sorteert twee speeldagen op dezelfde dag op tijd", () => {
     const uit = volgendeSpeeldagen(
       [
-        m("2026-08-20", { optionId: "laat", startTime: "20:00" }),
-        m("2026-08-20", { optionId: "vroeg", startTime: "11:00" }),
+        m("2026-08-20", { pollId: "laat", optionId: "laat", startTime: "20:00" }),
+        m("2026-08-20", { pollId: "vroeg", optionId: "vroeg", startTime: "11:00" }),
       ],
       "2026-08-10",
     );
-    expect(uit.map((x) => x.optionId)).toEqual(["vroeg", "laat"]);
+    expect(uit.map((x) => x.eerste.optionId)).toEqual(["vroeg", "laat"]);
+  });
+
+  it("geeft twee voorstellen van dezelfde poll één rij (#1270)", () => {
+    // Dít was de bug: drie wegwijzers, allemaal naar 15 augustus, waarvan twee
+    // dezelfde speeldag. Het paneel eronder bundelde ze wél.
+    const uit = volgendeSpeeldagen(
+      [
+        m("2026-08-15", { pollId: "p1", optionId: "a", startTime: "20:00" }),
+        m("2026-08-15", { pollId: "p1", optionId: "b", startTime: "21:30" }),
+        m("2026-08-22", { pollId: "p2" }),
+      ],
+      "2026-08-10",
+    );
+    expect(dagen(uit)).toEqual(["2026-08-15", "2026-08-22"]);
+    expect(tijdenLabel(uit[0].momenten)).toBe("20:00 of 21:30");
+  });
+
+  it("zet een poll over meerdere dagen op zijn vroegste dag (#1270)", () => {
+    // Eén vraag met "donderdag of zaterdag" is één speeldag, en de rij wijst
+    // naar de eerste kans. De tijd van die andere dag hoort er niet bij: "20:00
+    // of 11:00" onder "do 20" belooft twee tijden op donderdag.
+    const uit = volgendeSpeeldagen(
+      [
+        m("2026-08-22", { pollId: "p1", optionId: "za", startTime: "11:00" }),
+        m("2026-08-20", { pollId: "p1", optionId: "do", startTime: "20:00" }),
+      ],
+      "2026-08-10",
+    );
+    expect(uit).toHaveLength(1);
+    expect(uit[0].eerste.date).toBe("2026-08-20");
+    expect(tijdenLabel(uit[0].momenten)).toBe("20:00");
   });
 
   it("geeft een lege lijst als er niets meer komt", () => {
@@ -304,7 +345,7 @@ describe("telInMaand", () => {
     expect(telInMaand(markers, { jaar: 2026, maand: 8 })).toBe(3);
   });
 
-  it("telt een poll met meerdere voorstellen als één activiteit", () => {
+  it("telt een poll met meerdere voorstellen als één speeldag", () => {
     // Drie kandidaat-momenten van dezelfde poll is één vraag om te spelen; het
     // raster toont ze los, de telling niet (#1182).
     const markers = [
@@ -414,6 +455,23 @@ describe("komendeItems en wachtOpJou", () => {
       "2026-08-20",
       "2026-09-01",
     ]);
+  });
+
+  it("geeft één kaart per speeldag, ook als hij twee dagen voorstelt (#1270)", () => {
+    // De lijstkop telt deze items ("N speeldagen gepland") en de maandkop telt
+    // polls. Bundelde de lijst per dag, dan zei dezelfde poll hier "2" en daar
+    // "1" — met precies dezelfde data op het scherm.
+    const items = komendeItems(
+      [
+        komend({ pollId: "p1", date: "2026-08-13", startTime: "20:00" }),
+        komend({ pollId: "p1", date: "2026-08-15", startTime: "11:00" }),
+        komend({ pollId: "p2", date: "2026-08-20" }),
+      ],
+      "2026-08-07",
+    );
+    expect(items).toHaveLength(2);
+    expect(items[0].eerste.date).toBe("2026-08-13");
+    expect(items[1].eerste.date).toBe("2026-08-20");
   });
 
   it("groepeert per maand in de volgorde van de lijst", () => {
@@ -963,6 +1021,22 @@ describe("buildMarkers — twijfelaars en stille leden (#1121)", () => {
     expect(markers[0].maybeVoterIds).toEqual(["p2"]);
     // p3 en p4 zeiden niets — dat is per poll, niet per moment.
     expect(markers[0].nietGestemdIds).toEqual(["p3", "p4"]);
+  });
+
+  it("laat jezelf uit 'Nog niets gezegd' (#1270)", () => {
+    // Het sheet zette je eigen naam vooraan in de rij "Nog niets gezegd", pal
+    // onder een zin die je net aansprak met "Jij moet nog stemmen". Die rij
+    // beantwoordt "wie kan ik nog porren?", en dat ben jij niet.
+    const groepen = [{ ...groep("g1", "Vamos!"), member_ids: ["p1", "p2", "p3"] }];
+    const markers = buildMarkers(
+      venster({ polls: [poll()], options: [option()], votes: [vote("p2", "yes")] }),
+      groepen,
+      "p1",
+      at("2026-08-01T10:00:00Z"),
+    );
+
+    expect(markers[0].iVoted).toBe(false);
+    expect(markers[0].nietGestemdIds).toEqual(["p3"]);
   });
 });
 

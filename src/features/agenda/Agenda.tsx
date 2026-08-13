@@ -431,8 +431,12 @@ export function Agenda() {
                 ? // Niet "Nog niets gepland": dat staat een halve pagina lager
                   // ook al, in het dagpaneel, en gaat daar over de gekozen dag
                   // (#1195). Deze regel telt de máánd, dus zegt hij dat ook.
-                  "Geen activiteiten deze maand"
-                : `${inMaand} ${inMaand === 1 ? "activiteit" : "activiteiten"} deze maand`}
+                  "Geen speeldagen deze maand"
+                : // "Activiteiten" was een woord voor precies dezelfde eenheid
+                  // die de lijstkop hierboven "speeldagen" noemt, en `telInMaand`
+                  // telt allebei polls (#1270). Twee woorden voor één ding leest
+                  // als twee tellingen die elkaar tegenspreken.
+                  `${inMaand} ${inMaand === 1 ? "speeldag" : "speeldagen"} deze maand`}
           </p>
         </div>
         {/* De maandnavigatie hoort bij het raster. In de lijst is er geen maand

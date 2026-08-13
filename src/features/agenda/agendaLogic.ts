@@ -21,6 +21,18 @@ import type { GroupSummary } from "@/features/groups/api";
 /*                                                                     */
 /* Alles hier is puur — geen React, geen supabase — zodat het raster,   */
 /* de dag-sheet en de tests dezelfde afleiding delen.                   */
+/*                                                                     */
+/* De eenheid (#1270). Eén poll is één speeldag; één kandidaat-moment   */
+/* is één antwoordoptie op die ene vraag. Dat onderscheid stond nergens */
+/* opgeschreven, en dus telde elke plek iets anders: de maandkop polls, */
+/* de lijstkop dag-bundels, het paneel losse momenten. Met dezelfde     */
+/* drie polls op het scherm stond er "3 activiteiten", "5 speeldagen"   */
+/* en drie wegwijzers naar dezelfde zaterdag.                           */
+/*                                                                     */
+/* Vandaar: het maandraster tekent mómenten (daar zijn het zichtbare    */
+/* antwoorden waar je uit kiest), en alles wat in wóórden over          */
+/* speeldagen praat — koppen, tellingen, kaarten, wegwijzers — telt     */
+/* polls. `speeldagItems` is de ene bundelaar die dat afdwingt.         */
 /* ------------------------------------------------------------------ */
 
 /** Wat een dag draagt. De vorm (niet de kleur) van de glyph volgt hieruit. */
@@ -60,7 +72,10 @@ export type AgendaMarker = {
    *  rij wel, de agenda niet. */
   maybeVoterIds: string[];
   /** Groepsleden die op deze poll nog helemaal niets zeiden. Per poll en niet
-   *  per moment: wie één kandidaat beantwoordde, heeft gestemd. */
+   *  per moment: wie één kandidaat beantwoordde, heeft gestemd. Jezelf staat
+   *  er nooit bij (#1270): "Nog niets gezegd" zette je eigen naam vooraan in
+   *  een rij die je vertelt wie je nog kunt porren, pal onder een zin die je
+   *  al aansprak met "Jij moet nog stemmen". */
   nietGestemdIds: string[];
   /** Geboekte banen (#802) en toegangscode (#675); null zolang onbekend. */
   courts: string | null;
@@ -194,7 +209,7 @@ export function buildMarkers(
       yesVoterIds: yesByOption.get(option.id) ?? [],
       maybeVoterIds: maybeByOption.get(option.id) ?? [],
       nietGestemdIds: (groupMembers.get(poll.group_id) ?? []).filter(
-        (id) => !voters?.has(id),
+        (id) => id !== myId && !voters?.has(id),
       ),
       courts: poll.courts,
       accessCode: poll.access_code,
@@ -316,6 +331,43 @@ export function kannersOpDag(momenten: AgendaMarker[]): string[] {
 }
 
 /**
+ * Markers gebundeld tot speeldagen, over de dagen heen (#1270).
+ *
+ * Eén item per poll, en dat item staat op de vróegste dag die de poll nog
+ * voorstelt: daar spring je heen, en de andere voorgestelde dagen zijn geen
+ * tweede speeldag maar een tweede antwoord op dezelfde vraag. `dagItems`
+ * bundelt binnen één dag; dit is dezelfde regel, maar dan over een hele lijst.
+ *
+ * `momenten` houdt zich aan wat een `DagItem` belooft — de momenten van díe ene
+ * dag — dus een poll die ook een andere dag voorstelt draagt die tijd hier niet.
+ * Dat is met opzet: "za 15 · 20:00 of 11:00" zou twee tijden op één zaterdag
+ * beloven terwijl die tweede op zondag ligt. Wie de hele vraag wil zien, tikt de
+ * speeldag aan.
+ */
+export function speeldagItems(markers: AgendaMarker[]): DagItem[] {
+  const perPoll = new Map<string, AgendaMarker[]>();
+  for (const m of markers) {
+    const lijst = perPoll.get(m.pollId);
+    if (lijst) lijst.push(m);
+    else perPoll.set(m.pollId, [m]);
+  }
+
+  const items: DagItem[] = [];
+  for (const momenten of perPoll.values()) {
+    const eersteDag = momenten.reduce(
+      (dag, m) => (m.date < dag ? m.date : dag),
+      momenten[0].date,
+    );
+    const opDieDag = momenten.filter((m) => m.date === eersteDag).sort(byTime);
+    items.push({ eerste: opDieDag[0], momenten: opDieDag });
+  }
+  return items.sort(
+    (a, b) =>
+      a.eerste.date.localeCompare(b.eerste.date) || byTime(a.eerste, b.eerste),
+  );
+}
+
+/**
  * De eerstvolgende speeldagen ná een datum (#1112) — de "Hierna"-lijst onder een
  * lege dag.
  *
@@ -323,16 +375,21 @@ export function kannersOpDag(momenten: AgendaMarker[]): string[] {
  * en die daar nog eens herhalen leest als twee verschillende afspraken. Een dag
  * die geweest is valt weg, ook als hij later in de lijst zou vallen — je kunt er
  * niet meer heen.
+ *
+ * Speeldagen en geen momenten (#1270). Dit werkte op markers, en dus vulde één
+ * open poll met twee voorstellen op zaterdag twee van de drie rijen: drie
+ * wegwijzers, allemaal naar 15 augustus, waarvan twee dezelfde speeldag. Het
+ * paneel eronder bundelde ze wél — twee tellingen over precies dezelfde data.
  */
 export function volgendeSpeeldagen(
   markers: AgendaMarker[],
   na: string,
   max = 3,
-): AgendaMarker[] {
-  return markers
-    .filter((m) => m.date > na && !m.past)
-    .sort((a, b) => a.date.localeCompare(b.date) || byTime(a, b))
-    .slice(0, max);
+): DagItem[] {
+  return speeldagItems(markers.filter((m) => m.date > na && !m.past)).slice(
+    0,
+    max,
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -477,17 +534,22 @@ export function verdeelWedstrijden(
  * beantwoordt "wat komt eraan", en dat is een andere vraag: hij houdt niet op
  * bij de maandgrens. Vandaag telt mee — een speeldag van vanavond is nog
  * helemaal niet voorbij.
+ *
+ * Eén kaart per speeldag, niet per dag waarop hij voorgesteld staat (#1270).
+ * Dit bundelde per dag, dus een poll die donderdag óf zaterdag voorstelde gaf
+ * twee kaarten en telde voor twee in de kop — terwijl de maandkop diezelfde
+ * poll als één activiteit telde. Nu delen ze de noemer van `speeldagItems`, en
+ * kloppen kop en lijst met elkaar én met de strook erboven.
  */
 export function komendeItems(
   markers: AgendaMarker[],
   vanaf: string,
   max = 40,
 ): DagItem[] {
-  const perDag = markersByDay(markers.filter((m) => m.date >= vanaf && !m.past));
-  return Object.keys(perDag)
-    .sort()
-    .flatMap((dag) => dagItems(perDag[dag]))
-    .slice(0, max);
+  return speeldagItems(markers.filter((m) => m.date >= vanaf && !m.past)).slice(
+    0,
+    max,
+  );
 }
 
 /** Speeldagen gegroepeerd per maand, in dezelfde volgorde als ze binnenkwamen —
@@ -613,7 +675,7 @@ const STAART_DAGEN = 42;
  * Ruimer dan het raster, want "Hierna" kijkt vooruit voorbij de laatste rij —
  * in een lege maand staat de eerstvolgende speeldag per definitie buiten beeld.
  * Wat in die staart valt komt nooit in een cel terecht (het raster tekent
- * alleen zijn eigen weken) en telt ook niet mee in "activiteiten deze maand".
+ * alleen zijn eigen weken) en telt ook niet mee in "speeldagen deze maand".
  *
  * Bewust een ánder venster dan `windowFor`: de toetsenbordnavigatie gebruikt de
  * rastergrenzen om te weten wanneer ze een maand moet doorbladeren, en die vraag
@@ -643,10 +705,10 @@ export const zelfdeMaand = (a: Maand, b: Maand) =>
  * de maandtitel.
  *
  * Telt op de máánd en niet op het venster: het raster toont ook de randdagen van
- * de buurmaanden, en die horen niet mee in "3 activiteiten deze maand".
+ * de buurmaanden, en die horen niet mee in "3 speeldagen deze maand".
  *
  * Telt polls en geen markers (#1182): een open poll met drie voorstellen is één
- * vraag om te spelen, niet drie activiteiten. Een poll die over een maandgrens
+ * vraag om te spelen, niet drie speeldagen. Een poll die over een maandgrens
  * heen loopt telt in beide maanden mee — in allebei staat er iets.
  */
 export function telInMaand(markers: AgendaMarker[], m: Maand): number {

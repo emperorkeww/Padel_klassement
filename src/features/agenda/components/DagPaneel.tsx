@@ -5,7 +5,9 @@ import {
   dagItems,
   metHoofdletter,
   statusLabel,
+  tijdenLabel,
   type AgendaMarker,
+  type DagItem,
   type WedstrijdDag,
 } from "../agendaLogic";
 import { StatusGlyph } from "@/ui/StatusGlyph";
@@ -48,7 +50,7 @@ export function DagPaneel({
   /** De eerstvolgende speeldagen ná deze dag. Alleen zichtbaar zolang de dag
    *  zelf leeg is — anders staat er van alles onder elkaar dat over
    *  verschillende dagen gaat. */
-  volgende: AgendaMarker[];
+  volgende: DagItem[];
   /** Aantal leden per groep — de noemer van "2 van 4 kunnen". */
   ledenPerGroep: Record<string, number>;
   profielen: Record<string, Profile>;
@@ -209,34 +211,38 @@ function WedstrijdRij({
  * Compacter dan een speeldagkaart en met opzet: dit gaat niet over déze dag,
  * het is een wegwijzer. Aantikken kiest die dag — daarna staat de volle kaart
  * er gewoon, met dezelfde weg naar het dag-sheet.
+ *
+ * Eén rij per speeldag (#1270). Dit liep op losse momenten, dus een poll die
+ * twee tijden op dezelfde zaterdag voorstelde nam twee van de drie rijen —
+ * driemaal "15 aug" onder elkaar, waarvan twee dezelfde vraag.
  */
 function Hierna({
   dagen,
   onKiesDag,
 }: {
-  dagen: AgendaMarker[];
+  dagen: DagItem[];
   onKiesDag: (date: string) => void;
 }) {
   return (
     <>
       <h3 className="dagpaneel__kicker">Hierna</h3>
       <ul className="hierna">
-        {dagen.map((m) => (
-          <li key={m.optionId}>
+        {dagen.map(({ eerste: m, momenten }) => (
+          <li key={m.pollId}>
             <button
               type="button"
               className="hierna__rij"
               onClick={() => onKiesDag(m.date)}
               // De rij is een sprong naar een dag, en dat moet je kunnen horen:
               // de losse stukjes tekst zeggen los van elkaar te weinig.
-              aria-label={`${shortDay(m.date)}, ${m.startTime}, ${m.groupName}, ${statusLabel(m.status, m.past)}`}
+              aria-label={`${shortDay(m.date)}, ${tijdenLabel(momenten)}, ${m.groupName}, ${statusLabel(m.status, m.past)}`}
             >
               <StatusGlyph status={m.status} past={m.past} />
               <span className="hierna__dag" aria-hidden="true">
                 {shortDay(m.date)}
               </span>
               <span className="hierna__wat" aria-hidden="true">
-                {m.startTime} · {m.groupName}
+                {tijdenLabel(momenten)} · {m.groupName}
               </span>
               <IconChevron />
             </button>
