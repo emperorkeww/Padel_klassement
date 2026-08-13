@@ -33,7 +33,7 @@ const melding = (over: Partial<Melding> = {}): Melding => ({
 
 function toon(
   meldingen: Melding[],
-  props: Partial<{ laadt: boolean; limiet: number; verzoeken: number }> = {},
+  props: Partial<{ laadt: boolean; fout: string; verzoeken: number }> = {},
 ) {
   const onClose = vi.fn();
   const onVeranderd = vi.fn();
@@ -44,7 +44,7 @@ function toon(
         onClose={onClose}
         meldingen={meldingen}
         laadt={props.laadt ?? false}
-        limiet={props.limiet ?? 20}
+        fout={props.fout ?? null}
         verzoeken={props.verzoeken ?? 0}
         onVeranderd={onVeranderd}
       />
@@ -121,18 +121,17 @@ describe("<MeldingenPaneel /> (#1090)", () => {
     expect(screen.getByText(/zodra er een ronde klaarstaat/i)).toBeInTheDocument();
   });
 
-  it("wijst naar de volledige lijst zodra het paneel vol zit", () => {
-    toon(
-      Array.from({ length: 3 }, (_, i) => melding({ id: `n${i}`, tag: `t${i}` })),
-      { limiet: 3 },
-    );
+  // #1273: hing tot dan aan een vol paneel (twintig meldingen). Daaronder was
+  // er op het hele dashboard geen enkele link naar /meldingen.
+  it("wijst naar de volledige lijst zodra er íets staat", () => {
+    toon([melding()]);
     expect(
       screen.getByRole("link", { name: /alles bekijken/i }),
     ).toHaveAttribute("href", "/meldingen");
   });
 
-  it("belooft geen langere lijst als alles al in het paneel staat", () => {
-    toon([melding()], { limiet: 20 });
+  it("belooft geen lijst als er niets is om te bekijken", () => {
+    toon([]);
     expect(
       screen.queryByRole("link", { name: /alles bekijken/i }),
     ).not.toBeInTheDocument();
@@ -208,7 +207,6 @@ describe("<MeldingenPaneel /> (#1090)", () => {
           onClose={() => {}}
           meldingen={[melding()]}
           laadt={false}
-          limiet={20}
           onVeranderd={() => {}}
         />
       </MemoryRouter>,
@@ -232,8 +230,7 @@ describe("<MeldingenPaneel /> (#1090)", () => {
               melding({ id: "n3", soort: "uitslag", tag: "t3", title: "Gewonnen" }),
             ]}
             laadt={false}
-            limiet={20}
-            onVeranderd={() => {}}
+              onVeranderd={() => {}}
           />
         </MemoryRouter>,
       );
@@ -252,8 +249,7 @@ describe("<MeldingenPaneel /> (#1090)", () => {
             onClose={() => {}}
             meldingen={[melding({ soort: "teleportatie" })]}
             laadt={false}
-            limiet={20}
-            onVeranderd={() => {}}
+              onVeranderd={() => {}}
           />
         </MemoryRouter>,
       );
@@ -269,6 +265,29 @@ describe("<MeldingenPaneel /> (#1090)", () => {
     it("noemt de soort voor wie luistert", () => {
       toon([melding({ soort: "var", title: "Er wordt een punt betwist" })]);
       expect(screen.getByText("VAR:")).toBeInTheDocument();
+    });
+  });
+
+  // #1273: useMeldingen leverde een fout op, maar die kwam nooit hier aan —
+  // het paneel viel dan terug op de lege staat.
+  describe("een mislukte query (#1273)", () => {
+    it("meldt de fout met een weg vooruit in plaats van 'nog niets te melden'", async () => {
+      const { onVeranderd } = toon([], { fout: "Kon meldingen niet laden" });
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        /kon meldingen niet laden/i,
+      );
+      expect(screen.queryByText(/nog niets te melden/i)).toBeNull();
+      await userEvent.click(
+        screen.getByRole("button", { name: /opnieuw proberen/i }),
+      );
+      expect(onVeranderd).toHaveBeenCalled();
+    });
+
+    it("laat de wegwijzers staan, ook als het laden faalde", () => {
+      toon([], { fout: "offline" });
+      expect(
+        screen.getByRole("link", { name: /meldingsvoorkeuren/i }),
+      ).toBeInTheDocument();
     });
   });
 });
