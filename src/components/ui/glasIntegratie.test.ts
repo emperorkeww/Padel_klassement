@@ -191,3 +191,32 @@ describe("speeldagblok in het dag-sheet (#1207)", () => {
     expect(tsx).not.toMatch(/dagsheet__speeldag[^`]*glas--(paneel|pil|cirkel)/);
   });
 });
+
+describe("meldingenpaneel met eigen bodem (#1273)", () => {
+  const tsx = lees("src/features/meldingen/components/MeldingenPaneel.tsx");
+  const ui = lees("src/components/ui/ui.css");
+  const blok = ui.match(/\n\.sheet--dekkend\.glas \{([\s\S]*?)\n\}/)![1];
+
+  it("zet de bodem via de laag en niet via een kale background", () => {
+    // Het paneel hing boven de FUT-kaart, en die loopt binnen één sheet van
+    // zalm naar grijs: elke gedempte kleur werd daar onbetrouwbaar. Een
+    // `background` zou het materiaal wegvegen (les uit #1083/#1207); via
+    // --glas-laag blijven rand, randlicht en scroll-schaduwen staan.
+    expect(blok).toMatch(
+      /--glas-laag:\s*linear-gradient\(var\(--surface-elevated\) 0 0\)/,
+    );
+    expect(blok).not.toMatch(/^\s*background:/m);
+  });
+
+  it("zet de blur uit, want er valt niets meer doorheen te zien", () => {
+    expect(blok).toMatch(/backdrop-filter:\s*none/);
+    expect(blok).toMatch(/-webkit-backdrop-filter:\s*none/);
+  });
+
+  it("staat op .sheet--dekkend.glas, zodat glas.css hem niet overschrijft", () => {
+    // Zelfde reden als .sheet.glas hierboven: glas.css komt ná ui.css, dus op
+    // gelijke specificiteit zou .glas--sterk winnen.
+    expect(ui).toMatch(/\.sheet--dekkend\.glas \{/);
+    expect(tsx).toMatch(/className="sheet--dekkend meldingen-sheet"/);
+  });
+});

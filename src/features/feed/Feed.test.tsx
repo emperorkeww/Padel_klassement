@@ -185,8 +185,49 @@ describe("<Feed />", () => {
     const dagen = container.querySelectorAll(".feed__dag");
     expect(dagen.length).toBeGreaterThan(0);
     for (const dag of dagen) {
-      expect(dag.querySelector(".feed__day")).not.toBeNull();
       expect(dag.querySelector(".feed__items")).not.toBeNull();
+      // De kop verdient zijn ruimte pas vanaf twee rijen (#1272): boven één
+      // regel is hij hoger dan wat eronder staat.
+      const rijen = dag.querySelectorAll(":scope > .feed__items > li").length;
+      expect(Boolean(dag.querySelector(".feed__day"))).toBe(rijen > 1);
+    }
+  });
+
+  // #1272: tien van de achttien dagblokken bestonden uit één regel, en daarboven
+  // is de kop (hoofdletters + hairline + lucht) hoger dan de inhoud eronder.
+  it("laat de dagkop weg boven een dag met één regel, en houdt hem op drukke dagen", async () => {
+    // Twee losse dagen met elk één match, en één dag met er drie.
+    const dag = (d: number, n: number) =>
+      Array.from({ length: n }, (_, i) => {
+        const ts = new Date(Date.UTC(2026, 3, d, 18 + i)).toISOString();
+        return {
+          ...MATCH_DONE,
+          id: `d${d}-${i}`,
+          group_id: null,
+          round_number: null,
+          played_at: ts,
+          created_at: ts,
+        };
+      });
+    const herstel = overrideTabellen({
+      matches: [...dag(10, 3), ...dag(8, 1), ...dag(6, 1)],
+    });
+    try {
+      const { container } = renderPage();
+      await screen.findByRole("list", { name: /recente gebeurtenissen/i });
+
+      const dagen = [...container.querySelectorAll(".feed__dag")].map((d) => ({
+        rijen: d.querySelectorAll(":scope > .feed__items > li").length,
+        kop: Boolean(d.querySelector(".feed__day")),
+      }));
+      // De drie matches van 10 april vormen het drukke blok; de twee losse
+      // dagen eromheen houden hun regel zonder kop erboven.
+      expect(dagen.filter((d) => d.rijen === 1).length).toBeGreaterThanOrEqual(2);
+      expect(dagen.filter((d) => d.rijen === 1).every((d) => !d.kop)).toBe(true);
+      expect(dagen.filter((d) => d.rijen > 1).length).toBeGreaterThan(0);
+      expect(dagen.filter((d) => d.rijen > 1).every((d) => d.kop)).toBe(true);
+    } finally {
+      herstel();
     }
   });
 

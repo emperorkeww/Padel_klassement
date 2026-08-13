@@ -94,3 +94,57 @@ export function clearDraft(mode: NewMatchMode, groupId: string | null): void {
     // storage niet beschikbaar — negeer
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Score-concept van één match (#1271)                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * De invoer in de score-sheet, per match.
+ *
+ * `ScoreSheet` had geen concept, terwijl elk sheet sinds #1180 met een veeg
+ * omlaag sluit: half ingetikte score, kleine veeg, weg. Bewust sessionStorage
+ * en niet localStorage — een halve score van vorige week hoort niet terug te
+ * komen; deze avond, dit tabblad is precies lang genoeg.
+ */
+export type ScoreDraft = {
+  scoreA: string;
+  scoreB: string;
+  sets: SetPair[];
+  setsOpen: boolean;
+};
+
+const scoreKey = (matchId: string) => `vamos:score-draft:${matchId}`;
+
+export function readScoreDraft(matchId: string): ScoreDraft | null {
+  try {
+    const raw = sessionStorage.getItem(scoreKey(matchId));
+    if (!raw) return null;
+    const d = JSON.parse(raw) as ScoreDraft;
+    // Alleen een concept mét invoer is er een; anders opent de sheet gewoon
+    // met de stand die er al ligt.
+    const iets =
+      d.scoreA !== "" ||
+      d.scoreB !== "" ||
+      (d.sets ?? []).some((s) => s.a !== "" || s.b !== "");
+    return iets ? d : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeScoreDraft(matchId: string, draft: ScoreDraft): void {
+  try {
+    sessionStorage.setItem(scoreKey(matchId), JSON.stringify(draft));
+  } catch {
+    /* geen storage — dan is het concept er gewoon niet */
+  }
+}
+
+export function clearScoreDraft(matchId: string): void {
+  try {
+    sessionStorage.removeItem(scoreKey(matchId));
+  } catch {
+    /* idem */
+  }
+}

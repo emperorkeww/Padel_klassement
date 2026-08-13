@@ -179,8 +179,12 @@ describe("<GroupDetail />", () => {
     await userEvent.click(
       await screen.findByRole("button", { name: /volgende ronde/i }),
     );
+    // Het aantal rondes volgt sinds #1271 de geboekte duur, dus het label kan
+    // ook "Stel 8 eerlijke rondes voor" zijn.
     await userEvent.click(
-      await screen.findByRole("button", { name: /stel eerlijke teams voor/i }),
+      await screen.findByRole("button", {
+        name: /stel (\d+ eerlijke rondes|eerlijke teams) voor/i,
+      }),
     );
     expect(await screen.findByText(/^baan 1$/i)).toBeInTheDocument();
     // Ratings uit de fixtures (1012/1012/988/988): sterk speelt met zwak,
@@ -228,8 +232,10 @@ describe("<GroupDetail />", () => {
     await userEvent.click(
       await screen.findByRole("tab", { name: /^americano$/i }),
     );
+    // Het aantal rondes volgt sinds #1271 de geboekte duur, dus het label kan
+    // ook "Start 8 Americano-rondes" zijn.
     await userEvent.click(
-      screen.getByRole("button", { name: /start americano/i }),
+      screen.getByRole("button", { name: /start (\d+ )?americano/i }),
     );
     // De ronde wordt client-side ingedeeld (geschiedenis-bewust) en via
     // create_fair_round weggeschreven: g1 heeft 4 leden → één baan van vier.

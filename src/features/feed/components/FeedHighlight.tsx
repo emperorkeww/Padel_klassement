@@ -26,6 +26,10 @@ export function FeedHighlight({
   icon: string;
   label: string;
   to: string;
+  /** Klok-tijd; net als bij FeedLine alleen meegeven bij een écht
+      gebeurtenismoment. Klassement, kampioen en de pias van de maand dateren
+      zich op een periodegrens — die toonde hier "00:00" alsof er om middernacht
+      iets gebeurde (#1272). */
   at?: string;
   children: ReactNode;
 }) {

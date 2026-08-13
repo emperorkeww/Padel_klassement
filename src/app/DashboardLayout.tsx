@@ -361,7 +361,7 @@ export function DashboardLayout() {
         onClose={() => setMeldingenOpen(false)}
         meldingen={meldingen.meldingen}
         laadt={meldingen.laadt}
-        limiet={meldingen.limiet}
+        fout={meldingen.fout}
         verzoeken={verzoeken}
         onVeranderd={meldingen.herlaad}
       />

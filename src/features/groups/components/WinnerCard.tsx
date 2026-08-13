@@ -1,8 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/ui/ToastProvider";
+import { useRealtime } from "@/lib/hooks/useRealtime";
+import {
+  getAanwezigheid,
+  zetMijnAanwezigheid,
+} from "@/features/groups/aanwezigheidApi";
 import { Avatar } from "@/ui/Avatar";
 import { errorMessage } from "@/lib/utils/errors";
-import { downloadSpeeldagIcs } from "@/features/groups/speeldagIcs";
+import {
+  downloadSpeeldagIcs,
+  laatsteWijziging,
+} from "@/features/groups/speeldagIcs";
 import { bookingUrl } from "@/features/availability/api";
 import { useBookingUrl } from "@/features/availability/useBookingUrl";
 import { shareOrCopyText } from "@/lib/utils/shareText";
@@ -42,6 +50,7 @@ export function WinnerCard({
   club,
   groupName,
   profiles,
+  myId,
   isManager,
   busy,
   run,
@@ -54,6 +63,8 @@ export function WinnerCard({
   club: Club;
   groupName: string;
   profiles: Record<string, Profile>;
+  /** De kijker; nodig om jezelf af te kunnen melden (#1271). */
+  myId: string;
   isManager: boolean;
   busy: boolean;
   run: (fn: () => Promise<void>, done?: string) => Promise<void>;
@@ -90,6 +101,44 @@ export function WinnerCard({
     );
   }
 
+  // Mijn eigen aanwezigheid op dit moment (#1271). Alleen de afwijking staat in
+  // de database; geen rij betekent "volg de stemming".
+  const [ikKomNiet, setIkKomNiet] = useState(false);
+  const [afmeldBezig, setAfmeldBezig] = useState(false);
+  useEffect(() => {
+    let levend = true;
+    void getAanwezigheid(o.id)
+      .then((k) => {
+        if (levend) setIkKomNiet(k[myId] === false);
+      })
+      .catch(() => {
+        /* onbekend blijft "ik doe mee": de stemming is de bron */
+      });
+    return () => {
+      levend = false;
+    };
+  }, [o.id, myId]);
+  useRealtime("play_poll_presence", () => {
+    void getAanwezigheid(o.id).then((k) => setIkKomNiet(k[myId] === false));
+  }, `option_id=eq.${o.id}`);
+
+  async function zetAanwezig() {
+    const volgende = !ikKomNiet;
+    setAfmeldBezig(true);
+    setIkKomNiet(volgende);
+    try {
+      await zetMijnAanwezigheid(o.id, poll.group_id, myId, volgende ? false : null);
+      toast.success(
+        volgende ? "Afgemeld — de groep ziet het." : "Je doet weer mee.",
+      );
+    } catch (err) {
+      setIkKomNiet(!volgende);
+      toast.error(errorMessage(err));
+    } finally {
+      setAfmeldBezig(false);
+    }
+  }
+
   /** Tik op de code = naar het klembord: je staat met je telefoon bij de deur. */
   async function copyCode() {
     if (!code) return;
@@ -121,7 +170,7 @@ export function WinnerCard({
       courts: banenGeboekt,
       accessCode: code,
       deelnemers: t.yes.map(name),
-      changedAt: poll.booked_at ?? poll.locked_at ?? poll.created_at,
+      changedAt: laatsteWijziging(poll),
     });
   }
 
@@ -263,6 +312,29 @@ export function WinnerCard({
         {t.maybe.length > 0 && (
           <p className="winner-card__maybe">
             Misschien: {t.maybe.map(name).join(", ")}
+          </p>
+        )}
+
+        {/* Afmelden ná het vastleggen (#1271). Stemmen kan alleen zolang de
+            poll open is, dus wie ná het vastleggen afhaakte kon dat nergens
+            zeggen: de organisator zette het in zijn eigen browser, en de speler
+            zag zichzelf gewoon in de opstelling staan. Dit schrijft naar
+            play_poll_presence, dezelfde bron waaruit de indeling put. */}
+        {!compact && (
+          <p className="winner-card__afmelden">
+            <button
+              type="button"
+              className="btn btn--sm"
+              disabled={afmeldBezig}
+              onClick={zetAanwezig}
+            >
+              {ikKomNiet ? "Toch weer mee" : "Ik kan toch niet"}
+            </button>
+            {ikKomNiet && (
+              <span className="winner-card__afmeld-uitleg">
+                Je staat niet in de indeling.
+              </span>
+            )}
           </p>
         )}
 

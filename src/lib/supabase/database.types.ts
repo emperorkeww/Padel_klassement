@@ -1350,6 +1350,7 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          dismissed_at: string | null
           id: string
           read_at: string | null
           soort: string
@@ -1361,6 +1362,7 @@ export type Database = {
         Insert: {
           body: string
           created_at?: string
+          dismissed_at?: string | null
           id?: string
           read_at?: string | null
           soort: string
@@ -1372,6 +1374,7 @@ export type Database = {
         Update: {
           body?: string
           created_at?: string
+          dismissed_at?: string | null
           id?: string
           read_at?: string | null
           soort?: string
@@ -1544,6 +1547,73 @@ export type Database = {
           },
         ]
       }
+      play_poll_presence: {
+        Row: {
+          aanwezig: boolean
+          group_id: string
+          option_id: string
+          player_id: string
+          updated_at: string
+        }
+        Insert: {
+          aanwezig: boolean
+          group_id: string
+          option_id: string
+          player_id: string
+          updated_at?: string
+        }
+        Update: {
+          aanwezig?: boolean
+          group_id?: string
+          option_id?: string
+          player_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "play_poll_presence_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "play_poll_presence_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "play_poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "play_poll_presence_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "play_poll_presence_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "play_poll_presence_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "play_poll_presence_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       play_poll_votes: {
         Row: {
           group_id: string
@@ -1628,6 +1698,7 @@ export type Database = {
           id: string
           locked_at: string | null
           locked_option_id: string | null
+          remind_notified_at: string | null
           rounds_generated_at: string | null
           status: string
         }
@@ -1647,6 +1718,7 @@ export type Database = {
           id?: string
           locked_at?: string | null
           locked_option_id?: string | null
+          remind_notified_at?: string | null
           rounds_generated_at?: string | null
           status?: string
         }
@@ -1666,6 +1738,7 @@ export type Database = {
           id?: string
           locked_at?: string | null
           locked_option_id?: string | null
+          remind_notified_at?: string | null
           rounds_generated_at?: string | null
           status?: string
         }
@@ -1982,8 +2055,12 @@ export type Database = {
           notify_friend_request: boolean
           notify_match_reminder: boolean
           notify_new_round: boolean
+          notify_poll: boolean
           notify_rank_change: boolean
           notify_result: boolean
+          notify_stil_tot: string | null
+          notify_stil_van: string | null
+          notify_var: boolean
           owner_id: string | null
           pias_avatar_bron: string | null
           pias_avatar_url: string | null
@@ -2009,8 +2086,12 @@ export type Database = {
           notify_friend_request?: boolean
           notify_match_reminder?: boolean
           notify_new_round?: boolean
+          notify_poll?: boolean
           notify_rank_change?: boolean
           notify_result?: boolean
+          notify_stil_tot?: string | null
+          notify_stil_van?: string | null
+          notify_var?: boolean
           owner_id?: string | null
           pias_avatar_bron?: string | null
           pias_avatar_url?: string | null
@@ -2036,8 +2117,12 @@ export type Database = {
           notify_friend_request?: boolean
           notify_match_reminder?: boolean
           notify_new_round?: boolean
+          notify_poll?: boolean
           notify_rank_change?: boolean
           notify_result?: boolean
+          notify_stil_tot?: string | null
+          notify_stil_van?: string | null
+          notify_var?: boolean
           owner_id?: string | null
           pias_avatar_bron?: string | null
           pias_avatar_url?: string | null
@@ -2056,6 +2141,7 @@ export type Database = {
           endpoint: string
           id: string
           p256dh: string
+          user_agent: string | null
           user_id: string
         }
         Insert: {
@@ -2064,6 +2150,7 @@ export type Database = {
           endpoint: string
           id?: string
           p256dh: string
+          user_agent?: string | null
           user_id: string
         }
         Update: {
@@ -2072,6 +2159,7 @@ export type Database = {
           endpoint?: string
           id?: string
           p256dh?: string
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: [
@@ -2674,6 +2762,7 @@ export type Database = {
         Args: { p_match: string; p_uid: string }
         Returns: boolean
       }
+      _mag_speeldag_beheren: { Args: { p_option_id: string }; Returns: boolean }
       _player_joker: {
         Args: { p_match: string; p_player: string }
         Returns: Database["public"]["Enums"]["joker_type"]
@@ -2933,6 +3022,10 @@ export type Database = {
         Returns: string
       }
       delete_match: { Args: { p_match_id: string }; Returns: undefined }
+      delete_round: {
+        Args: { p_dag: string; p_group_id: string; p_round_number: number }
+        Returns: number
+      }
       expire_point_appeals: { Args: never; Returns: number }
       first_match_date: { Args: never; Returns: string }
       generate_americano_round: {
@@ -2940,7 +3033,7 @@ export type Database = {
         Returns: string[]
       }
       generate_mexicano_round: {
-        Args: { p_group_id: string; p_played_at?: string }
+        Args: { p_group_id: string; p_played_at?: string; p_players?: string[] }
         Returns: string[]
       }
       get_friend_suggestions: {

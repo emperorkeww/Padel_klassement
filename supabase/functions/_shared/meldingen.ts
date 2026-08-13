@@ -68,10 +68,13 @@ export const VOORKEUR_KOLOM: Record<Soort, string | null> = {
   // De lef-onthulling bij de aftrap (#804) hangt bewust aan dezelfde schakelaar
   // als de herinnering: wie geen match-meldingen wil, wil deze ook niet.
   lef: "notify_match_reminder",
-  // Polls, VAR en pias hebben geen eigen schakelaar. Pias filtert zichzelf al
-  // via roast_schild, in send-push zelf.
-  poll: null,
-  var: null,
+  // Poll en VAR kregen hun schakelaar in #1273: samen tien van de negentien
+  // verstuurmomenten, waarvan poll er in zijn eentje zeven is. Wie ze wilde
+  // temperen kon tot dan alleen de hele app afzetten.
+  poll: "notify_poll",
+  var: "notify_var",
+  // Pias houdt geen eigen schakelaar: die filtert zichzelf al via roast_schild,
+  // in send-push zelf.
   pias: null,
 };
 

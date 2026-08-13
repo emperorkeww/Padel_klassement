@@ -531,6 +531,26 @@ textarea {
   --glas-dekking: calc(var(--glas-dekking-basis) * var(--glas-sheet-factor));
   --glas-blur: var(--glas-blur-basis);
 }
+/* Een sheet die zijn eigen bodem meebrengt (#1273).
+
+   Het glasmateriaal is doorschijnend, en dat betekent: de ondergrond ís wat er
+   toevallig achter ligt. Op het overzicht is dat de FUT-kaart, en die loopt
+   binnen één paneel van zalm naar grijs — gemeten op de gerenderde pixels
+   L* 81,5 / C* 14,4 bovenaan tegen L* 92,4 / C* 1,8 onderaan. Voor een lijst
+   is dat fataal: elke gedempte kleur wordt onbetrouwbaar, dus staat álles op
+   --ink en is er geen hiërarchie meer over.
+
+   De dekking komt via --glas-laag en niet via een kale `background`: dat is het
+   kanaal dat glas.css daar zelf voor heeft (zie ook .me-chip en de gekozen
+   baan-pil), en zo blijven de rand, het randlicht en de scroll-schaduwen van
+   .glas--scrollbaar staan. De blur mag dan uit — er is niets meer om doorheen
+   te kijken, en hij kost op elke scroll-frame werk. */
+.sheet--dekkend.glas {
+  --glas-laag: linear-gradient(var(--surface-elevated) 0 0);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 .sheet--compact {
   max-width: 420px;
 }

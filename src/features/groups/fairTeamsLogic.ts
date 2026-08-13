@@ -56,9 +56,41 @@ export interface FairTeamsOptions {
 }
 
 /**
+ * Wisselt spelers over de baangrenzen heen (#1271).
+ *
+ * "Andere verdeling" veranderde alleen wélke 2-2-splitsing er binnen een
+ * viertal gekozen werd. Bij een aantal spelers dat deelbaar is door vier — geen
+ * reserves, dus ook geen bankrotatie — betekende dat: je speelt vijf rondes
+ * tegen dezelfde drie mensen, terwijl de knop wat anders belooft.
+ *
+ * De ruil gaat over de grens tussen twee banen, en begint bij de spelers die er
+ * qua rating het dichtst bij zitten: eerst de laatste van baan 1 met de eerste
+ * van baan 2, dan de voorlaatste met de tweede, enzovoort. Zo verandert wél met
+ * wie je speelt, terwijl elke baan vier spelers houdt die in rating dicht bij
+ * elkaar liggen — dat is de belofte van "eerlijk", en die blijft staan.
+ */
+function wisselOverBanen(spelers: string[], variant: number): string[] {
+  const k = variant % 4; // 0 = de strikt eerlijkste indeling
+  if (k === 0) return spelers;
+  const uit = [...spelers];
+  for (let grens = 4; grens + k - 1 < uit.length; grens += 4) {
+    for (let i = 0; i < k; i++) {
+      const a = grens - 1 - i;
+      const b = grens + i;
+      [uit[a], uit[b]] = [uit[b], uit[a]];
+    }
+  }
+  return uit;
+}
+
+/**
  * Verdeelt spelers over banen van 4 met zo eerlijk mogelijke teams.
- * `variant` kiest per baan de n-de eerlijkste splitsing (0 = eerlijkst,
- * 1 = op één na eerlijkst, …) — voor de "Opnieuw"-knop; cyclisch over de 3.
+ *
+ * `variant` doet sinds #1271 twee dingen tegelijk: het kiest per baan de n-de
+ * eerlijkste 2-2-splitsing (cyclisch over 3) én het wisselt spelers over de
+ * baangrenzen (cyclisch over 4). Samen levert dat twaalf verschillende
+ * indelingen op in plaats van drie keer dezelfde vier mensen bij elkaar.
+ *
  * `options.benched` roteert de bankbeurten (zie {@link FairTeamsOptions}).
  */
 export function fairTeams(
@@ -85,7 +117,10 @@ export function fairTeams(
   );
   // Reserves in rating-aflopende volgorde teruggeven (zoals voorheen).
   const reserves = sorted.filter((id) => benchSet.has(id));
-  const playing = sorted.filter((id) => !benchSet.has(id));
+  const playing = wisselOverBanen(
+    sorted.filter((id) => !benchSet.has(id)),
+    variant,
+  );
 
   const courts: CourtProposal[] = [];
   for (let c = 0; c < courtCount; c++) {

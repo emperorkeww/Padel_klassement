@@ -214,15 +214,11 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
       myId: "p1",
       histories: { p1: [point(m.id, 1095, 1105)] }, // Wannabe I → Glazenwasser III
     });
+    // Eén blok per wissel (#1272): de kaart draagt het nieuws, de matchkaart
+    // krijgt er geen chip met hetzelfde tijdstip meer bij.
     const matchEvent = feed.find((e) => e.kind === "match");
     if (!matchEvent) throw new Error("verwacht match-event");
-    expect(matchEvent.highlights).toContainEqual({
-      type: "tier",
-      playerId: "p1",
-      label: "Glazenwasser III",
-      emoji: "🪟",
-      richting: "promotie",
-    });
+    expect(matchEvent.highlights.map((h) => h.type)).not.toContain("tier");
     const tierEvent = feed.find((e) => e.kind === "tier");
     if (!tierEvent) throw new Error("verwacht tier-event");
     expect(tierEvent).toEqual({
@@ -249,9 +245,8 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
     });
     const matchEvent = feed.find((e) => e.kind === "match");
     if (!matchEvent) throw new Error("verwacht match-event");
-    // Sub-niveau binnen dezelfde hoofddivisie: geen tier-chip op de match…
-    expect(matchEvent.highlights.some((h) => h.type === "tier")).toBe(false);
-    // …en geen standalone klassement-item (#354).
+    // Sub-niveau binnen dezelfde hoofddivisie: geen standalone item (#354).
+    expect(matchEvent.highlights.map((h) => h.type)).not.toContain("tier");
     expect(feed.find((e) => e.kind === "tier")).toBeUndefined();
   });
 
@@ -799,13 +794,106 @@ describe("buildFeed — statuswijzigingen (#344)", () => {
     });
 
     const pias = feed.find((e) => e.kind === "pias-week");
-    const piet = feed.find((e) => e.kind === "zwarte-piet");
 
     expect(pias).toBeDefined();
     expect(pias?.at).toBe("2026-07-12T19:30:00Z"); // Niet "2026-07-06"
+    expect(pias?.kind === "pias-week" && pias.tijdEcht).toBe(true);
 
+    // Dezelfde nederlaag: de Piet schuift aan op de pias-kaart in plaats van er
+    // een tweede kaart met hetzelfde tijdstip naast te zetten (#1272). Let op
+    // dat de drager (p2) een ander is dan de pias (p1) — teamgenoten.
+    expect(feed.find((e) => e.kind === "zwarte-piet")).toBeUndefined();
+    expect(pias?.kind === "pias-week" && pias.piet).toEqual({
+      toPlayerId: "p2",
+      fromPlayerId: "p1",
+      reden: "choke",
+      detail: "choked hard",
+    });
+  });
+
+  it("pias-week en zwarte-piet uit verschillende matches blijven twee kaarten", () => {
+    const m1 = match("2026-07-12T19:30:00Z", "t-ab", "t-cd");
+    const m2 = { ...match("2026-07-10T19:30:00Z", "t-cd", "t-ab"), id: "m-ander" };
+    const feed = buildFeed({
+      matches: [m1, m2],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups,
+      piasWeeks: [
+        {
+          groupId: "g1",
+          isoYear: 2026,
+          isoWeek: 28,
+          weekStart: "2026-07-06",
+          playerId: "p1",
+          matchId: m1.id,
+          reden: "choke" as const,
+          ernst: 38,
+          waarde: 0.8,
+          winChance: 0.8,
+        },
+      ],
+      shameTransfers: [
+        {
+          groupId: "g1",
+          holderId: "p2",
+          fromId: "p1",
+          reden: "choke",
+          ernst: 10,
+          detail: "choked hard",
+          matchId: m2.id,
+          since: "2026-07-10",
+        },
+      ],
+    });
+
+    const pias = feed.find((e) => e.kind === "pias-week");
+    const piet = feed.find((e) => e.kind === "zwarte-piet");
+    expect(pias?.kind === "pias-week" && pias.piet).toBeUndefined();
     expect(piet).toBeDefined();
-    expect(piet?.at).toBe("2026-07-12T19:30:00Z"); // Niet "2026-07-12" (middernacht)
+    expect(piet?.at).toBe("2026-07-10T19:30:00Z");
+  });
+
+  it("zonder ankermatch valt de tijd terug op de periodegrens en toont de kaart geen klok", () => {
+    const feed = buildFeed({
+      matches: [],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups,
+      piasWeeks: [
+        {
+          groupId: "g1",
+          isoYear: 2026,
+          isoWeek: 28,
+          weekStart: "2026-07-06",
+          playerId: "p1",
+          matchId: "onbekend",
+          reden: "choke" as const,
+          ernst: 38,
+          waarde: 0.8,
+          winChance: 0.8,
+        },
+      ],
+      shameTransfers: [
+        {
+          groupId: "g1",
+          holderId: "p2",
+          fromId: "p1",
+          reden: "choke",
+          ernst: 10,
+          detail: "choked hard",
+          matchId: "ook-onbekend",
+          since: "2026-07-12",
+        },
+      ],
+    });
+
+    const pias = feed.find((e) => e.kind === "pias-week");
+    const piet = feed.find((e) => e.kind === "zwarte-piet");
+    expect(pias?.kind === "pias-week" && pias.tijdEcht).toBe(false);
+    expect(piet?.kind === "zwarte-piet" && piet.tijdEcht).toBe(false);
   });
 });
 

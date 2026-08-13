@@ -11,6 +11,11 @@ import { summarizeDay } from "@/features/availability/weatherLogic";
 import { isPlaytomicClub, type Club } from "@/features/availability/club";
 import { type NewPollOption } from "@/features/groups/pollsApi";
 import {
+  bewaarConcept,
+  leesConcept,
+  wisConcept,
+} from "@/features/groups/pollConcept";
+import {
   DURATIONS,
   EVENING_FROM,
   MAX_OPTIONS,
@@ -63,7 +68,14 @@ export function PollWizard({
   onDone: () => void;
 }) {
   const toast = useToast();
-  const [duration, setDuration] = useState<number>(90);
+  // Het bewaarde concept, één keer gelezen bij het opbouwen (#1271). Alles
+  // hieronder start hieruit als het er is — niet alleen de selectie: kwam je
+  // terug op de verkeerde dag, met een andere duur en het handmatige paneel
+  // dicht, dan was je selectie er wel maar zag je hem nergens staan.
+  const [concept] = useState(() =>
+    storageKey && !initialPicked ? leesConcept(storageKey) : null,
+  );
+  const [duration, setDuration] = useState<number>(concept?.duration ?? 90);
   const weekEnd = addDays(today, 6);
   // Ligt de meegegeven dag voorbij het venster waarvoor we vrije banen hebben?
   const buitenVenster = initialDay != null && initialDay > weekEnd;
@@ -75,9 +87,10 @@ export function PollWizard({
   // iets tegensprak. Een dag in het verleden blijft wél vandaag: daar valt niets
   // meer te plannen.
   const [selectedDay, setSelectedDay] = useState(
-    initialDay != null && initialDay >= today ? initialDay : today,
+    concept?.selectedDay ??
+      (initialDay != null && initialDay >= today ? initialDay : today),
   );
-  const [wholeDay, setWholeDay] = useState(false);
+  const [wholeDay, setWholeDay] = useState(concept?.wholeDay ?? false);
   // Weericoontjes in de dag-navigator (#83-bonus): alleen bij buitenbanen,
   // en stil bij ontbrekende data — zelfde regels als op de Banen-pagina.
   const wizardOutdoor = week.some((d) =>
@@ -89,41 +102,44 @@ export function PollWizard({
   );
   const [picked, setPicked] = useState<Map<string, NewPollOption>>(() => {
     if (initialPicked) return new Map(initialPicked);
-    if (storageKey) {
-      try {
-        const raw = sessionStorage.getItem(storageKey);
-        if (raw) {
-          return new Map(
-            Object.entries(JSON.parse(raw)) as [string, NewPollOption][],
-          );
-        }
-      } catch {
-        /* ongeldige of onbeschikbare opslag → verse start */
-      }
-    }
+    if (concept) return new Map(Object.entries(concept.picked));
     return new Map();
   });
-  // Selectie live wegschrijven zodat een swipe-terug vanuit /banen hem
-  // terugvindt; leeg = sleutel weg (dan heropent de wizard ook niet).
-  useEffect(() => {
-    if (!storageKey) return;
-    try {
-      if (picked.size === 0) sessionStorage.removeItem(storageKey);
-      else {
-        sessionStorage.setItem(
-          storageKey,
-          JSON.stringify(Object.fromEntries(picked)),
-        );
-      }
-    } catch {
-      /* opslag niet beschikbaar — geen probleem */
-    }
-  }, [picked, storageKey]);
   // Een dag verder vooruit dan het beschikbaarheidsvenster opent meteen het
   // handmatige pad, met die dag al ingevuld: alleen het uur is nog aan jou.
-  const [manualDate, setManualDate] = useState(buitenVenster ? (initialDay as string) : "");
-  const [manualOpen, setManualOpen] = useState(buitenVenster);
-  const [manualTime, setManualTime] = useState("20:00");
+  const [manualDate, setManualDate] = useState(
+    concept?.manualDate ?? (buitenVenster ? (initialDay as string) : ""),
+  );
+  const [manualOpen, setManualOpen] = useState(
+    concept?.manualOpen ?? buitenVenster,
+  );
+  const [manualTime, setManualTime] = useState(concept?.manualTime ?? "20:00");
+  // De hele stand live wegschrijven zodat een swipe-terug vanuit /banen hem
+  // terugvindt; leeg = sleutel weg (dan heropent de agenda de wizard ook niet).
+  useEffect(() => {
+    if (!storageKey) return;
+    if (picked.size === 0) wisConcept(storageKey);
+    else {
+      bewaarConcept(storageKey, {
+        picked: Object.fromEntries(picked),
+        selectedDay,
+        duration,
+        wholeDay,
+        manualOpen,
+        manualDate,
+        manualTime,
+      });
+    }
+  }, [
+    picked,
+    storageKey,
+    selectedDay,
+    duration,
+    wholeDay,
+    manualOpen,
+    manualDate,
+    manualTime,
+  ]);
   const [saving, setSaving] = useState(false);
   // Twee-taps bevestiging wanneer de wijziging iets laat vervallen.
   const [armed, setArmed] = useState(false);
@@ -239,6 +255,9 @@ export function PollWizard({
     setSaving(true);
     try {
       await onSubmit([...picked.values()], picked);
+      // De poll staat er: het concept is klaar en mag weg, anders heropent de
+      // agenda straks een wizard voor een speeldag die al bestaat (#1271).
+      if (storageKey) wisConcept(storageKey);
       onDone();
     } catch (err) {
       toast.error(errorMessage(err));
@@ -480,7 +499,16 @@ export function PollWizard({
                 ? "Zeker? Tik nogmaals"
                 : submitLabel(picked.size)}
           </button>
-          <button type="button" className="btn btn--sm" onClick={onClose}>
+          {/* Annuleren is een besluit, geen omweg: het concept mag weg. Alleen
+              wegnavigeren (bv. naar /banen) laat het staan (#1271). */}
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => {
+              if (storageKey) wisConcept(storageKey);
+              onClose();
+            }}
+          >
             Annuleren
           </button>
         </div>

@@ -14,6 +14,9 @@ export interface Melding {
   tag: string;
   created_at: string;
   read_at: string | null;
+  /** Weggeveegd (#1273). Zulke rijen komen niet meer in een lijst of teller;
+   *  de rij blijft staan tot prune_notifications hem na 90 dagen opruimt. */
+  dismissed_at?: string | null;
 }
 
 /** Hoeveel meldingen het paneel toont. Wie verder wil bladeren gaat naar
@@ -30,6 +33,8 @@ export function getMeldingen(limiet = PANEEL_LIMIET): Promise<Melding[]> {
     const { data, error } = await supabase
       .from("notifications")
       .select("id, soort, title, body, url, tag, created_at, read_at")
+      // Weggeveegde rijen bestaan nog (#1273), maar niet meer voor jou.
+      .is("dismissed_at", null)
       .order("created_at", { ascending: false })
       .limit(limiet);
     if (error) throw error;
@@ -58,6 +63,7 @@ export function getMeldingenVenster(
     const { data, error } = await supabase
       .from("notifications")
       .select("id, soort, title, body, url, tag, created_at, read_at")
+      .is("dismissed_at", null)
       .order("created_at", { ascending: false })
       // +1 om te wéten of er meer is, in plaats van het te gokken aan een
       // volle pagina. De extra rij wordt hieronder weer afgeknipt.
@@ -81,7 +87,8 @@ export function getOngelezenAantal(): Promise<number> {
     const { count, error } = await supabase
       .from("notifications")
       .select("id", { count: "exact", head: true })
-      .is("read_at", null);
+      .is("read_at", null)
+      .is("dismissed_at", null);
     if (error) throw error;
     return count ?? 0;
   });
@@ -99,13 +106,79 @@ export async function markeerGelezen(id: string): Promise<void> {
   invalidate("meldingen");
 }
 
-/** "Alles gelezen" voor wie de teller weg wil. De update raakt alleen je eigen
- *  rijen (RLS) en alleen read_at (kolomgrant). */
-export async function markeerAllesGelezen(): Promise<void> {
-  const { error } = await supabase
+/**
+ * "Alles gelezen" voor wie de teller weg wil. De update raakt alleen je eigen
+ * rijen (RLS) en alleen read_at (kolomgrant).
+ *
+ * Geeft sinds #1273 de geraakte ids terug, zodat "ongedaan maken" precies die
+ * rijen kan terugzetten — en niet alles wat er intussen bij kwam.
+ */
+export async function markeerAllesGelezen(): Promise<string[]> {
+  const { data, error } = await supabase
     .from("notifications")
     .update({ read_at: new Date().toISOString() })
-    .is("read_at", null);
+    .is("read_at", null)
+    .is("dismissed_at", null)
+    .select("id");
+  if (error) throw error;
+  invalidate("meldingen");
+  return (data ?? []).map((r) => (r as { id: string }).id);
+}
+
+/** Ongedaan maken van "alles gelezen" (#1273). Geen botsing op de tag-index
+ *  mogelijk: deze rijen wáren zojuist samen ongelezen. */
+export async function zetAllesOngelezen(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read_at: null })
+    .in("id", ids);
+  if (error) throw error;
+  invalidate("meldingen");
+}
+
+/**
+ * Terug op ongelezen (#1273).
+ *
+ * Kan botsen op de partiële unieke index (user_id, tag) where read_at is null:
+ * staat er inmiddels een nieuwe óngelezen melding met dezelfde tag, dan zouden
+ * er twee open rijen voor één gebeurtenis komen. Postgres geeft dan 23505 —
+ * de aanroeper vertaalt dat in gewone taal.
+ */
+export async function markeerOngelezen(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read_at: null })
+    .eq("id", id);
+  if (error) throw error;
+  invalidate("meldingen");
+}
+
+/**
+ * Wegvegen (#1273), zacht: de rij blijft staan met een dismissed_at.
+ *
+ * Ook read_at wordt gezet als die nog leeg was. Niet uit netheid: de tag-index
+ * hierboven houdt één óngelezen rij per tag vast, en een weggeveegde-maar-
+ * ongelezen rij zou die plek bezet houden — het volgende bericht over dezelfde
+ * gebeurtenis werd dan stilletjes in de rij gevouwen die jij net had weggeveegd.
+ */
+export async function veegWeg(melding: Pick<Melding, "id" | "read_at">): Promise<void> {
+  const nu = new Date().toISOString();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ dismissed_at: nu, read_at: melding.read_at ?? nu })
+    .eq("id", melding.id);
+  if (error) throw error;
+  invalidate("meldingen");
+}
+
+/** "Ongedaan maken" na het wegvegen: alleen dismissed_at terug op null. De
+ *  leesmarkering blijft — je hébt hem gezien. */
+export async function zetTerug(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("notifications")
+    .update({ dismissed_at: null })
+    .eq("id", id);
   if (error) throw error;
   invalidate("meldingen");
 }

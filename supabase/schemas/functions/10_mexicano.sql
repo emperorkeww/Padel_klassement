@@ -5,14 +5,23 @@
 -- punten (en saldo), en per court van 4 speelt rang 1&4 tegen 2&3 — zo spelen
 -- gelijkwaardige spelers tegen elkaar.
 --
--- Blokkade: er mag geen onafgeronde match meer openstaan in de groep. Anders
--- zou de volgende ronde op een halve (onvolledige) stand gepaird worden.
+-- Blokkade: er mag geen geplande match meer openstaan in de groep. Anders zou
+-- de volgende ronde op een halve (onvolledige) stand gepaird worden. Een
+-- geannuleerde match telt daar niet in mee (#1271): die levert nooit meer een
+-- uitslag op en zou de groep anders permanent blokkeren.
 --
 -- p_played_at is het (optionele) starttijdstip van de ronde (#827): bij een
 -- gelockte speeldag-poll is dat de echte starttijd, anders null zoals voorheen.
+--
+-- p_players is wie er vanavond meespeelt (#1271). Laat hem weg en de hele
+-- ledenlijst wordt ingedeeld — het oude gedrag, dat wie afzegde gewoon op de
+-- baan zette terwijl de kaart "8 aan · 1 op de bank" beloofde. Anders dan bij
+-- create_fair_round is dit een pool en geen indeling: de volgorde komt uit de
+-- stand, niet uit de lijst.
 create or replace function public.generate_mexicano_round(
   p_group_id uuid,
-  p_played_at timestamptz default null
+  p_played_at timestamptz default null,
+  p_players uuid[] default null
 )
 returns setof uuid
 language plpgsql
@@ -36,17 +45,35 @@ begin
     raise exception 'Geen toegang tot deze groep';
   end if;
 
+  if p_players is not null and exists (
+    select 1 from unnest(p_players) as pid
+    where not public.is_group_member(p_group_id, pid)
+  ) then
+    raise exception 'Alle spelers moeten lid zijn van deze groep';
+  end if;
+
   -- Ronde-slot: eerst alle uitslagen van de vorige ronde(s) invullen.
   if exists (
     select 1 from public.matches
-    where group_id = p_group_id and status <> 'completed'
+    where group_id = p_group_id and status = 'scheduled'
   ) then
     raise exception 'Vul eerst alle uitslagen van de vorige ronde in voordat je een nieuwe Mexicano-ronde genereert.';
   end if;
 
+  -- Ronde-nummer binnen déze speeldag (#1271). Het was max+1 over de hele
+  -- groep, dus de tiende speeldag begon bij "Ronde 37" — en de app moest met
+  -- guards voorkomen dat er "ronde 4 van 3" kwam te staan. De dag komt uit het
+  -- starttijdstip van de ronde zelf, in clubtijd; zonder tijdstip uit nu.
+  --
+  -- Dit is een benadering van de regel die de app hanteert (#1221: de match
+  -- hoort bij het dichtstbijzijnde moment, met een uur voorsprong). Voor een
+  -- sessie die over middernacht heen loopt kan de nummering dus opnieuw
+  -- beginnen. Dat is zichtbaar en onschuldig; een poll_id op matches is er niet.
   select coalesce(max(round_number), 0) + 1 into v_round
   from public.matches
-  where group_id = p_group_id;
+  where group_id = p_group_id
+    and (coalesce(played_at, created_at) at time zone 'Europe/Brussels')::date
+        = (coalesce(p_played_at, now()) at time zone 'Europe/Brussels')::date;
 
   -- Rangschik de leden op stand (punten desc, saldo desc). Spelers zonder
   -- afgeronde match krijgen 0 en vallen via de random-tiebreak willekeurig mee.
@@ -77,7 +104,8 @@ begin
     ) pt on pt.team_id = tr.team_id
     group by pt.player_id
   ) s on s.player_id = gm.player_id
-  where gm.group_id = p_group_id;
+  where gm.group_id = p_group_id
+    and (p_players is null or gm.player_id = any(p_players));
 
   v_n := coalesce(array_length(v_players, 1), 0);
   if v_n < 4 then
@@ -103,4 +131,4 @@ begin
 end;
 $$;
 
-grant execute on function public.generate_mexicano_round(uuid, timestamptz) to authenticated;
+grant execute on function public.generate_mexicano_round(uuid, timestamptz, uuid[]) to authenticated;

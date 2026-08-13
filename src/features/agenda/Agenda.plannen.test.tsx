@@ -102,13 +102,12 @@ function toon(url = "/agenda") {
 }
 
 /**
- * Een dag openen kost sinds #1112 twee tikken: de eerste kiest de dag (het
- * paneel eronder werkt bij), de tweede opent het detail. Dat is precies waarom
- * die tweede betekenis er is — anders was plannen van één tik naar twee gegaan.
+ * Een dag openen kost sinds #1270 één tik. Het waren er twee — eerst kiezen,
+ * dan openen — maar het antwoord op die eerste tik stond op 390×800 buiten
+ * beeld, dus de tweede betekenis viel niet te ontdekken.
  */
 async function openDag(naam: RegExp) {
   const dag = await screen.findByRole("button", { name: naam });
-  await userEvent.click(dag);
   await userEvent.click(dag);
   return dag;
 }
@@ -168,22 +167,10 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
     ).toBeInTheDocument();
   });
 
-  it("laat de eerste tik de dag kiezen zonder iets te openen", async () => {
-    toon();
-    await userEvent.click(
-      await screen.findByRole("button", {
-        name: /donderdag 13 augustus, speeldag geboekt/,
-      }),
-    );
-    // Het paneel gaat over 13 augustus...
-    expect(
-      screen.getByRole("heading", { name: /donderdag 13 augustus/i }),
-    ).toBeInTheDocument();
-    // ...en er staat níets overheen. Eén tik is kijken, geen handeling.
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  });
-
-  it("opent bij de tweede tik op dezelfde dag", async () => {
+  it("opent een dag met één tik (#1270)", async () => {
+    // Dit koste er twee. Het paneel dat op de eerste tik bijwerkte begon op
+    // 390x800 bij y=744 met 730px in beeld, en aantikken scrollde niet: het
+    // enige zichtbare gevolg was een gevulde cel.
     toon();
     await openDag(/donderdag 13 augustus, speeldag geboekt/);
     expect(
@@ -191,23 +178,31 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
     ).toBeInTheDocument();
   });
 
-  it("stuurt de tweede tik op een lege dag naar het plan-sheet", async () => {
+  it("stuurt één tik op een lege dag naar het plan-sheet", async () => {
     toon();
-    // 20 augustus is leeg en ligt in de toekomst: daar valt te plannen, en dat
-    // moet één tik blijven vanaf de dag die je al bekeek.
+    // 20 augustus is leeg en ligt in de toekomst: daar valt te plannen.
     await openDag(/donderdag 20 augustus, niets gepland/);
     expect(await screen.findByText("Plan een speeldag")).toBeInTheDocument();
   });
 
-  it("wijst vanaf een lege dag naar de eerstvolgende speeldag", async () => {
+  it("opent een lege dag die geweest is toch, met het eerlijke antwoord", async () => {
+    // Niets doen zou de tik weer stil maken — precies de klacht waar #1270 mee
+    // begon. Het sheet zegt daar wat er te zeggen valt.
     toon();
-    // Vandaag (7 augustus) is leeg; 13 augustus is de eerstvolgende.
-    const rij = await screen.findByRole("button", {
-      name: /do 13 aug, 20:00, Vamos!/,
-    });
-    await userEvent.click(rij);
+    await openDag(/zaterdag 1 augustus, niets gespeeld/);
+    const sheet = await screen.findByRole("dialog", { name: /1 augustus/ });
+    expect(sheet).toHaveTextContent("Deze dag is geweest");
+  });
+
+  it("opent vanaf 'Hierna' meteen die speeldag (#1270)", async () => {
+    toon();
+    // Vandaag (7 augustus) is leeg; 13 augustus is de eerstvolgende. De rij
+    // koos die dag vroeger alleen, en wat dat opleverde stond buiten beeld.
+    await userEvent.click(
+      await screen.findByRole("button", { name: /do 13 aug, 20:00, Vamos!/ }),
+    );
     expect(
-      screen.getByRole("heading", { name: /donderdag 13 augustus/i }),
+      await screen.findByRole("dialog", { name: /donderdag 13 augustus/ }),
     ).toBeInTheDocument();
   });
 
@@ -224,25 +219,21 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
     );
   });
 
-  it("laat de gekozen dag meebladeren met de maand", async () => {
+  it("blijft bij het bladeren op vandaag geankerd (#1270)", async () => {
+    // Het paneel ging over de dag die je aantikte en moest daarom meebladeren,
+    // anders praatte het over een dag buiten het opgehaalde venster. Nu hangt
+    // het aan vandaag: bladeren naar september laat het met rust, en je houdt
+    // een anker op nu terwijl je vooruitkijkt.
     toon();
-    // 13 augustus kiezen, dan naar september. Zou de keuze blijven staan, dan
-    // praat het paneel over een dag buiten het opgehaalde venster — en meldt
-    // het "Nog niets gepland" voor een dag met een geboekte speeldag erop.
-    await userEvent.click(
-      await screen.findByRole("button", {
-        name: /donderdag 13 augustus, speeldag geboekt/,
-      }),
-    );
     await userEvent.click(
       screen.getByRole("button", { name: /volgende maand/i }),
     );
     expect(
-      await screen.findByRole("heading", { name: /dinsdag 1 september/i }),
+      await screen.findByRole("heading", { level: 1, name: "September 2026" }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("heading", { name: /13 augustus/i }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("heading", { name: /vandaag . vrijdag 7 augustus/i }),
+    ).toBeInTheDocument();
   });
 
   it("legt alleen de statussen uit die in beeld staan", async () => {
@@ -264,6 +255,16 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
       screen.getByRole("button", { name: /donderdag 13 augustus/ }),
     );
     expect(vandaag).not.toHaveAttribute("aria-current");
+  });
+
+  it("plant met één knop, in beide weergaven (#1270)", async () => {
+    // Plannen kon op vier manieren en geen enkele stond in beeld; in de lijst
+    // kon het zelfs helemaal niet.
+    toon("/agenda?weergave=lijst");
+    await userEvent.click(
+      await screen.findByRole("button", { name: "+ Speeldag" }),
+    );
+    expect(await screen.findByText("Plan een speeldag")).toBeInTheDocument();
   });
 
   it("laat de lijst zien wat eraan komt, en opent daar hetzelfde sheet", async () => {
@@ -313,9 +314,14 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
     expect(screen.queryByText("Plan een speeldag")).not.toBeInTheDocument();
   });
 
-  it("laat het sheet weer los zonder de dag kwijt te raken", async () => {
-    // Openen duwt een history-entry, sluiten gaat er weer vanaf. Wat blijft
-    // staan is de dag zelf — je was daar aan het kijken.
+  it("laat het sheet weer los zonder de agenda te verlaten", async () => {
+    // Openen duwt een history-entry, sluiten gaat er weer vanaf: op Android
+    // sluit de terugknop daarmee het sheet in plaats van de pagina (#1182).
+    //
+    // Die stap brengt je terug op de entry van vóór het openen, en daar stond
+    // de dag nog niet in — sinds #1270 is de tik die opent immers óók de eerste
+    // tik. De markering keert dus terug naar vandaag, en dat klopt: je kijkt
+    // dan naar niets meer in het bijzonder. Wat blijft staan is de maand.
     toon();
     await openDag(/donderdag 13 augustus, speeldag geboekt/);
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
@@ -323,9 +329,27 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
-    expect(
-      screen.getByRole("heading", { name: /donderdag 13 augustus/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Augustus 2026",
+    );
+  });
+
+  it("houdt de dag vast als je hem uit een link opende", async () => {
+    // Daar duwden we niets, dus sluiten wist alleen de sheet-vlag en blijf je
+    // staan waar de link je bracht.
+    toon("/agenda?dag=2026-08-13&open=1");
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    const dag = screen.getByRole("button", {
+      name: /donderdag 13 augustus, speeldag geboekt/,
+    });
+    expect(dag.closest("[role=gridcell]")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
   it("opent de lijst uit de link", async () => {
@@ -355,8 +379,9 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
       await screen.findByRole("button", { name: /maandag 27 juli/ }),
     );
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Juli 2026");
+    // En de dag zelf opent: het sheet zegt wat er die dag was.
     expect(
-      screen.getByRole("heading", { name: /maandag 27 juli/i }),
+      await screen.findByRole("dialog", { name: /maandag 27 juli/i }),
     ).toBeInTheDocument();
   });
 });

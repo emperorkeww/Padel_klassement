@@ -83,6 +83,7 @@ function renderCard(
             club={CLUB}
             groupName="Vrijdagavond padel"
             profiles={extra.profiles ?? PROFILES}
+            myId="p1"
             isManager
             busy={false}
             run={async (fn) => {

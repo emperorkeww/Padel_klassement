@@ -484,6 +484,34 @@ export async function lockPoll(pollId: string, optionId: string): Promise<void> 
 }
 
 /**
+ * Verzet het vastgelegde moment naar een ander (#1271).
+ *
+ * Anders dan `lockPoll` raakt dit de status niet, en anders dan `reopenPoll`
+ * blijft de boeking staan: `booked_at`, `access_code` en `courts` overleven het.
+ * Dat is precies het geval waarvoor het bestaat — de baan is geboekt en het
+ * moet een half uur later. Tot nu toe was de enige weg "↩ Heropen stemmen", en
+ * die gooit je baancode weg om een uur te verschuiven.
+ *
+ * `locked_at` schuift wél op: hij voedt de SEQUENCE van het agenda-event
+ * (`laatsteWijziging`), en zonder die stap laten agenda-apps de wijziging
+ * liggen.
+ */
+export async function verzetMoment(
+  pollId: string,
+  optionId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("play_polls")
+    .update({
+      locked_option_id: optionId,
+      locked_at: new Date().toISOString(),
+    })
+    .eq("id", pollId);
+  if (error) throw error;
+  invalidate("play-poll");
+}
+
+/**
  * Markeert de gelockte poll als geboekt op Playtomic. `details` is optioneel
  * (#675, #802): laat een veld weg en die kolom blijft ongemoeid — boeken zonder
  * banen of code is nog altijd één actie. Meegeven (ook als lege string of null)
@@ -562,9 +590,26 @@ export async function cancelPoll(pollId: string): Promise<void> {
   invalidate("play-poll");
 }
 
+/** De groep is net al gepord (#1273). Eigen fouttype, want dit is geen
+ *  storing: de knop moet er alleen even af. */
+export class PorTeSnelError extends Error {
+  constructor(readonly minutenResterend: number) {
+    super(
+      minutenResterend > 0
+        ? `Net al herinnerd — over ${minutenResterend} ${minutenResterend === 1 ? "minuut" : "minuten"} kan het weer.`
+        : "Net al herinnerd.",
+    );
+    this.name = "PorTeSnelError";
+  }
+}
+
 /**
  * Stuurt via de edge function "remind-group" een push naar groepsleden die
  * nog op geen enkele optie van deze poll stemden.
+ *
+ * De functie remt zichzelf af (#1273): binnen de cooldown komt er een 429 met
+ * hoeveel minuten er nog te gaan zijn. functions.invoke geeft die body niet
+ * mee, alleen de rauwe Response in `context` — daar halen we hem uit.
  */
 export async function remindPoll(
   groupId: string,
@@ -574,6 +619,15 @@ export async function remindPoll(
     "remind-group",
     { body: { group_id: groupId, poll_id: pollId } },
   );
-  if (error) throw error;
+  if (error) {
+    const respons = (error as { context?: Response }).context;
+    if (respons?.status === 429) {
+      const body = await respons
+        .json()
+        .catch(() => ({}) as { minuten_resterend?: number });
+      throw new PorTeSnelError(Number(body.minuten_resterend ?? 0));
+    }
+    throw error;
+  }
   return data?.reminded ?? 0;
 }

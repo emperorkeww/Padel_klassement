@@ -8,18 +8,56 @@
   padding: 0;
 }
 
+/* Tijdvakken (#1273). De koppen verschijnen alleen als er meer dan één vak in
+   beeld staat; de scheiding tussen de vakken is ruimte, niet nog een lijn. */
+.meldingen__groep + .meldingen__groep {
+  margin-top: var(--sp-4);
+}
+
+.meldingen__kop {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--melding-tijd-ink, var(--ink));
+}
+
+/* Eigen token, geen --line (#1273): de haarlijn haalt in het lichte thema 1,22
+   op de kaart, en dan bestaat de scheiding tussen twee meldingen alleen nog uit
+   witruimte. --line globaal donkerder maken zou élke kaartrand in de app
+   verzwaren, dus staat de lijn die hier betekenis draagt op zijn eigen token —
+   met een regel in contrast-check.mjs die hem in beide thema's op 3:1 houdt. */
 .meldingen__lijst > li + li {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--melding-scheiding);
+}
+
+/* Grenst de lijn aan een ongelezen rij, dan doet het vlak het werk al en
+   wordt de streep eronder een tweede rand om dezelfde doos (#1273). */
+.meldingen__lijst > li + li.melding-rij--ongelezen,
+.meldingen__lijst > li.melding-rij--ongelezen + li {
+  border-top-color: transparent;
+}
+
+/* De rij draagt het vlak, de knop erin draagt de tik (#1273). Een knop in een
+   knop kan niet, dus de acties staan ernaast in plaats van erin — en dan hoort
+   het ongelezen-vlak op de rij en niet op de openknop. */
+.melding-rij {
+  display: flex;
+  align-items: center;
+  /* Volle breedte raken met de tik, tot in de marge van het vlak eromheen. */
+  margin: 0 calc(-1 * var(--sp-2));
+  width: calc(100% + var(--sp-4));
+  border-radius: var(--radius-sm);
 }
 
 .melding {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: flex-start;
   gap: var(--sp-2);
-  /* Volle breedte raken met de tik, tot in de marge van het vlak eromheen. */
   padding: var(--sp-3) var(--sp-2);
-  margin: 0 calc(-1 * var(--sp-2));
-  width: calc(100% + var(--sp-4));
   border: 0;
   border-radius: var(--radius-sm);
   background: none;
@@ -30,24 +68,110 @@
   transition: background 0.15s;
 }
 
+/* De acties staan er altijd, ook zonder hover: op een telefoon bestaat hover
+   niet, en dan zou de veeg het enige spoor zijn. Klein en gedempt, zodat ze de
+   melding zelf niet overstemmen. */
+.melding__knoppen {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+  padding-right: var(--sp-1);
+}
+
+.melding__knop {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink-soft-strong);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.melding__knop:hover,
+.melding__knop:focus-visible {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+
+/* Open bolletje = ongelezen maken, gevuld = gelezen maken. Dezelfde vorm als de
+   stip die vóór #1273 de ongelezen-markering wás. */
+.melding__knop-stip {
+  width: 10px;
+  height: 10px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.melding__knop-stip[data-gelezen="false"] {
+  background: currentColor;
+}
+
 .melding:hover,
 .melding:focus-visible {
   background: var(--surface-hover);
 }
 
-/* De stip staat op de tekstregel, niet erboven: uitgelijnd op het midden van
-   de titelregel in plaats van op de bovenrand van de knop. */
-.melding__stip {
+/* De icoonkolom heeft een vaste maat, zodat alle titels op dezelfde x
+   beginnen. Het vlakje is de soft-tint van de familie, het icoon de inkt
+   erop — allebei paren die contrast-check.mjs al bewaakt. */
+.melding__icoon {
   flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  margin-top: 0.4em;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-top: 1px;
   border-radius: 50%;
-  background: transparent;
+  background: var(--surface-2);
+  color: var(--ink-soft-strong);
 }
 
-.melding--ongelezen .melding__stip {
-  background: var(--accent);
+.melding__icoon--accent {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.melding__icoon--poll {
+  background: var(--poll-soft);
+  color: var(--poll-diep);
+}
+.melding__icoon--warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.melding__icoon--success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.melding__icoon--gold {
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+.melding__icoon--joker {
+  background: var(--joker-soft);
+  color: var(--joker);
+}
+.melding__icoon--coach {
+  background: var(--coach-soft);
+  color: var(--coach-diep);
+}
+.melding__icoon--lef {
+  background: var(--lef-soft);
+  color: var(--lef);
+}
+.melding__icoon--danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* Ongelezen is een vlak, geen stip (#1273). Vier ongelezen meldingen tussen
+   tien gelezen moeten net zo hard aankomen als de badge op de bel; 8×8 px en
+   een zwaardere titel deden dat niet. */
+.melding-rij--ongelezen {
+  background: var(--accent-soft);
 }
 
 .melding__tekst {
@@ -62,7 +186,7 @@
   color: var(--ink);
 }
 
-.melding--ongelezen .melding__titel {
+.melding-rij--ongelezen .melding__titel {
   font-weight: 800;
 }
 
@@ -75,16 +199,23 @@
    AA zodra het boven een FUT-kaart hangt — in het lichte thema zakt
    --ink-soft-strong daar naar 2,2. Van de twee uitwegen die #1083 openliet
    (een eigen token voor tekst op glas, of secundaire tekst gewoon --ink geven)
-   is dit de tweede: de hiërarchie komt van maat en gewicht in plaats van van
-   kleur. Op /meldingen is dat niet nodig, maar één lijst is één lijst. */
+   was dit de tweede: de hiërarchie kwam van maat en gewicht in plaats van van
+   kleur.
+
+   Sinds #1273 is dat de terugval en niet meer de regel: één lijst blijft één
+   lijst, maar één gedeelde kleur voor twee ondergronden was de fout. Waar de
+   drager dekkend is (de kaart op /meldingen, en vanaf spoor B ook het paneel)
+   zet die drager --melding-tijd-ink en haalt de gedempte inkt gewoon AA:
+   4,88 licht en 9,21 donker op --surface. */
 .melding__tijd {
   font-size: var(--fs-xs);
-  color: var(--ink);
+  color: var(--melding-tijd-ink, var(--ink));
   font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .melding {
+  .melding,
+  .melding__knop {
     transition: none;
   }
 }

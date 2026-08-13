@@ -1,5 +1,11 @@
 // Onthouden wie je met de hand aan- of uitzette op de speeldag (#1089).
 //
+// Sinds #1271 gaat dat via de database zodra er een speeldag-moment is: de
+// correcties horen bij de groep en niet bij jouw browser. Wat hieronder staat
+// is de lokale kant, en die blijft nodig — op de Spelen-tab kun je zonder poll
+// teams maken, en dan is er geen moment om de afwijkingen aan te hangen.
+// `haalKeuzes`/`zetKeuzes` onderaan kiezen tussen de twee.
+//
 // De deelnemerslijst begint bij de poll van vandaag (of bij alle leden als er
 // geen poll is) en is daarna bij te sturen. Die correcties waren tot nu toe
 // weg na een refresh: de selectie werd bij elke mount opnieuw uit de poll
@@ -19,6 +25,10 @@
 // speeldagen van vandaag elkaar niet wegvegen.
 
 import { readFlag, writeFlag } from "@/lib/utils/localFlag";
+import {
+  getAanwezigheid,
+  zetAanwezigheid,
+} from "@/features/groups/aanwezigheidApi";
 
 /** Speler-id → expliciet aan (true) of uit (false). */
 export type AanwezigKeuzes = Record<string, boolean>;
@@ -115,4 +125,49 @@ export function pasKeuzesToe(
     else if (keuze === false) uit.delete(id);
   }
   return uit;
+}
+
+/* ------------------------------------------------------------------ */
+/* Welke opslag? (#1271)                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * De afwijkingen voor deze speeldag.
+ *
+ * Mét moment komt het uit `play_poll_presence`: gedeeld met de groep, zichtbaar
+ * voor een tweede organisator, en bestand tegen een apparaatwissel. Zonder
+ * moment — teams maken op de Spelen-tab zonder poll — is er niets om ze aan te
+ * hangen en blijft het lokaal.
+ *
+ * Faalt de database, dan valt dit terug op de lokale kopie in plaats van de
+ * pagina te laten struikelen: je correcties kwijt zijn is erger dan ze even
+ * alleen zelf te zien.
+ */
+export async function haalKeuzes(
+  groupId: string,
+  dag: string,
+  moment?: string | null,
+): Promise<AanwezigKeuzes> {
+  if (!moment) return leesKeuzes(groupId, dag, moment);
+  try {
+    return await getAanwezigheid(moment);
+  } catch {
+    return leesKeuzes(groupId, dag, moment);
+  }
+}
+
+/**
+ * Bewaart de afwijkingen. Schrijft altijd óók lokaal: dat is de terugval
+ * hierboven, en het houdt de selectie staan als de verbinding wegvalt op het
+ * moment dat je hem het hardst nodig hebt (in de kooi, halverwege de avond).
+ */
+export async function zetKeuzes(
+  groupId: string,
+  dag: string,
+  keuzes: AanwezigKeuzes,
+  moment?: string | null,
+): Promise<void> {
+  bewaarKeuzes(groupId, dag, keuzes, moment);
+  if (!moment) return;
+  await zetAanwezigheid(moment, groupId, keuzes);
 }

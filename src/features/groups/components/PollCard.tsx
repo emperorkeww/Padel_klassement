@@ -17,9 +17,11 @@ import {
   setPollVote,
   clearPollVote,
   lockPoll,
+  verzetMoment,
   setPollClub,
   reopenPoll,
   cancelPoll,
+  PorTeSnelError,
   remindPoll,
   pollClub,
   pollShareUrl,
@@ -42,6 +44,7 @@ import {
 } from "@/features/groups/pollLogic";
 import {
   downloadSpeeldagIcs,
+  laatsteWijziging,
   type SpeeldagAgenda,
 } from "@/features/groups/speeldagIcs";
 import { shareOrCopyText } from "@/lib/utils/shareText";
@@ -106,7 +109,6 @@ export function PollCard({
   const week = weekAsync.data ?? [];
   const weekLoading = weekAsync.loading;
   const [busy, setBusy] = useState(false);
-  const [confirmCancel, setConfirmCancel] = useState(false);
   const [remindedDone, setRemindedDone] = useState(false);
   const [openDetail, setOpenDetail] = useState<string | null>(null);
   const [showLosers, setShowLosers] = useState(false);
@@ -203,7 +205,14 @@ export function PollCard({
         n === 0 ? "Iedereen heeft al gestemd." : `${n} ${n === 1 ? "lid" : "leden"} herinnerd.`,
       );
     } catch (err) {
-      toast.error(errorMessage(err));
+      // Binnen de cooldown (#1273) is dit geen storing maar een antwoord: de
+      // groep is net al gepord. De knop gaat weg, zoals na een geslaagde por.
+      if (err instanceof PorTeSnelError) {
+        setRemindedDone(true);
+        toast.info(err.message);
+      } else {
+        toast.error(errorMessage(err));
+      }
     } finally {
       setBusy(false);
     }
@@ -282,7 +291,7 @@ export function PollCard({
     duration: locked.duration,
     courts: poll.courts,
     accessCode: poll.access_code,
-    changedAt: poll.booked_at ?? poll.locked_at ?? poll.created_at,
+    changedAt: laatsteWijziging(poll),
   };
 
   /** ± prijs per persoon voor een optie, uit de Playtomic-slotdata. */
@@ -313,16 +322,28 @@ export function PollCard({
   const keuzes = options.filter((o) => vastlegbaar(o, today));
 
   /* Zoals het er nu voor staat, annuleert `poll-deadline` deze speeldag
-     (#1234): geen enkel moment dat nog te spelen valt haalt vier spelers op
-     ja of misschien. Op kaartniveau, want het is geen eigenschap van één rij —
-     en de annulering treft de hele speeldag. */
+     (#1234, #1271). Eén bron: `besteOptie` hanteert sinds #1271 exact de regel
+     van de cron, dus "geen aanbeveling" en "de automaat kiest niets" zijn
+     hetzelfde geworden. Op kaartniveau, want het is geen eigenschap van één rij
+     — en de annulering treft de hele speeldag. */
   const geenMomentHaalbaar =
-    poll.status === "open" &&
-    keuzes.length > 0 &&
-    keuzes.every((o) => tallyOption(o, votes).tekort > 0);
+    poll.status === "open" && keuzes.length > 0 && bestOption == null;
+  /* En waaróm niet: te weinig volk of te weinig baan. Zonder dat onderscheid
+     stuur je iemand op zoek naar stemmers terwijl de club vol zit. */
+  const tekortAanVolk = keuzes.every((o) => tallyOption(o, votes).tekort > 0);
+  // Ook bij `booked` (#1271): staat de baan geboekt en moet het een half uur
+  // later, dan hoor je daarvoor niet je baancode weg te gooien via "Heropen
+  // stemmen". `verzetMoment` laat de boeking staan.
   const magKiezen =
-    isManager && (poll.status === "open" || poll.status === "locked");
-  const toonKiezer = magKiezen && keuzes.length > (poll.status === "open" ? 1 : 0);
+    isManager &&
+    (poll.status === "open" ||
+      poll.status === "locked" ||
+      poll.status === "booked");
+  // Alleen openen als er écht iets te kiezen valt: het al vastgelegde moment is
+  // geen keuze meer, dus één kandidaat leverde een sheet op met één regel, en
+  // die stond disabled met de badge "nu gekozen".
+  const andereKeuzes = keuzes.filter((o) => o.id !== poll.locked_option_id);
+  const toonKiezer = magKiezen && andereKeuzes.length > 0;
 
   /**
    * Een moment vastleggen — ook eentje dat de telling niet voorstelt. Alleen
@@ -349,10 +370,27 @@ export function PollCard({
       });
       if (!ok) return;
     }
-    await run(
-      () => lockPoll(poll.id, o.id),
-      poll.locked_option_id ? "Moment verzet." : "Moment vastgelegd.",
-    );
+    // Verzetten is een andere handeling dan vastleggen (#1271): het laat status,
+    // boeking, baancode en banen met rust. Alleen de eerste keer zet de poll
+    // van `open` naar `locked`.
+    const verzet = poll.locked_option_id != null;
+    await run(async () => {
+      if (verzet) await verzetMoment(poll.id, o.id);
+      else await lockPoll(poll.id, o.id);
+      // Wie de speeldag in zijn agenda zette, staat anders een uur te vroeg op
+      // de baan: bied het bijgewerkte event meteen aan, net zoals annuleren
+      // het CANCELLED-bestand meteen aanbiedt. Dezelfde UID, dus het werkt de
+      // bestaande afspraak bij in plaats van er een tweede naast te zetten.
+      if (verzet && agendaDag) {
+        downloadSpeeldagIcs({
+          ...agendaDag,
+          date: o.date,
+          startTime: o.start_time,
+          duration: o.duration,
+          changedAt: new Date().toISOString(),
+        });
+      }
+    }, verzet ? "Moment verzet — de bijgewerkte agenda staat klaar." : "Moment vastgelegd.");
   }
 
   // Bij locked/booked: winnaar groot, de rest ingeklapt. Bij booked blijven de
@@ -509,6 +547,7 @@ export function PollCard({
                 club={club}
                 groupName={groupName}
                 profiles={profiles}
+                myId={myId}
                 isManager={isManager}
                 busy={busy}
                 run={run}
@@ -538,8 +577,11 @@ export function PollCard({
 
       {geenMomentHaalbaar && (
         <p className="poll-card__tekort" role="status">
-          Zoals het nu staat gaat deze speeldag niet door: er zijn{" "}
-          {PLAYERS_PER_COURT} spelers nodig op één moment.
+          Zoals het nu staat gaat deze speeldag niet door:{" "}
+          {tekortAanVolk
+            ? `er zijn ${PLAYERS_PER_COURT} spelers nodig op één moment.`
+            : "geen enkel moment heeft genoeg vrije banen."}{" "}
+          {isManager && "Leg je er zelf een vast, dan gaat hij wél door."}
         </p>
       )}
 
@@ -561,6 +603,9 @@ export function PollCard({
             <button
               className="btn btn--sm btn--primary"
               disabled={busy}
+              // Sinds #1271 rekent deze knop met dezelfde regel als de cron,
+              // dus dit ís het moment dat er anders vanzelf uit rolt.
+              title="Dit moment legt de app anders zelf vast, kort voor de speeldag"
               onClick={() => kiesMoment(bestOption)}
             >
               Kies {shortDay(bestOption.date)} · {bestOption.start_time}
@@ -568,14 +613,21 @@ export function PollCard({
           )}
           {/* De aanbeveling is één tik; hier staat de rest van de lijst (#1181).
               Bij een al gekozen speeldag verzet dit het moment zonder dat de
-              stemming eerst heropend — en dus weggegooid — moet worden. */}
+              stemming eerst heropend — en dus weggegooid — moet worden. Sinds
+              #1271 geldt dat ook voor een geboekte speeldag: de baancode en de
+              banen blijven staan, alleen de tijd schuift. */}
           {toonKiezer && (
             <button
               className="btn btn--sm"
               disabled={busy}
+              title={
+                poll.status === "booked"
+                  ? "Verzet de speeldag; je boeking, baannummers en toegangscode blijven staan"
+                  : undefined
+              }
               onClick={() => setKiezen(true)}
             >
-              {poll.status === "locked" ? "📅 Ander moment" : "Ander moment…"}
+              {poll.status === "open" ? "Ander moment…" : "📅 Ander moment"}
             </button>
           )}
           {isManager && poll.status === "locked" && (
@@ -601,20 +653,35 @@ export function PollCard({
               Haal uit je agenda
             </button>
           )}
+          {/* Eén bevestigingsmechaniek op deze kaart (#1271). Dit was een
+              two-tap ("Zeker? Tik nogmaals") die op `onBlur` reset — op touch
+              onvoorspelbaar, want een scroll of een tik ernaast telt daar als
+              blur — terwijl er twee knoppen verderop een echte ConfirmDialog
+              stond voor een lichtere ingreep. */}
           {magAnnuleren && poll.status !== "cancelled" && (
             <button
-              className={`btn btn--sm proposal__withdraw${confirmCancel ? " is-confirm" : ""}`}
+              className="btn btn--sm proposal__withdraw"
               disabled={busy}
-              onClick={() => {
-                if (!confirmCancel) {
-                  setConfirmCancel(true);
-                  return;
-                }
+              onClick={async () => {
+                const ok = await confirm({
+                  title:
+                    poll.status === "open"
+                      ? "Poll annuleren?"
+                      : "Speeldag annuleren?",
+                  body:
+                    poll.status === "open"
+                      ? "De stemmen blijven bewaard, maar er wordt niets meer vastgelegd."
+                      : "Iedereen die deze speeldag in zijn agenda zette krijgt een annulering aangeboden.",
+                  confirmLabel: "Annuleren",
+                  cancelLabel: "Laat staan",
+                  danger: true,
+                });
+                if (!ok) return;
                 // Het annuleerbestand meteen aanbieden: wie het pas bij een
                 // volgend bezoek zou downloaden, laat de afspraak intussen in
                 // ieders agenda staan.
                 if (agendaDag) downloadSpeeldagIcs(agendaDag, "CANCELLED");
-                run(
+                void run(
                   () =>
                     annuleerAlsBeheerder
                       ? zetPollStatus(poll.id, "cancelled")
@@ -622,13 +689,8 @@ export function PollCard({
                   poll.status === "open" ? "Poll geannuleerd." : "Speeldag geannuleerd.",
                 );
               }}
-              onBlur={() => setConfirmCancel(false)}
             >
-              {confirmCancel
-                ? "Zeker? Tik nogmaals"
-                : poll.status === "open"
-                  ? "Annuleer poll"
-                  : "Annuleer speeldag"}
+              {poll.status === "open" ? "Annuleer poll" : "Annuleer speeldag"}
             </button>
           )}
         </div>

@@ -15,16 +15,20 @@ import { getProfilesMap } from "@/features/profiles/api";
 import { getMatchDaysInWindow } from "@/features/matches/api";
 import { getPollWindow, type PollWindow } from "@/features/groups/pollsApi";
 import {
+  conceptSleutel,
+  openstaandConcept,
+} from "@/features/groups/pollConcept";
+import {
   buildMarkers,
   filterOpGroepen,
   komendeItems,
+  filterLabel,
   leesGroepKeuze,
   maandLabel,
   maandVan,
   markersByDay,
   metHoofdletter,
   monthGrid,
-  ophaalVenster,
   schuifMaand,
   statusChip,
   telInMaand,
@@ -78,9 +82,24 @@ export function Agenda() {
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const globaleClub = useClub();
+  // Een klok die doortikt (#1270).
+  //
+  // `buildMarkers(…, Date.now())` zat in een useMemo, dus `past` bevroor op het
+  // moment dat het venster laadde. Het dag-sheet tikte daarom zelf al door
+  // (#1104), maar het raster, de kaarten en de actiestrook niet: een moment dat
+  // om 20:00 begon bleef "Jij moet nog stemmen" tot je herlaadde. En `vandaag`
+  // schoof om dezelfde reden niet mee over middernacht — de agenda bleef dan
+  // een dag lang gisteren aanwijzen.
+  //
+  // Dezelfde tik als in DagSheet: het gaat om de laatste minuten vóór een slot,
+  // en fijner meten kost renders zonder iets te zeggen.
+  const nu = useKlok();
   // "Vandaag" hangt aan de tijdzone van je clubkeuze, niet aan die van je
   // toestel: om 00:30 in een andere zone is het hier nog gisteren (#783).
-  const vandaag = dateInZone(globaleClub.timezone);
+  const vandaag = useMemo(
+    () => dateInZone(globaleClub.timezone, 0, nu),
+    [globaleClub.timezone, nu],
+  );
 
   // Wat je bekijkt staat in de URL (#1182): deelbaar, refresh-bestendig, en de
   // terugknop sluit het sheet in plaats van de pagina te verlaten. De gekozen
@@ -98,9 +117,16 @@ export function Agenda() {
   // De aangetikte lege dag; los van `open`, want het plan-sheet geeft het stokje
   // door aan de wizard en moet die dag ondertussen vasthouden.
   const [planDag, setPlanDag] = useState<string | null>(null);
-  const [wizardDag, setWizardDag] = useState<string | null>(null);
-  const [planGroep, setPlanGroep] = useState<string | null>(() =>
-    readFlag(LAATSTE_GROEP),
+  // Stond er nog een wizard open toen je de agenda verliet — de knop "Verken
+  // alle vrije banen →" navigeert de app uit — dan hoort die weer open te gaan
+  // mét je selectie (#1271). Het concept draagt de groep en de dag in zijn
+  // sleutelnaam, dus dit is één lees-actie zonder tweede schrijver.
+  const hervat = useState(() => openstaandConcept())[0];
+  const [wizardDag, setWizardDag] = useState<string | null>(
+    hervat?.initialDay ?? null,
+  );
+  const [planGroep, setPlanGroep] = useState<string | null>(
+    () => hervat?.groupId ?? readFlag(LAATSTE_GROEP),
   );
   const [bewaardFilter, setBewaardFilter] = useState<string | null>(() =>
     readFlag(GROEP_FILTER),
@@ -127,20 +153,26 @@ export function Agenda() {
   const lijst = useMemo(() => groepen.data ?? [], [groepen.data]);
   const groepSleutel = lijst.map((g) => g.id).join(",");
 
-  // Twee vensters, met opzet. `raster` is wat je ziet staan en bepaalt wanneer
-  // de toetsenbordnavigatie een maand doorbladert; `from`/`to` is wat we ophalen
-  // en loopt zes weken verder, zodat "Hierna" ook in een lege maand iets te
-  // wijzen heeft (#1112).
-  const raster = windowFor(maand);
-  const { from, to } = ophaalVenster(maand);
+  // Twee vensters, elk met een eigen vraag (#1270).
+  //
+  // `raster` beantwoordt "wat staat er in deze maand" en volgt dus wat je
+  // bekijkt. Het haalde tot nu toe zes weken extra op, zodat "Hierna" ook in een
+  // lege maand iets te wijzen had; sinds "Hierna" en het paneel uit het
+  // vooruitblik-venster komen, is die staart dood gewicht — hij kwam nooit in
+  // een cel terecht en telde nergens in mee. Precies de rastergrenzen dus, wat
+  // ook de vraag beantwoordt wanneer de toetsenbordnavigatie een maand
+  // doorbladert.
+  const { from, to } = windowFor(maand);
   const venster = useAsync<PollWindow>(
     () => getPollWindow(lijst.map((g) => g.id), from, to),
     [groepSleutel, from, to],
   );
-  // Het derde venster (#1182). Het raster toont een maand en `ophaalVenster`
-  // volgt dat; de lijst en de "wacht op jou"-strook gaan over wat er aankomt en
-  // mogen niet veranderen omdat jij naar december zit te bladeren. Vandaar een
-  // eigen, vaste blik van vandaag tot een kwartaal verder.
+  // Het vooruitblik-venster (#1182): de lijst, de "wacht op jou"-strook en het
+  // vandaag-paneel gaan over wat er aankomt, en mogen niet veranderen omdat jij
+  // naar december zit te bladeren. Vandaar een eigen, vaste blik van vandaag tot
+  // een kwartaal verder. Dat overlapt in de huidige maand grotendeels met het
+  // raster, maar samenvoegen kan niet: zodra je bladert gaan ze uit elkaar, en
+  // dan zou de één de ander meesleuren.
   const lijstEinde = addDays(vandaag, LIJST_DAGEN);
   const lijstVenster = useAsync<PollWindow>(
     () => getPollWindow(lijst.map((g) => g.id), vandaag, lijstEinde),
@@ -181,20 +213,45 @@ export function Agenda() {
   useRealtime("play_polls", herlaad);
   useRealtime("play_poll_options", herlaad);
   useRealtime("play_poll_votes", herlaad);
-  // Een uitslag die iemand logt zet een dag in het verleden aan (#1182).
-  useRealtime("matches", wedstrijden.reload);
+  // Een uitslag die iemand logt zet een dag in het verleden aan (#1182), maar
+  // alleen als het jóuw groepen betreft (#1270). Zonder filter wekte elke
+  // uitslag in de hele app dit venster, en de speeldagpagina filtert al net zo
+  // (#1141). Zolang de groepen nog laden is er niets te filteren.
+  const matchFilter = groepSleutel ? `group_id=in.(${groepSleutel})` : undefined;
+  useRealtime("matches", wedstrijden.reload, matchFilter);
 
   const alleMarkers = useMemo(
-    () => buildMarkers(venster.data ?? LEEG_VENSTER, lijst, myId, Date.now()),
-    [venster.data, lijst, myId],
+    () => buildMarkers(venster.data ?? LEEG_VENSTER, lijst, myId, nu),
+    [venster.data, lijst, myId, nu],
   );
-  // De filterkeuze staat in localStorage, maar wordt elke render gezeefd langs
-  // de groepen die je nú hebt: een groep die je verliet zou de agenda anders
-  // leeg houden zonder dat er nog een chip staat om hem uit te zetten.
+  // De filterkeuze komt uit de URL en valt terug op wat je vorige bezoek
+  // onthield (#1270). Beide worden elke render gezeefd langs de groepen die je
+  // nú hebt: een groep die je verliet — of een id uit iemand anders' link —
+  // zou de agenda anders leeg houden zonder dat er een chip staat om hem uit te
+  // zetten.
   const groepFilter = useMemo(
-    () => leesGroepKeuze(bewaardFilter, lijst.map((g) => g.id)),
-    [bewaardFilter, lijst],
+    () => leesGroepKeuze(stand.groepen ?? bewaardFilter, lijst.map((g) => g.id)),
+    [stand.groepen, bewaardFilter, lijst],
   );
+  // Wat er van jouw keuze in de koppen te merken is. Zonder dit kon er "Geen
+  // speeldagen deze maand" staan terwijl de maand vol stond met de groep die je
+  // net wegklikte.
+  const filterUitleg = useMemo(
+    () => filterLabel(groepFilter, lijst),
+    [groepFilter, lijst],
+  );
+
+  // Wat je vorige bezoek onthield hoort ook in de URL te staan, anders deel je
+  // een link die bij de ander een andere agenda toont dan bij jou (#1270). Eén
+  // keer bijschrijven zodra we weten welke groepen je hebt — met `replace`, dus
+  // zonder extra stap in je geschiedenis, en ScrollRestore laat hetzelfde pad
+  // sinds #1195 met rust. Wat er niet bij staat is de lege keuze: "alles" is de
+  // standaard en die schrijf je niet op.
+  useEffect(() => {
+    if (stand.groepen != null || lijst.length === 0) return;
+    if (groepFilter.length === 0) return;
+    zet({ groepen: groepFilter.join(",") });
+  }, [stand.groepen, lijst.length, groepFilter, zet]);
   const markers = useMemo(
     () => filterOpGroepen(alleMarkers, groepFilter),
     [alleMarkers, groepFilter],
@@ -212,13 +269,15 @@ export function Agenda() {
   const lijstMarkers = useMemo(
     () =>
       filterOpGroepen(
-        buildMarkers(lijstVenster.data ?? LEEG_VENSTER, lijst, myId, Date.now()),
+        buildMarkers(lijstVenster.data ?? LEEG_VENSTER, lijst, myId, nu),
         groepFilter,
       ),
-    [lijstVenster.data, lijst, myId, groepFilter],
+    [lijstVenster.data, lijst, myId, groepFilter, nu],
   );
   const perDagLijst = useMemo(() => markersByDay(lijstMarkers), [lijstMarkers]);
-  const komende = useMemo(
+  // `meer` is hoeveel er buiten de lijst viel (#1270): die kapte stil af, en een
+  // lijst die ophoudt ziet er precies zo uit als een agenda die leeg raakt.
+  const { items: komende, meer } = useMemo(
     () => komendeItems(lijstMarkers, vandaag),
     [lijstMarkers, vandaag],
   );
@@ -227,9 +286,18 @@ export function Agenda() {
     [lijstMarkers, vandaag],
   );
   const inMaand = useMemo(() => telInMaand(markers, maand), [markers, maand]);
+  // Het paneel hangt sinds #1270 aan vandaag en niet aan de dag die je aantikte
+  // (die opent nu meteen een sheet). Beide blokken komen daarom uit hetzelfde
+  // vooruitblik-venster als de lijst: dat verschuift niet als je naar december
+  // bladert, en dan blijft dit blok een anker op nu in plaats van iets te
+  // beweren over een maand die je alleen maar bekijkt.
+  const vandaagItems = useMemo(
+    () => komende.filter((i) => i.eerste.date === vandaag),
+    [komende, vandaag],
+  );
   const volgende = useMemo(
-    () => volgendeSpeeldagen(markers, gekozenDag),
-    [markers, gekozenDag],
+    () => volgendeSpeeldagen(lijstMarkers, vandaag),
+    [lijstMarkers, vandaag],
   );
   // Dezelfde markers, maar per poll: een poll strekt zich over meerdere dagen
   // uit, en in het dag-sheet beantwoord je hem in één keer (#1104).
@@ -255,17 +323,30 @@ export function Agenda() {
     [lijst],
   );
 
+  // Waar de plan-knop op begint: de dag die je in het raster markeerde als die
+  // nog komt, anders vandaag. Zo plant de knop op wat je aankijkt zonder ooit
+  // een dag voor te stellen die al geweest is.
+  const planStartDag = gekozenDag >= vandaag ? gekozenDag : vandaag;
+
   // De groep waarvoor we plannen: de onthouden keuze, of bij één groep die ene.
   // Een onthouden groep die je intussen verlaten hebt telt niet meer mee.
   const planGroepId =
     lijst.find((g) => g.id === planGroep)?.id ??
     (lijst.length === 1 ? lijst[0].id : null);
 
-  /** Groepskeuze onthouden; leeg wist de vlag, zodat "alles" de standaard is. */
+  /**
+   * Groepskeuze in de URL zetten én onthouden; leeg wist allebei, zodat "alles"
+   * de standaard blijft.
+   *
+   * Twee bewaarplekken met een verschillende taak (#1270): de URL is wat je
+   * deelt en waar de terugknop op werkt, localStorage is wat je volgende bezoek
+   * begint. Ze lopen niet uit elkaar omdat dit de enige plek is die schrijft.
+   */
   function kiesGroepen(ids: string[]) {
     const waarde = ids.length > 0 ? ids.join(",") : null;
     setBewaardFilter(waarde);
     writeFlag(GROEP_FILTER, waarde);
+    zet({ groepen: waarde });
   }
 
   /** De groep waarvoor we plannen én suggesties tonen; onthouden voor later. */
@@ -290,20 +371,20 @@ export function Agenda() {
   const zichtbareStatussen = useMemo(() => {
     const aanwezig = new Set(
       markers
-        .filter((m) => m.date >= raster.from && m.date <= raster.to)
+        .filter((m) => m.date >= from && m.date <= to)
         .map((m) => m.status),
     );
     return (["booked", "locked", "open"] as const).filter((s) => aanwezig.has(s));
-  }, [markers, raster.from, raster.to]);
+  }, [markers, from, to]);
 
   // De ruit staat sinds #1221 alleen nog voor losse partijen: wat bij een
   // speeldag hoort draagt de stip van die speeldag al.
   const wedstrijdenInBeeld = useMemo(
     () =>
       Object.keys(indeling.losPerDag).some(
-        (d) => d >= raster.from && d <= raster.to,
+        (d) => d >= from && d <= to,
       ),
-    [indeling.losPerDag, raster.from, raster.to],
+    [indeling.losPerDag, from, to],
   );
 
   /**
@@ -314,38 +395,44 @@ export function Agenda() {
    */
   function verplaatsFocus(date: string) {
     setFocusDag(date);
-    if (date < raster.from || date > raster.to) zet({ maand: maandVan(date) });
+    if (date < from || date > to) zet({ maand: maandVan(date) });
   }
 
   /**
-   * Een aangetikte dag kiest die dag: het paneel eronder werkt bij (#1112).
+   * Eén tik, één betekenis (#1270).
    *
-   * Tikken op de dag die al gekozen ís, opent meteen — het detail als er iets
-   * op staat, anders het plan-sheet. Zonder die tweede betekenis zou plannen
-   * van één tik naar twee gaan, en juist dat was de belofte van deze tab.
+   * Dit koste twee tikken: de eerste koos de dag en werkte het paneel eronder
+   * bij, de tweede opende. Op 390×800 begon dat paneel op y=744 met 730px in
+   * beeld, en een tik scrollde niet — het enige zichtbare gevolg van die eerste
+   * tik was dus een gevulde cel, en de tweede betekenis viel niet te ontdekken.
+   * De belofte "plannen kost één tik" was daarmee onvindbaar in plaats van waar.
    *
-   * Een randdag van een buurmaand laat het raster meebladeren; anders kies je
-   * een dag die je meteen daarna niet meer ziet staan.
+   * Nu opent een tik meteen: het dag-sheet als er iets staat, het plan-sheet
+   * bij een lege dag die nog komt. Een sheet ligt per definitie in beeld, dus
+   * het antwoord staat er waar je kijkt.
+   *
+   * Een lege dag die geweest is opent óók het sheet, dat daar "Niets gespeeld"
+   * meldt. Niets doen zou de tik weer stil maken — precies de klacht waar dit
+   * mee begon.
    */
   function kiesDag(date: string) {
-    if (date === gekozenDag) openDag(date);
-    // Dag en maand in één schrijfbeurt: twee losse calls in dezelfde tick
-    // overschrijven elkaar (zie agendaParams.ts).
-    else zet({ dag: date, maand: maandVan(date) });
-  }
-
-  /** Het sheet bij een dag met speeldagen, het plan-sheet bij een lege dag die
-   *  nog komt. Een lege dag die geweest is heeft niets te openen — het paneel
-   *  zegt daar al dat er niet gespeeld is. */
-  function openDag(date: string) {
-    if (dagMarkers(date).length > 0) openSheet(date);
-    else if (date >= vandaag) setPlanDag(date);
+    const leeg =
+      dagMarkers(date).length === 0 && dagWedstrijden(date).length === 0;
+    if (leeg && date >= vandaag) {
+      // Dag en maand in één schrijfbeurt: twee losse calls in dezelfde tick
+      // overschrijven elkaar (zie agendaParams.ts). De dag blijft gemarkeerd in
+      // het raster, zodat je na het sluiten ziet waar je was.
+      zet({ dag: date, maand: maandVan(date) });
+      setPlanDag(date);
+    } else {
+      openSheet(date);
+    }
   }
 
   /** Het dag-sheet openen. Dit is de enige stap die een history-entry duwt: op
    *  Android hoort de terugknop het sheet te sluiten en niet de agenda te
-   *  verlaten. De dag schuift mee, zodat het paneel eronder over dezelfde dag
-   *  gaat als het sheet erboven. */
+   *  verlaten. De dag schuift mee, zodat het raster onthoudt waar je was toen je
+   *  het sheet weer sluit. */
   function openSheet(date: string) {
     geduwd.current = true;
     zet({ dag: date, maand: maandVan(date), open: date }, { push: true });
@@ -370,8 +457,17 @@ export function Agenda() {
     return uitRaster.length > 0 ? uitRaster : (perDagLijst[date] ?? []);
   }
 
-  /** Vanuit de actiestrook: naar de dag toe én hem meteen openen. De strook
-   *  belooft dat je kunt stemmen, dus daar moet je in één tik staan. */
+  /** De los gelogde partijen van een dag — alles wat bij geen enkele speeldag
+   *  hoort (#1221). Sinds #1270 telt dit mee in wat een tik opent: een avond
+   *  met drie gelogde wedstrijden is geen lege dag. */
+  function dagWedstrijden(date: string) {
+    return indeling.losPerDag[date] ?? [];
+  }
+
+  /** Vanuit de actiestrook, "Hierna" of een kaart: naar die dag toe én hem
+   *  meteen openen. Allemaal beloven ze een speeldag, dus daar moet je in één
+   *  tik staan (#1270). Het raster bladert mee, zodat de dag ook zichtbaar is
+   *  als je het sheet weer sluit. */
   function gaNaarDag(date: string) {
     setFocusDag(date);
     geduwd.current = true;
@@ -381,13 +477,6 @@ export function Agenda() {
     );
   }
 
-  /** Naar een dag springen vanuit "Hierna": de maand schuift mee en de tab-stop
-   *  blijft niet achter in de maand die je verlaat. */
-  function springNaar(date: string) {
-    setFocusDag(date);
-    zet({ dag: date, maand: maandVan(date) });
-  }
-
   function naarMaand(delta: number) {
     const nieuw = schuifMaand(maand, delta);
     // De tab-stop mag niet achterblijven in een maand die je niet meer ziet.
@@ -395,12 +484,9 @@ export function Agenda() {
       ? vandaag
       : `${nieuw.jaar}-${String(nieuw.maand).padStart(2, "0")}-01`;
     setFocusDag(doel);
-    // En de gekozen dag schuift mee. Het ontwerp liet die staan bij het
-    // bladeren, maar dat kan hier niet: we halen per maand op, dus zodra de
-    // gekozen dag buiten het nieuwe venster valt kent het paneel zijn
-    // speeldagen niet meer en meldt het "Nog niets gepland" voor een dag die
-    // wél iets draagt. Een paneel dat over een dag praat die je niet ziet
-    // staan is bovendien sowieso raar — het staat er pal onder.
+    // En de gemarkeerde dag schuift mee: een markering in een maand die je niet
+    // meer ziet zegt niets, en bij terugbladeren wil je hem terugvinden waar je
+    // hem liet.
     zet({ maand: nieuw, dag: doel });
   }
 
@@ -420,19 +506,37 @@ export function Agenda() {
               ? "Wat komt eraan"
               : metHoofdletter(maandLabel(maand))}
           </h1>
-          <p className="agenda-kop__telling">
+          {/* De telling zegt erbij waarover ze gaat zodra er chips aanstaan
+              (#1270): "Geen speeldagen deze maand" viel niet te rijmen met een
+              raster vol stippen, en niets in die zin wees naar het filter. */}
+          {/* Dezelfde live region als de titel erboven (#1270): met het
+              toetsenbord bladeren of een chip omzetten verandert dit getal, en
+              dat zei tot nu toe niets. */}
+          <p className="agenda-kop__telling" aria-live="polite">
             {weergave === "lijst"
               ? lijstVenster.loading && lijstVenster.data == null
                 ? " "
-                : `${komende.length} ${komende.length === 1 ? "speeldag" : "speeldagen"} gepland`
+                : metFilter(
+                    `${komende.length} ${komende.length === 1 ? "speeldag" : "speeldagen"} gepland`,
+                    filterUitleg,
+                  )
               : laadt || verversen
               ? " "
-              : inMaand === 0
-                ? // Niet "Nog niets gepland": dat staat een halve pagina lager
-                  // ook al, in het dagpaneel, en gaat daar over de gekozen dag
-                  // (#1195). Deze regel telt de máánd, dus zegt hij dat ook.
-                  "Geen activiteiten deze maand"
-                : `${inMaand} ${inMaand === 1 ? "activiteit" : "activiteiten"} deze maand`}
+              : metFilter(
+                  inMaand === 0
+                    ? // Niet "Nog niets gepland": dat staat een halve pagina
+                      // lager ook al, in het dagpaneel, en gaat daar over de
+                      // gekozen dag (#1195). Deze regel telt de maand zelf, dus
+                      // zegt hij dat ook.
+                      "Geen speeldagen deze maand"
+                    : // "Activiteiten" was een woord voor precies dezelfde
+                      // eenheid die de lijstkop hierboven "speeldagen" noemt, en
+                      // `telInMaand` telt allebei polls (#1270). Twee woorden
+                      // voor één ding leest als twee tellingen die elkaar
+                      // tegenspreken.
+                      `${inMaand} ${inMaand === 1 ? "speeldag" : "speeldagen"} deze maand`,
+                  filterUitleg,
+                )}
           </p>
         </div>
         {/* De maandnavigatie hoort bij het raster. In de lijst is er geen maand
@@ -519,11 +623,30 @@ export function Agenda() {
                 { id: "lijst" as Weergave, label: "Lijst" },
               ]}
             />
+            {/* De zichtbare plan-actie (#1270). Plannen kon op vier manieren —
+                dubbeltik op een dag, een knop in het paneel onder de vouw, een
+                knop in het dag-sheet, de ingeklapte suggesties — en geen enkele
+                stond in beeld. In de lijstweergave kón het zelfs helemaal niet:
+                de lege staat verwees je terug naar het maandoverzicht. Voor een
+                tab die de Plannen-tab heeft opgeslokt (#1121) was dat de
+                belangrijkste ontbrekende knop. Hier staat hij, in beide
+                weergaven, en hij opent dezelfde keten als een tik op een lege
+                dag: plan-sheet → wizard. */}
+            <button
+              type="button"
+              className="btn btn--sm btn--primary agenda-plan-knop"
+              aria-haspopup="dialog"
+              onClick={() => setPlanDag(planStartDag)}
+            >
+              + Speeldag
+            </button>
             {/* Abonneren stond tot #1197 als laatste blok onderaan de pagina,
                 onder raster, paneel én suggesties. Hier staat het boven de
                 vouw en in beide weergaven — en niet in de maandkop, want die
                 knoppenrij verdwijnt in de lijst en is op telefoonbreedte al
-                vol. */}
+                vol. Sinds #1270 is dit de enige ingang: de teaserregel onderaan
+                opende hetzelfde sheet, en twee wegen naar één instelling die je
+                één keer doet zijn er een te veel. */}
             <button
               type="button"
               className="agenda-abo-knop"
@@ -538,6 +661,7 @@ export function Agenda() {
           {weergave === "lijst" ? (
             <AgendaLijst
               items={komende}
+              meer={meer}
               laadt={lijstVenster.loading && lijstVenster.data == null}
               ledenPerGroep={ledenPerGroep}
               profielen={profielen.data ?? {}}
@@ -581,25 +705,18 @@ export function Agenda() {
                 )}
               </ul>
 
-              {/* Wat er in het raster niet meer past (#1112). De instap-kaart die
-                  hier stond legde uit dat je een dag kon aantikken; dit paneel
-                  laat het gewoon zien. */}
+              {/* Wat er in het raster niet meer past (#1112), sinds #1270
+                  verankerd op vandaag in plaats van op de dag die je aantikte —
+                  die opent nu meteen een sheet. */}
               {!laadt && (
                 <DagPaneel
-                  datum={gekozenDag}
                   vandaag={vandaag}
-                  markers={perDag[gekozenDag] ?? []}
-                  wedstrijden={indeling.losPerDag[gekozenDag] ?? []}
-                  wedstrijdenPerPoll={indeling.perPoll}
-                  groepNamen={groepNamen}
+                  vandaagItems={vandaagItems}
                   volgende={volgende}
+                  wedstrijdenPerPoll={indeling.perPoll}
                   ledenPerGroep={ledenPerGroep}
                   profielen={profielen.data ?? {}}
-                  onOpen={() => openSheet(gekozenDag)}
-                  onPlan={
-                    gekozenDag >= vandaag ? () => setPlanDag(gekozenDag) : undefined
-                  }
-                  onKiesDag={springNaar}
+                  onOpenDag={gaNaarDag}
                 />
               )}
             </>
@@ -615,26 +732,15 @@ export function Agenda() {
             onGestart={herlaad}
           />
 
-          {/* Wat hier stond was het hele abonneerblok (#1099): permanent
-              uitgeklapt, met link, drie knoppen en twee alinea's uitleg, voor
-              iets wat je één keer instelt. Nu één regel die hetzelfde sheet
-              opent als de knop bovenaan — wie doorscrolt komt het nog steeds
-              tegen, maar het eet geen half scherm meer (#1197). */}
-          <button
-            type="button"
-            className="agenda-abo-teaser"
-            aria-haspopup="dialog"
-            onClick={() => setAboOpen(true)}
-          >
-            <span>Zet je speeldagen in je eigen agenda</span>
-            <IconChevron kant="rechts" />
-          </button>
         </>
       )}
 
       <DagSheet
         datum={open}
         markers={open ? dagMarkers(open) : []}
+        wedstrijden={open ? dagWedstrijden(open) : []}
+        wedstrijdenPerPoll={indeling.perPoll}
+        groepNamen={groepNamen}
         momentenPerPoll={perPoll}
         ledenPerGroep={ledenPerGroep}
         profielen={profielen.data ?? {}}
@@ -659,16 +765,16 @@ export function Agenda() {
         groepen={lijst}
         gekozenGroep={planGroep}
         onGroep={kiesPlanGroep}
-        club={nieuwClub}
-        onClub={setNieuwClub}
         vensterEinde={addDays(vandaag, 6)}
         onClose={() => setPlanDag(null)}
         onDoor={() => {
           // Het plan-sheet sluit en geeft de dag door aan de wizard; de
-          // groepskeuze blijft staan, ook als je 'm nooit aanpaste.
-          if (planGroep == null && lijst.length === 1) {
-            setPlanGroep(lijst[0].id);
-            writeFlag(LAATSTE_GROEP, lijst[0].id);
+          // groepskeuze blijft staan, ook als je 'm nooit aanpaste. Schrijf de
+          // groep op waarmee we straks daadwerkelijk plannen (#1270): dat wist
+          // meteen een onthouden id van een groep die je verliet, in plaats van
+          // die tot in lengte van dagen te laten staan.
+          if (planGroepId != null && planGroepId !== planGroep) {
+            kiesPlanGroep(planGroepId);
           }
           setWizardDag(planDag);
           setPlanDag(null);
@@ -686,6 +792,10 @@ export function Agenda() {
           club={nieuwClub}
           onClub={setNieuwClub}
           initialDay={wizardDag}
+          // Zodat de omweg naar /banen je selectie niet opeet (#1271). De
+          // sleutel draagt groep en dag, want daarmee weet de agenda bij
+          // terugkomst welke wizard hij moet heropenen.
+          storageKey={conceptSleutel(planGroepId, wizardDag)}
           onClose={() => setWizardDag(null)}
           onCreated={() => {
             setWizardDag(null);
@@ -706,6 +816,31 @@ export function Agenda() {
       </Sheet>
     </div>
   );
+}
+
+/** Hoe vaak de agenda opnieuw kijkt hoe laat het is. Een minuut: het gaat om de
+ *  laatste minuten vóór een slot, en om middernacht. Zelfde tik als DagSheet. */
+const TIK_MS = 60_000;
+
+/**
+ * De klok, als waarde die doortikt (#1270).
+ *
+ * Alles wat "is dit al geweest?" beantwoordt hing aan één `Date.now()` in een
+ * useMemo, en dat getal bevroor op het moment van laden.
+ */
+function useKlok(): number {
+  const [nu, setNu] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNu(Date.now()), TIK_MS);
+    return () => clearInterval(id);
+  }, []);
+  return nu;
+}
+
+/** Een telling met de groep(en) erbij waarover ze gaat, of gewoon de telling
+ *  als er niets gefilterd is (#1270). */
+function metFilter(telling: string, filter: string | null): string {
+  return filter ? `${telling} in ${filter}` : telling;
 }
 
 function IconChevron({ kant }: { kant: "links" | "rechts" }) {

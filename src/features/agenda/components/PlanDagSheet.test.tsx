@@ -12,13 +12,6 @@ vi.mock("@/lib/supabase/client", async () => {
 
 import { PlanDagSheet } from "./PlanDagSheet";
 
-const CLUB = {
-  id: "91d8d419-3736-498e-90be-362de786d588",
-  name: "Padel De Panne",
-  city: "De Panne",
-  timezone: "Europe/Brussels",
-};
-
 function groep(id: string, name: string, leden = 8): GroupSummary {
   return {
     id,
@@ -42,8 +35,6 @@ function toon(props: Partial<Parameters<typeof PlanDagSheet>[0]> = {}) {
         groepen={TWEE}
         gekozenGroep={null}
         onGroep={onGroep}
-        club={CLUB}
-        onClub={() => {}}
         vensterEinde="2026-08-13"
         onClose={onClose}
         onDoor={onDoor}
@@ -75,6 +66,32 @@ describe("<PlanDagSheet />", () => {
     expect(gekozen.closest("label")).toHaveTextContent("Kantoorpadel");
     expect(gekozen.closest("label")).toHaveTextContent("laatst gebruikt");
     expect(screen.getByRole("button", { name: /Kies momenten/ })).toBeEnabled();
+  });
+
+  it("negeert een onthouden groep die je verliet (#1270)", () => {
+    // Met een oude id in `agenda-laatste-groep` stond er geen rij aangevinkt,
+    // was "Kies momenten →" tóch actief, en sloot de klik alles zonder iets te
+    // openen: de wizard kreeg een groep die niet meer bestaat.
+    toon({ gekozenGroep: "verlaten-groep" });
+    expect(screen.queryByRole("radio", { checked: true })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Kies momenten/ })).toBeDisabled();
+  });
+
+  it("valt bij één groep terug op die ene, ook met een oude id", () => {
+    // Daar valt niets te kiezen, dus die stap hoort niet in de weg te zitten.
+    toon({ groepen: [groep("g1", "Vamos!")], gekozenGroep: "verlaten-groep" });
+    expect(screen.getByRole("button", { name: /Kies momenten/ })).toBeEnabled();
+  });
+
+  it("vraagt de club hier niet meer (#1270, #1271)", () => {
+    // De clubnaam stond hier eerst twee keer: als tekst links en in de knop
+    // rechts, wat op 390px "LAG…" opleverde naast dezelfde naam voluit (#1270).
+    // Daarna bleek de vraag zélf dubbel: het scherm hierna stelt hem opnieuw,
+    // op dezelfde state, en dáár zie je wat je keuze oplevert (#1271).
+    toon();
+    expect(screen.queryByText(/Padel De Panne/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Club")).not.toBeInTheDocument();
+    expect(screen.queryByText("je huidige clubkeuze")).not.toBeInTheDocument();
   });
 
   it("meldt de keuze terug en geeft daarna het stokje door", async () => {

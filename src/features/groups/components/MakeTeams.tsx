@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
@@ -19,19 +19,24 @@ import {
   type PlayPoll,
   type PollOption,
 } from "@/features/groups/pollsApi";
+import { avondDatumLabel } from "@/features/groups/eveningPoster";
 import { tallyOption } from "@/features/groups/pollLogic";
-import { rondeStart, rondesOpDag } from "@/features/groups/speeldagRondes";
+import {
+  rondeStart,
+  rondesOpDag,
+  rondesVoorDuur,
+} from "@/features/groups/speeldagRondes";
 import { FairTeamsCard } from "@/features/groups/components/FairTeams";
 import {
-  bewaarKeuzes,
-  leesKeuzes,
+  haalKeuzes,
   pasKeuzesToe,
+  zetKeuzes,
   type AanwezigKeuzes,
 } from "@/features/groups/aanwezigOpslag";
 import { SpelersKiezer } from "@/features/groups/components/SpelersKiezer";
 import { SpeelformaatKaart } from "@/features/groups/components/SpeelformaatKaart";
 import type { KiesbareSpeler } from "@/features/groups/spelersKiezer";
-import type { Speelvorm } from "@/features/groups/speelformaat";
+import { klemRondes, type Speelvorm } from "@/features/groups/speelformaat";
 import type { GroupMember, Match, Profile, Team } from "@/types";
 import "@/features/groups/Proposals.css";
 
@@ -76,8 +81,10 @@ export function MakeTeams({
   myId: string;
   matches: Match[];
   teams: Record<string, Team>;
-  /** Ronde met nog openstaande uitslagen (blokkeert Mexicano), of null. */
-  openRound: { round: number } | null;
+  /** Ronde met nog openstaande uitslagen (blokkeert Mexicano), of null. Komt
+   *  van `openGeplandeRonde` en kijkt naar de hele groep, net als de RPC; `dag`
+   *  is de clubdag waarop die ronde staat (#1271). */
+  openRound: { round: number; dag?: string | null } | null;
   /** De speeldag waarvoor gegenereerd wordt (#1133). Zonder waarde zoekt de
    *  generator zelf de speeldag van vandaag op — het gedrag op de Spelen-tab. */
   speeldag?: GeneratorSpeeldag | null;
@@ -164,6 +171,24 @@ export function MakeTeams({
 
   const tonightYes = gekozen?.yes ?? null;
 
+  // Hoeveel rondes er nog in de geboekte tijd passen (#1271). `rondesVoorDuur`
+  // bestond al maar had alleen de cron als caller; de kiezer in de UI was een
+  // vaste 1–10 die niets van de boeking wist. De rondes die al klaarstaan gaan
+  // eraf: die zijn al gespeeld of ingepland.
+  const alKlaar = rondesTotNu ?? rondesOpDag(matches, club.timezone, dag);
+  const rondesInBoeking = gekozen
+    ? Math.max(0, rondesVoorDuur(gekozen.option.duration) - alKlaar)
+    : null;
+  // Eén keer per moment de standaard zetten, daarna is het jouw getal.
+  const standaardVoor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!gekozen || standaardVoor.current === gekozen.option.id) return;
+    standaardVoor.current = gekozen.option.id;
+    if (rondesInBoeking != null && rondesInBoeking > 0) {
+      setRoundsToGen(klemRondes(rondesInBoeking));
+    }
+  }, [gekozen, rondesInBoeking]);
+
   // Starttijd van de eerstvolgende ronde: tien minuten per al klaargezette
   // ronde opschuivend vanaf het gekozen moment. De rondes die er op die dag al
   // staan tellen mee, dus een tweede generatie landt niet bovenop de eerste.
@@ -182,10 +207,29 @@ export function MakeTeams({
   // voor iedereen die je nog niet hebt aangeraakt — zie aanwezigOpslag.ts.
   const defaultKey = (tonightYes ?? members.map((m) => m.player_id)).join(",");
   const ledenKey = members.map((m) => m.player_id).join(",");
+  //
+  // Sinds #1271 staan ze in de database zodra er een moment is (#1146 maakt dat
+  // per moment en niet per dag). Daarmee ziet een tweede organisator ze ook, en
+  // kan de speler die afzegt zichzelf uit de opstelling halen — voorheen leefde
+  // dit in localStorage en zag alleen jouw browser het.
   const [keuzes, setKeuzes] = useState<AanwezigKeuzes>({});
-  useEffect(() => {
-    setKeuzes(leesKeuzes(groupId, dag, momentId));
+  const herlaadKeuzes = useCallback(() => {
+    let levend = true;
+    void haalKeuzes(groupId, dag, momentId).then((k) => {
+      if (levend) setKeuzes(k);
+    });
+    return () => {
+      levend = false;
+    };
   }, [groupId, dag, momentId]);
+  useEffect(() => herlaadKeuzes(), [herlaadKeuzes]);
+  // Een afmelding halverwege de avond hoort meteen te landen: de indeling die
+  // je erna genereert hangt ervan af.
+  useRealtime(
+    "play_poll_presence",
+    herlaadKeuzes,
+    momentId ? `option_id=eq.${momentId}` : undefined,
+  );
 
   const selected = useMemo(
     () =>
@@ -197,10 +241,15 @@ export function MakeTeams({
     [ledenKey, defaultKey, keuzes],
   );
 
-  /** Eén plek waar een keuze zowel in beeld als in de opslag terechtkomt. */
+  /** Eén plek waar een keuze zowel in beeld als in de opslag terechtkomt.
+   *  Optimistisch: de pil springt meteen om, het wegschrijven mag daarachteraan
+   *  komen. Gaat dat mis, dan zegt de toast het — de lokale kopie in
+   *  `zetKeuzes` houdt je selectie dan wel vast. */
   const kiesAnders = (volgende: AanwezigKeuzes) => {
     setKeuzes(volgende);
-    bewaarKeuzes(groupId, dag, volgende, momentId);
+    void zetKeuzes(groupId, dag, volgende, momentId).catch((err) => {
+      toast.error(errorMessage(err));
+    });
   };
 
   const toggle = (id: string) => {
@@ -231,9 +280,21 @@ export function MakeTeams({
   const selectedIds = [...selected];
   const enough = selectedIds.length >= 4;
   const mexicanoBlocked = format === "mexicano" && !!openRound;
+  // De blokkerende ronde hoeft niet die van vandaag te zijn (#1271): noem de
+  // avond erbij, anders zoek je je suf naar een ronde die hier niet staat.
+  const blokkadeDag =
+    openRound?.dag && openRound.dag !== dag
+      ? ` van ${avondDatumLabel(openRound.dag)}`
+      : "";
 
   async function generate() {
     setBusy(true);
+    // Hoeveel rondes er al staan als het halverwege misgaat (#1271). N rondes
+    // zijn N losse RPC-calls; faalt call 3 van 5, dan blijven 1 en 2 staan met
+    // een rode toast erboven en weet je niet wat er nu klaarstaat. De cron
+    // erkent dat expliciet ("liever een halve reeks die de groep zelf aanvult
+    // dan dubbele rondes"), dus de reeks blijft — de melding wordt eerlijk.
+    let gelukt = 0;
     try {
       let total = 0;
       if (format === "americano") {
@@ -244,10 +305,18 @@ export function MakeTeams({
           if (courts.length === 0) break;
           const ids = await createFairRound(groupId, courts, startVanRonde(i));
           total += ids.length;
+          gelukt += 1;
           applyRound(history, courts);
         }
       } else {
-        const ids = await generateMexicanoRound(groupId, startVanRonde(0));
+        // Mét de selectie (#1271): zonder deze lijst rangschikt de RPC de hele
+        // ledenlijst en staat wie afzegde alsnog op de baan — terwijl het
+        // paneel hierboven "N aan · M op de bank" belooft.
+        const ids = await generateMexicanoRound(
+          groupId,
+          startVanRonde(0),
+          selectedIds,
+        );
         total = ids.length;
       }
       if (total === 0) throw new Error("Geen wedstrijden gegenereerd.");
@@ -260,7 +329,14 @@ export function MakeTeams({
             : `${roundsToGen} Americano-rondes gegenereerd.`,
       );
     } catch (err) {
-      toast.error(errorMessage(err));
+      // Wat er wél staat hoort in beeld te komen, en de lijst moet meteen
+      // kloppen: anders zet je er nog vijf bovenop.
+      if (gelukt > 0) onGenerated();
+      const staat =
+        gelukt > 0
+          ? ` ${gelukt} van de ${roundsToGen} ${gelukt === 1 ? "ronde staat" : "rondes staan"} al klaar; wis ze of vul aan.`
+          : "";
+      toast.error(`${errorMessage(err)}${staat}`);
     } finally {
       setBusy(false);
     }
@@ -277,6 +353,9 @@ export function MakeTeams({
         profielen={profiles}
         gekozen={selected}
         moment={gekozen?.option.start_time ?? null}
+        // Niet hardgecodeerd "Vandaag" (#1271): de speeldagpagina genereert
+        // net zo goed voor een avond over drie weken.
+        dagLabel={dag === today ? "Vandaag" : avondDatumLabel(dag)}
         herkomst={
           tonightYes
             ? speeldag
@@ -299,12 +378,13 @@ export function MakeTeams({
         aanwezig={selectedIds.length}
         aantalRondes={roundsToGen}
         onAantalRondes={setRoundsToGen}
+        rondesInBoeking={rondesInBoeking}
         bezig={busy}
         blokkade={
           !enough
             ? "Minimaal 4 deelnemers nodig om teams te maken."
             : mexicanoBlocked
-              ? `Vul eerst alle uitslagen van ronde ${openRound!.round} in — Mexicano paart op basis van de volledige stand.`
+              ? `Vul eerst alle uitslagen van ronde ${openRound!.round}${blokkadeDag} in — Mexicano paart op basis van de volledige stand.`
               : null
         }
         onStart={() => {

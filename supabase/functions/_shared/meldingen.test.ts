@@ -49,9 +49,14 @@ describe("VOORKEUR_KOLOM", () => {
     expect(VOORKEUR_KOLOM.lef).toBe("notify_match_reminder");
   });
 
-  it("laat polls, VAR en pias ongefilterd", () => {
-    expect(VOORKEUR_KOLOM.poll).toBeNull();
-    expect(VOORKEUR_KOLOM.var).toBeNull();
+  // #1273: poll (zeven verstuurmomenten) en VAR (twee) hadden geen enkele
+  // schakelaar — samen met pias tien van de negentien.
+  it("laat polls en VAR temperen", () => {
+    expect(VOORKEUR_KOLOM.poll).toBe("notify_poll");
+    expect(VOORKEUR_KOLOM.var).toBe("notify_var");
+  });
+
+  it("laat pias ongefilterd, want die filtert zichzelf via roast_schild", () => {
     expect(VOORKEUR_KOLOM.pias).toBeNull();
   });
 });
@@ -106,7 +111,7 @@ describe("zonderUitgezet", () => {
     expect(over).toEqual(["b"]);
   });
 
-  it("laat iedereen door als er geen kolom is (poll, VAR, pias, lef)", () => {
+  it("laat iedereen door als er geen kolom is (pias)", () => {
     expect(zonderUitgezet(["a", "b"], null, [])).toEqual(["a", "b"]);
   });
 

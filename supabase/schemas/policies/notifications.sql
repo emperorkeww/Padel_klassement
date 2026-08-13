@@ -15,6 +15,8 @@ create policy "notifications_update_own" on public.notifications
   with check (user_id = (select auth.uid()));
 
 -- Bewust geen insert- of delete-policy: een melding schrijf je niet zelf, en
--- wegveegbaar hoeft ze niet te zijn — prune_notifications ruimt op na 90 dagen.
+-- wegvegen gaat sinds #1273 zacht — dismissed_at zetten in plaats van de rij
+-- verwijderen, zodat "ongedaan maken" een gewone update is en geen insert-recht
+-- vraagt. prune_notifications ruimt na 90 dagen alsnog alles op.
 revoke insert, update on public.notifications from authenticated;
-grant update (read_at) on public.notifications to authenticated;
+grant update (read_at, dismissed_at) on public.notifications to authenticated;

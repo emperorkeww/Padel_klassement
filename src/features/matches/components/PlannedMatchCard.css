@@ -437,3 +437,10 @@
     flex: 1 1 100%;
   }
 }
+
+/* Corrigeren vanaf de kaart (#1271): een stille knop onder de opgeslagen
+   uitslag. Geen hoofdactie — de meeste uitslagen kloppen — maar wél binnen
+   handbereik op de avond zelf, in plaats van via /matches/:id → ⋯. */
+.planned-saved__corrigeer {
+  justify-self: start;
+}

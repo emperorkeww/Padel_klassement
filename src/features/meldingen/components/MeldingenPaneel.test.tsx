@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
+import { ToastProvider } from "@/ui/ToastProvider";
 import type { Melding } from "../api";
 
 const navigeer = vi.fn();
@@ -13,11 +14,22 @@ vi.mock("react-router-dom", async (importOriginal) => ({
 vi.mock("../api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../api")>()),
   markeerGelezen: vi.fn().mockResolvedValue(undefined),
-  markeerAllesGelezen: vi.fn().mockResolvedValue(undefined),
+  markeerOngelezen: vi.fn().mockResolvedValue(undefined),
+  markeerAllesGelezen: vi.fn().mockResolvedValue(["n1"]),
+  zetAllesOngelezen: vi.fn().mockResolvedValue(undefined),
+  veegWeg: vi.fn().mockResolvedValue(undefined),
+  zetTerug: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { MeldingenPaneel } from "./MeldingenPaneel";
-import { markeerAllesGelezen, markeerGelezen } from "../api";
+import {
+  markeerAllesGelezen,
+  markeerGelezen,
+  markeerOngelezen,
+  veegWeg,
+  zetAllesOngelezen,
+  zetTerug,
+} from "../api";
 
 const melding = (over: Partial<Melding> = {}): Melding => ({
   id: "n1",
@@ -33,21 +45,23 @@ const melding = (over: Partial<Melding> = {}): Melding => ({
 
 function toon(
   meldingen: Melding[],
-  props: Partial<{ laadt: boolean; limiet: number; verzoeken: number }> = {},
+  props: Partial<{ laadt: boolean; fout: string; verzoeken: number }> = {},
 ) {
   const onClose = vi.fn();
   const onVeranderd = vi.fn();
   render(
     <MemoryRouter>
-      <MeldingenPaneel
-        open
-        onClose={onClose}
-        meldingen={meldingen}
-        laadt={props.laadt ?? false}
-        limiet={props.limiet ?? 20}
-        verzoeken={props.verzoeken ?? 0}
-        onVeranderd={onVeranderd}
-      />
+      <ToastProvider>
+        <MeldingenPaneel
+          open
+          onClose={onClose}
+          meldingen={meldingen}
+          laadt={props.laadt ?? false}
+          fout={props.fout ?? null}
+          verzoeken={props.verzoeken ?? 0}
+          onVeranderd={onVeranderd}
+        />
+      </ToastProvider>
     </MemoryRouter>,
   );
   return { onClose, onVeranderd };
@@ -61,7 +75,9 @@ beforeEach(() => {
 
 describe("<MeldingenPaneel /> (#1090)", () => {
   it("toont titel, body en relatieve tijd per melding", () => {
-    toon([melding({ created_at: new Date(Date.now() - 7_200_000).toISOString() })]);
+    toon([
+      melding({ created_at: new Date(Date.now() - 7_200_000).toISOString() }),
+    ]);
     expect(screen.getByText("Nieuwe speeldag-poll")).toBeInTheDocument();
     expect(screen.getByText("Bart stelt momenten voor.")).toBeInTheDocument();
     expect(screen.getByText("2 u geleden")).toBeInTheDocument();
@@ -103,36 +119,39 @@ describe("<MeldingenPaneel /> (#1090)", () => {
 
   it("biedt 'alles gelezen' alleen zolang er iets ongelezen is", async () => {
     const { onVeranderd } = toon([melding()]);
-    await userEvent.click(screen.getByRole("button", { name: /alles gelezen/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /alles gelezen/i }),
+    );
     expect(markeerAllesGelezen).toHaveBeenCalled();
     await vi.waitFor(() => expect(onVeranderd).toHaveBeenCalled());
   });
 
-  it("verbergt 'alles gelezen' als alles al gelezen is", () => {
+  // #1273: de knop verscheen en verdween, en duwde de lijst dus een rij op en
+  // neer precies terwijl je erop wilde tikken.
+  it("houdt 'alles gelezen' op zijn plek, uitgeschakeld als er niets te markeren valt", () => {
     toon([melding({ read_at: "2026-08-01T10:00:00.000Z" })]);
-    expect(
-      screen.queryByRole("button", { name: /alles gelezen/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /alles gelezen/i })).toBeDisabled();
   });
 
   it("zegt in de lege staat wat er straks komt te staan", () => {
     toon([]);
     expect(screen.getByText(/nog niets te melden/i)).toBeInTheDocument();
-    expect(screen.getByText(/zodra er een ronde klaarstaat/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/zodra er een ronde klaarstaat/i),
+    ).toBeInTheDocument();
   });
 
-  it("wijst naar de volledige lijst zodra het paneel vol zit", () => {
-    toon(
-      Array.from({ length: 3 }, (_, i) => melding({ id: `n${i}`, tag: `t${i}` })),
-      { limiet: 3 },
-    );
+  // #1273: hing tot dan aan een vol paneel (twintig meldingen). Daaronder was
+  // er op het hele dashboard geen enkele link naar /meldingen.
+  it("wijst naar de volledige lijst zodra er íets staat", () => {
+    toon([melding()]);
     expect(
       screen.getByRole("link", { name: /alles bekijken/i }),
     ).toHaveAttribute("href", "/meldingen");
   });
 
-  it("belooft geen langere lijst als alles al in het paneel staat", () => {
-    toon([melding()], { limiet: 20 });
+  it("belooft geen lijst als er niets is om te bekijken", () => {
+    toon([]);
     expect(
       screen.queryByRole("link", { name: /alles bekijken/i }),
     ).not.toBeInTheDocument();
@@ -203,18 +222,167 @@ describe("<MeldingenPaneel /> (#1090)", () => {
   it("markeert ongelezen items ook voor wie geen kleur ziet", () => {
     const { container } = render(
       <MemoryRouter>
-        <MeldingenPaneel
-          open
-          onClose={() => {}}
-          meldingen={[melding()]}
-          laadt={false}
-          limiet={20}
-          onVeranderd={() => {}}
-        />
+        <ToastProvider>
+          <MeldingenPaneel
+            open
+            onClose={() => {}}
+            meldingen={[melding()]}
+            laadt={false}
+            onVeranderd={() => {}}
+          />
+        </ToastProvider>
       </MemoryRouter>,
     );
-    // De stip is aria-hidden; "ongelezen" staat als tekst in de regel.
-    expect(container.querySelector(".melding--ongelezen")).not.toBeNull();
+    // Het icoon is aria-hidden; "ongelezen" staat als tekst in de regel.
+    expect(container.querySelector(".melding-rij--ongelezen")).not.toBeNull();
     expect(screen.getAllByText(/ongelezen/i).length).toBeGreaterThan(0);
+  });
+
+  // #1273: negen soorten die op één regel leken.
+  describe("de rij draagt haar soort (#1273)", () => {
+    it("geeft elke soort een eigen icoonvlak in zijn accentfamilie", () => {
+      const { container } = render(
+        <MemoryRouter>
+          <ToastProvider>
+            <MeldingenPaneel
+              open
+              onClose={() => {}}
+              meldingen={[
+                melding({ id: "n1", soort: "poll", tag: "t1" }),
+                melding({ id: "n2", soort: "var", tag: "t2", title: "VAR" }),
+                melding({
+                  id: "n3",
+                  soort: "uitslag",
+                  tag: "t3",
+                  title: "Gewonnen",
+                }),
+              ]}
+              laadt={false}
+              onVeranderd={() => {}}
+            />
+          </ToastProvider>
+        </MemoryRouter>,
+      );
+      expect(container.querySelector(".melding__icoon--poll")).not.toBeNull();
+      expect(container.querySelector(".melding__icoon--warn")).not.toBeNull();
+      expect(
+        container.querySelector(".melding__icoon--success"),
+      ).not.toBeNull();
+      // Elke rij heeft er precies één, ook als de servertitel al een emoji had.
+      expect(container.querySelectorAll(".melding__icoon")).toHaveLength(3);
+    });
+
+    it("valt terug op een neutraal icoon voor een soort die deze bundel nog niet kent", () => {
+      const { container } = render(
+        <MemoryRouter>
+          <ToastProvider>
+            <MeldingenPaneel
+              open
+              onClose={() => {}}
+              meldingen={[melding({ soort: "teleportatie" })]}
+              laadt={false}
+              onVeranderd={() => {}}
+            />
+          </ToastProvider>
+        </MemoryRouter>,
+      );
+      expect(
+        container.querySelector(".melding__icoon--neutraal"),
+      ).not.toBeNull();
+    });
+
+    it("laat de emoji uit de servertitel weg, want het icoon draagt dat al", () => {
+      toon([melding({ title: "🎾 Nieuwe ronde staat klaar" })]);
+      expect(screen.getByText("Nieuwe ronde staat klaar")).toBeInTheDocument();
+      expect(screen.queryByText(/🎾/)).toBeNull();
+    });
+
+    it("noemt de soort voor wie luistert", () => {
+      toon([melding({ soort: "var", title: "Er wordt een punt betwist" })]);
+      expect(screen.getByText("VAR:")).toBeInTheDocument();
+    });
+  });
+
+  // #1273: useMeldingen leverde een fout op, maar die kwam nooit hier aan —
+  // het paneel viel dan terug op de lege staat.
+  describe("een mislukte query (#1273)", () => {
+    it("meldt de fout met een weg vooruit in plaats van 'nog niets te melden'", async () => {
+      const { onVeranderd } = toon([], { fout: "Kon meldingen niet laden" });
+      // ToastProvider heeft zelf een live region met role=alert; deze staat in
+      // het paneel.
+      expect(screen.getByText(/kon meldingen niet laden/i)).toBeInTheDocument();
+      expect(screen.queryByText(/nog niets te melden/i)).toBeNull();
+      await userEvent.click(
+        screen.getByRole("button", { name: /opnieuw proberen/i }),
+      );
+      expect(onVeranderd).toHaveBeenCalled();
+    });
+
+    it("laat de wegwijzers staan, ook als het laden faalde", () => {
+      toon([], { fout: "offline" });
+      expect(
+        screen.getByRole("link", { name: /meldingsvoorkeuren/i }),
+      ).toBeInTheDocument();
+    });
+  });
+
+  // #1273: openen was de enige actie die er was — en dat markeert gelezen én
+  // navigeert je weg.
+  describe("acties per melding (#1273)", () => {
+    it("markeert een ongelezen melding gelezen zonder te navigeren", async () => {
+      const { onVeranderd } = toon([melding()]);
+      await userEvent.click(
+        screen.getByRole("button", { name: /markeer .* als gelezen/i }),
+      );
+      expect(markeerGelezen).toHaveBeenCalledWith("n1");
+      expect(navigeer).not.toHaveBeenCalled();
+      await vi.waitFor(() => expect(onVeranderd).toHaveBeenCalled());
+    });
+
+    it("zet een gelezen melding terug op ongelezen", async () => {
+      toon([melding({ read_at: "2026-08-01T10:00:00.000Z" })]);
+      await userEvent.click(
+        screen.getByRole("button", { name: /markeer .* als ongelezen/i }),
+      );
+      expect(markeerOngelezen).toHaveBeenCalledWith("n1");
+    });
+
+    it("legt de tag-botsing uit in plaats van een fout te tonen", async () => {
+      // De partiële unieke index houdt één óngelezen rij per tag vast.
+      vi.mocked(markeerOngelezen).mockRejectedValueOnce({ code: "23505" });
+      toon([melding({ read_at: "2026-08-01T10:00:00.000Z" })]);
+      await userEvent.click(
+        screen.getByRole("button", { name: /markeer .* als ongelezen/i }),
+      );
+      expect(
+        await screen.findByText(/al een ongelezen melding over deze gebeurtenis/i),
+      ).toBeInTheDocument();
+    });
+
+    it("legt een melding weg en biedt hem terug", async () => {
+      const { onVeranderd } = toon([melding()]);
+      await userEvent.click(screen.getByRole("button", { name: /leg .* weg/i }));
+      expect(veegWeg).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "n1" }),
+      );
+      const terug = await screen.findByRole("button", {
+        name: /tik om terug te zetten/i,
+      });
+      await userEvent.click(terug);
+      expect(zetTerug).toHaveBeenCalledWith("n1");
+      await vi.waitFor(() => expect(onVeranderd).toHaveBeenCalled());
+    });
+
+    it("biedt na 'alles gelezen' een weg terug voor precies die rijen", async () => {
+      toon([melding()]);
+      await userEvent.click(
+        screen.getByRole("button", { name: /alles gelezen/i }),
+      );
+      const terug = await screen.findByRole("button", {
+        name: /tik om terug te zetten/i,
+      });
+      await userEvent.click(terug);
+      expect(zetAllesOngelezen).toHaveBeenCalledWith(["n1"]);
+    });
   });
 });

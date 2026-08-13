@@ -13,11 +13,16 @@ vi.mock("@/lib/supabase/client", async () => {
 
 // De push-module is de natuurlijke seam: browser-API's (service worker,
 // PushManager) bestaan niet in jsdom, dus we mocken op moduleniveau.
-vi.mock("@/lib/supabase/push", () => ({
+vi.mock("@/lib/supabase/push", async (importOriginal) => ({
+  // apparaatNaam is pure tekst en mag echt blijven (#1273).
+  ...(await importOriginal<typeof import("@/lib/supabase/push")>()),
   pushAvailability: vi.fn(() => "unsupported"),
   getPushSubscription: vi.fn(() => Promise.resolve(null)),
   enablePush: vi.fn(() => Promise.resolve()),
   disablePush: vi.fn(() => Promise.resolve()),
+  getMijnApparaten: vi.fn(() => Promise.resolve([])),
+  herstelAbonnement: vi.fn(() => Promise.resolve(false)),
+  vergeetApparaat: vi.fn(() => Promise.resolve()),
 }));
 
 import ProfileSettings from "./ProfileSettings";
@@ -25,6 +30,7 @@ import { supabase } from "@/lib/supabase/client";
 import {
   disablePush,
   enablePush,
+  getMijnApparaten,
   getPushSubscription,
   pushAvailability,
 } from "@/lib/supabase/push";
@@ -322,6 +328,77 @@ describe("<ProfileSettings /> — notificatie-voorkeuren (#57)", () => {
     await userEvent.click(
       await screen.findByRole("switch", { name: /nieuwe ronde/i }),
     );
+    expect(
+      await screen.findByText(/pushmeldingen bijgewerkt/i),
+    ).toBeInTheDocument();
+  });
+
+  // #1273: poll en VAR waren samen tien van de negentien verstuurmomenten en
+  // hadden geen enkele knop — wie ze wilde temperen kon alleen de hele app
+  // afzetten.
+  it("heeft ook een schakelaar voor speeldag-polls en de VAR", async () => {
+    renderPage();
+    await openTab(/meldingen & privacy/i);
+    expect(
+      await screen.findByRole("switch", { name: /speeldagen plannen/i }),
+    ).toBeChecked();
+    expect(screen.getByRole("switch", { name: /^var/i })).toBeChecked();
+  });
+
+  // #1273: de kaart heette "Pushmeldingen op dit apparaat" en toonde er nul,
+  // terwijl een verlopen abonnement pas opgeruimd wordt als een verzending
+  // 404/410 oplevert.
+  it("toont welke toestellen meldingen krijgen, met een weg om er een in te trekken", async () => {
+    vi.mocked(getMijnApparaten).mockResolvedValue([
+      {
+        endpoint: "https://fcm.googleapis.com/x1",
+        user_agent: "Mozilla/5.0 (Linux; Android 14) Chrome/126",
+        created_at: "2026-08-01T10:00:00.000Z",
+        ditApparaat: true,
+      },
+      {
+        endpoint: "https://web.push.apple.com/x2",
+        user_agent: null,
+        created_at: "2026-07-04T10:00:00.000Z",
+        ditApparaat: false,
+      },
+    ]);
+    renderPage();
+    await openTab(/meldingen & privacy/i);
+    expect(await screen.findByText(/chrome op android/i)).toBeInTheDocument();
+    // Zonder user-agent (oude rijen) valt de naam terug op de push-dienst.
+    expect(screen.getByText(/apple-toestel/i)).toBeInTheDocument();
+    // "op dit apparaat" staat ook in de kaarttitel; deze markering hoort bij de
+    // rij van de browser waarin je kijkt.
+    expect(document.querySelector(".apparaten__hier")).not.toBeNull();
+    expect(
+      screen.getAllByRole("button", { name: /intrekken/i }),
+    ).toHaveLength(2);
+  });
+
+  it("zwijgt over apparaten als er geen abonnement is", async () => {
+    vi.mocked(getMijnApparaten).mockResolvedValue([]);
+    renderPage();
+    await openTab(/meldingen & privacy/i);
+    await screen.findByRole("heading", { name: /waarvoor mag je toestel piepen/i });
+    expect(screen.queryByText(/toestellen die meldingen krijgen/i)).toBeNull();
+  });
+
+  it("zet de stille uren standaard aan, met de tijden erbij", async () => {
+    renderPage();
+    await openTab(/meldingen & privacy/i);
+    const schakelaar = await screen.findByRole("switch", {
+      name: /stille uren/i,
+    });
+    expect(schakelaar).toBeChecked();
+    // Een speeldag om 08:00 leverde een push om 03:05; deze twee tijden zijn
+    // de bodem daaronder.
+    const van = screen.getByLabelText(/^van$/i) as HTMLInputElement;
+    const tot = screen.getByLabelText(/^tot$/i) as HTMLInputElement;
+    expect(van.value).toBe("23:00");
+    expect(tot.value).toBe("07:30");
+
+    await userEvent.click(schakelaar);
     expect(
       await screen.findByText(/pushmeldingen bijgewerkt/i),
     ).toBeInTheDocument();

@@ -296,6 +296,30 @@ describe("setMatchResult", () => {
     });
   });
 
+  it("houdt de geplande speeltijd aan wanneer die meegegeven wordt (#1271)", async () => {
+    enqueue({ data: [{ id: "m1" }] });
+    await setMatchResult({
+      matchId: "m1",
+      winnerTeamId: "t-a",
+      scoreA: 6,
+      scoreB: 3,
+      playedAt: "2026-08-12T18:00:00.000Z",
+    });
+    const upd = calls.find((c) => c.method === "update");
+    expect(upd?.args[0]).toMatchObject({ played_at: "2026-08-12T18:00:00.000Z" });
+  });
+
+  it("valt terug op nu wanneer de match geen tijdstip heeft", async () => {
+    enqueue({ data: [{ id: "m1" }] });
+    const voor = Date.now();
+    await setMatchResult({ matchId: "m1", winnerTeamId: null, playedAt: null });
+    const upd = calls.find((c) => c.method === "update");
+    const gezet = new Date(
+      (upd?.args[0] as Record<string, string>).played_at,
+    ).getTime();
+    expect(gezet).toBeGreaterThanOrEqual(voor);
+  });
+
   it("meldt dat de match niet meer bestaat (0 rijen + geen lookup)", async () => {
     enqueue({ data: [] }, { data: null });
     await expect(

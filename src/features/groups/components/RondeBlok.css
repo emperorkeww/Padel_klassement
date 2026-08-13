@@ -160,3 +160,18 @@
   background: none;
   box-shadow: none;
 }
+
+/* Een late afmelding (#1271): geen fout, wel iets waar je nú iets mee moet.
+   Dezelfde taal als de blokkade in het speelformaat-paneel. */
+.round__afgemeld {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--gold);
+}
+/* De wisknop hoort bij de kop, maar mag hem niet domineren: hij staat er
+   alleen zolang er nog geen uitslag in de ronde staat. */
+.round-head__wissen {
+  margin-left: var(--sp-2);
+  position: relative;
+  z-index: 1;
+}

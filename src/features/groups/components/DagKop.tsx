@@ -149,8 +149,9 @@ function voortgangZin(
   }
   const stand = `${v.gespeeld} van ${v.totaal} uitslagen binnen`;
   if (v.openRonde == null) return stand;
-  // "Ronde 2 van 3" alleen als dat klopt; bij losse nummering (bv. een ronde
-  // verwijderd) zou "ronde 4 van 3" onzin zijn.
+  // "Ronde 2 van 3" alleen als dat klopt. De grootste bron van scheve
+  // nummering is weg (#1271: rondes tellen binnen hun speeldag), maar een
+  // gewiste ronde laat nog steeds een gat achter.
   const van = v.openRonde <= v.rondes ? ` van ${v.rondes}` : "";
   return `Ronde ${v.openRonde}${van} loopt · ${stand}`;
 }

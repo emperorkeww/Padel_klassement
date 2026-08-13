@@ -573,6 +573,21 @@
   display: grid;
   gap: var(--sp-2);
 }
+/* Voorbije momenten zijn context, geen keuze (#1271): opvouwbaar en gedempt. */
+.moment-kiezer__voorbij {
+  margin-top: var(--sp-3);
+}
+.moment-kiezer__voorbij > summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.moment-kiezer__voorbij[open] > summary {
+  margin-bottom: var(--sp-2);
+}
 .moment-kiezer__optie {
   display: grid;
   gap: var(--sp-1);
@@ -780,6 +795,20 @@
   margin: var(--sp-1) 0 0;
   font-size: var(--fs-xs);
   color: var(--gold);
+}
+/* Afmelden ná het vastleggen (#1271): een stille regel onder de deelnemers.
+   Het is geen hoofdactie — de meesten komen gewoon — maar wie afhaakt moet het
+   kunnen zeggen zonder de organisator te appen. */
+.winner-card__afmelden {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin: var(--sp-2) 0 0;
+}
+.winner-card__afmeld-uitleg {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
 }
 .winner-card__actions {
   display: flex;

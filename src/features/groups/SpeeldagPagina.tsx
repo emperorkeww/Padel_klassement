@@ -25,13 +25,22 @@ import {
   speeldagMoment,
 } from "@/features/groups/speeldagMatches";
 import { rondesOpDag } from "@/features/groups/speeldagRondes";
-import { groupByRound } from "@/features/groups/groupDetailHelpers";
+import {
+  groupByRound,
+  openGeplandeRonde,
+} from "@/features/groups/groupDetailHelpers";
 import { PollCard } from "@/features/groups/components/PollCard";
+import { DoorloopBalk } from "@/features/groups/components/DoorloopBalk";
 import { RondeBlok } from "@/features/groups/components/RondeBlok";
 import { MakeTeams } from "@/features/groups/components/MakeTeams";
 import { VolgendeRonde } from "@/features/groups/components/VolgendeRonde";
 import { LossePartij } from "@/features/groups/components/LossePartij";
 import { dateInZone } from "@/lib/utils/time";
+import { errorMessage } from "@/lib/utils/errors";
+import { useToast } from "@/ui/ToastProvider";
+import { useConfirm } from "@/ui/ConfirmDialog";
+import { verwijderRonde } from "@/features/groups/api";
+import { getAanwezigheid } from "@/features/groups/aanwezigheidApi";
 import type { Match, Profile } from "@/types";
 import "@/features/groups/Proposals.css";
 
@@ -56,6 +65,8 @@ export function SpeeldagPagina() {
   const { id = "" } = useParams();
   const { user } = useAuth();
   const myId = user?.id ?? "";
+  const toast = useToast();
+  const [confirm, confirmUi] = useConfirm();
 
   // De poll eerst: alles hieronder hangt aan de groep waar hij in zit, en die
   // staat niet in de URL — een poll-id is genoeg om hem te vinden.
@@ -116,6 +127,30 @@ export function SpeeldagPagina() {
     [moment, buren, matches.data],
   );
 
+  // Wie zich afmeldde (#1271). De ronde die al klaarstaat verandert daar niet
+  // van, dus dat hoort ergens te staan — anders sta je met z'n drieën op een
+  // baan waar er vier gepland waren.
+  const momentId = moment?.option.id ?? "";
+  const aanwezigheid = useAsync(
+    () => getAanwezigheid(momentId),
+    [momentId],
+    { enabled: momentId !== "" },
+  );
+  useRealtime(
+    "play_poll_presence",
+    aanwezigheid.reload,
+    momentId ? `option_id=eq.${momentId}` : undefined,
+  );
+  const afgemeld = useMemo(
+    () =>
+      new Set(
+        Object.entries(aanwezigheid.data ?? {})
+          .filter(([, aan]) => !aan)
+          .map(([id]) => id),
+      ),
+    [aanwezigheid.data],
+  );
+
   // Teams en rating-historie horen bij de wedstrijdkaarten, dus ze hoeven pas
   // te laden zodra die er zijn. Bewust `…ForMatches` en niet de "recente"
   // historie: een speeldag uit het verleden valt daar buiten.
@@ -169,6 +204,31 @@ export function SpeeldagPagina() {
   const [geklapt, setGeklapt] = useState<Record<number, boolean>>({});
   const rondeOpen = (round: number, list: Match[]) =>
     geklapt[round] ?? list.some((m) => m.status !== "completed");
+
+  // Een ronde wissen (#1271). Tot nu toe was de enige weg terug: per match
+  // ⋯ → "Verwijderen", zes seconden undo, keer drie banen keer N rondes.
+  const [wissen, setWissen] = useState<number | null>(null);
+  async function wisRonde(round: number, dag: string) {
+    const ok = await confirm({
+      title: `Ronde ${round} wissen?`,
+      body: "De wedstrijden van deze ronde verdwijnen. Er staat nog geen uitslag in, dus er gaat niets aan de stand verloren.",
+      confirmLabel: "Wissen",
+      danger: true,
+    });
+    if (!ok) return;
+    setWissen(round);
+    try {
+      const weg = await verwijderRonde(groupId, round, dag);
+      toast.success(
+        weg === 1 ? "Wedstrijd gewist." : `${weg} wedstrijden gewist.`,
+      );
+      herlaadMatches();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setWissen(null);
+    }
+  }
 
   const upsets = useMemo(
     () => upsetsByMatch(dagMatches, teams.data ?? {}, histories.data ?? {}),
@@ -228,11 +288,13 @@ export function SpeeldagPagina() {
   const eigenOpties = pollOptions(speeldag, alleOpties);
   const rondes = groupByRound(dagMatches);
   const intensiteit = groep.roast_intensiteit ?? "radioactief";
-  // Een ronde van deze dag met openstaande uitslagen blokkeert Mexicano: die
-  // vorm paart op de volledige stand en heeft dus alle uitslagen nodig.
-  const openRonde =
-    rondes.find(({ list }) => list.some((m) => m.status !== "completed")) ??
-    null;
+  // Een openstaande ronde blokkeert Mexicano: die vorm paart op de volledige
+  // stand en heeft dus alle uitslagen nodig. De RPC kijkt daarbij naar de hele
+  // groep, dus deze check ook (#1271) — een ronde die vorige week is blijven
+  // hangen gaf anders een groene knop en dan een onbegrijpelijke serverfout.
+  const openRonde = moment
+    ? openGeplandeRonde(matches.data ?? [], moment.tz)
+    : null;
 
   // Groepsleden als profiel: de kiesbare spelers bij een losse partij.
   const groepSpelers = leden
@@ -309,6 +371,16 @@ export function SpeeldagPagina() {
         </div>
       </header>
 
+      {/* Waar sta je in de doorloop (#1271)? De pagina droeg drie flows onder
+          elkaar zonder dat ergens stond wat de volgorde was — elke kaart wist
+          het van zichzelf, niemand van het geheel. */}
+      <DoorloopBalk
+        status={speeldag.status}
+        heeftMoment={speeldag.locked_option_id != null}
+        totaal={dagMatches.length}
+        gespeeld={dagMatches.filter((m) => m.status === "completed").length}
+      />
+
       <PollCard
         poll={speeldag}
         groupName={groep.name}
@@ -380,6 +452,9 @@ export function SpeeldagPagina() {
                 intensiteit={intensiteit}
                 upsets={upsets}
                 onMatches={herlaadMatches}
+                onWissen={moment ? () => void wisRonde(round, moment.dag) : undefined}
+                wisBezig={wissen === round}
+                afgemeld={afgemeld}
               />
             ))}
           </div>
@@ -391,6 +466,7 @@ export function SpeeldagPagina() {
           {generatorProps && <VolgendeRonde {...generatorProps} />}
         </section>
       )}
+      {confirmUi}
     </div>
   );
 }

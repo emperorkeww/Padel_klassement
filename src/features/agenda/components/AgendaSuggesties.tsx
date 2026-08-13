@@ -60,28 +60,32 @@ export function AgendaSuggesties({
 
   return (
     <section className="agenda-suggesties" aria-label="Suggesties">
-      {/* Met een eigen label en een eigen vorm (#1182). Dit was dezelfde
-          chiprij als het groepsfilter bovenaan, met dezelfde groepsnamen erin,
-          terwijl het iets anders doet: hier kies je er precies één, en die
-          keuze filtert niets maar bepaalt waarvoor gerekend wordt. */}
+      {/* Een keuzelijst en geen chiprij (#1270). Dit kreeg in #1182 al een eigen
+          label omdat het iets anders doet dan het groepsfilter bovenaan: daar
+          zet je er meerdere aan of uit, hier kies je er precies één en die
+          bepaalt waarvóór gerekend wordt. Maar het bleef dezelfde vorm met
+          dezelfde namen erin, en een label repareert geen vorm die iets anders
+          belooft. Een select zegt "precies één" uit zichzelf. */}
       {groepen.length > 1 && (
         <div className="agenda-suggesties__keuze">
-          <span className="agenda-suggesties__label" id={labelId}>
+          <label className="agenda-suggesties__label" htmlFor={labelId}>
             Suggesties voor
-          </span>
-          <div className="agenda-keuze" role="group" aria-labelledby={labelId}>
+          </label>
+          <select
+            id={labelId}
+            className="select agenda-suggesties__select"
+            value={groepId ?? ""}
+            onChange={(e) => onGroep(e.target.value)}
+          >
+            <option value="" disabled>
+              Kies een groep
+            </option>
             {groepen.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                className="agenda-keuze__chip"
-                aria-pressed={g.id === groepId}
-                onClick={() => onGroep(g.id)}
-              >
+              <option key={g.id} value={g.id}>
                 {g.name}
-              </button>
+              </option>
             ))}
-          </div>
+          </select>
         </div>
       )}
 

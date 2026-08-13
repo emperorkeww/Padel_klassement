@@ -35,6 +35,18 @@ export type AgendaStand = {
    * en dat is geen keten die je halverwege wil kunnen delen.
    */
   plan: boolean;
+  /**
+   * De aangevinkte groepschips, komma-gescheiden (#1270).
+   *
+   * `null` betekent "staat niet in de URL", en dat is iets anders dan een lege
+   * keuze: alleen bij afwezigheid valt de agenda terug op wat je vorige bezoek
+   * onthield. Het filter stond tot nu toe alléén in localStorage, en dus toonde
+   * een gedeelde agenda-link bij de ander een andere maand dan bij jou — soms
+   * een lege, terwijl de link over een volle dag ging.
+   *
+   * Dezelfde vorm als in localStorage, zodat `leesGroepKeuze` allebei zeeft.
+   */
+  groepen: string | null;
 };
 
 /** Sleutelnamen zoals ze in de URL staan; gedeeld met de tests. */
@@ -44,6 +56,7 @@ export const SLEUTELS = {
   open: "open",
   weergave: "weergave",
   plan: "plan",
+  groepen: "groepen",
 } as const;
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -112,6 +125,8 @@ export function standNaarParams(
     [SLEUTELS.open]: stand.open ? "1" : null,
     [SLEUTELS.weergave]: stand.weergave === "lijst" ? "lijst" : null,
     [SLEUTELS.plan]: stand.plan ? "1" : null,
+    // Alle chips uit is de standaard ("alles"), en die schrijven we niet op.
+    [SLEUTELS.groepen]: stand.groepen || null,
   };
 }
 
@@ -128,6 +143,10 @@ export function paramsNaarStand(
     open: params.get(SLEUTELS.open) ? dag : null,
     weergave: params.get(SLEUTELS.weergave) === "lijst" ? "lijst" : "maand",
     plan: params.get(SLEUTELS.plan) != null,
+    // Niet gezeefd tegen je groepen: die kent deze module niet, en `?groepen=`
+    // uit iemand anders' link draagt per definitie vreemde id's. `leesGroepKeuze`
+    // doet dat verderop, met dezelfde zeef als de onthouden keuze.
+    groepen: params.get(SLEUTELS.groepen) || null,
   };
 }
 

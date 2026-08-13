@@ -95,6 +95,9 @@ type MatchRecord = {
   score_b: number | null;
   winner_team_id: string | null;
   group_id: string | null;
+  /** Starttijd van de ronde (#827); voedt de deeplink naar de speeldag. */
+  played_at?: string | null;
+  created_at?: string | null;
 };
 
 type PiasRecord = {
@@ -140,6 +143,50 @@ type WebhookPayload = {
   record: Record<string, unknown>;
   old_record: Record<string, unknown> | null;
 };
+
+/**
+ * Waar een pushbericht over een nieuwe ronde naartoe wijst (#1271).
+ *
+ * Dat was `/groepen/<id>`, en daar staat sinds #1209 alleen nog een verwijsknop
+ * naar de speeldag: één extra tik voor iedereen, elke ronde. De match zelf
+ * draagt geen poll_id — die koppeling bestaat niet in het datamodel — dus we
+ * zoeken de speeldag op zoals de app dat doet: de vastgelegde poll van die
+ * groep met een moment op dezelfde kalenderdag (in clubtijd).
+ *
+ * Vindt hij niets, dan blijft de groepspagina het vangnet.
+ */
+async function speeldagUrl(match: MatchRecord): Promise<string> {
+  const terugval = match.group_id ? `/groepen/${match.group_id}` : "/spelen";
+  const wanneer = match.played_at ?? match.created_at;
+  if (!match.group_id || !wanneer) return terugval;
+
+  const { data: polls } = await supabase
+    .from("play_polls")
+    .select("id, locked_option_id, club_timezone")
+    .eq("group_id", match.group_id)
+    .in("status", ["locked", "booked"])
+    .not("locked_option_id", "is", null);
+  if (!polls || polls.length === 0) return terugval;
+
+  const { data: opties } = await supabase
+    .from("play_poll_options")
+    .select("id, date")
+    .in("id", polls.map((p) => p.locked_option_id as string));
+  if (!opties) return terugval;
+
+  for (const poll of polls) {
+    const optie = opties.find((o) => o.id === poll.locked_option_id);
+    if (!optie) continue;
+    const dag = new Intl.DateTimeFormat("en-CA", {
+      timeZone: poll.club_timezone ?? "Europe/Brussels",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(wanneer));
+    if (dag === optie.date) return `/speeldag/${poll.id}`;
+  }
+  return terugval;
+}
 
 async function playersOf(match: MatchRecord): Promise<string[]> {
   const { data } = await supabase
@@ -249,7 +296,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Melding[]> {
       pool: NIEUWE_MATCH,
       seedKey: `nieuwe-match|${rec.id}`,
       titelPool: TITEL_NIEUWE_RONDE,
-      url: rec.group_id ? `/groepen/${rec.group_id}` : "/spelen",
+      url: await speeldagUrl(rec),
       soort: "nieuwe_ronde",
       // Eén tag per groep: worden er in één klap vier rondes klaargezet (#827),
       // dan houdt de speler één melding over in plaats van vier trillingen.

@@ -22,6 +22,7 @@ const stand = (o: Partial<AgendaStand> = {}): AgendaStand => ({
   open: null,
   weergave: "maand",
   plan: false,
+  groepen: null,
   ...o,
 });
 
@@ -76,6 +77,7 @@ describe("agendaParams", () => {
       open: "2026-08-13",
       weergave: "lijst",
       plan: false,
+      groepen: null,
     });
   });
 
@@ -89,7 +91,19 @@ describe("agendaParams", () => {
       open: null,
       weergave: "maand",
       plan: false,
+      groepen: null,
     });
+  });
+
+  it("draagt het groepsfilter mee, zodat een gedeelde link hetzelfde toont (#1270)", () => {
+    // Het filter zat alleen in localStorage: dezelfde link liet bij de ander
+    // een andere maand zien. Niet gezeefd tegen jóuw groepen — dat doet
+    // `leesGroepKeuze` verderop, met dezelfde zeef als de onthouden keuze.
+    expect(paramsNaarStand(params("groepen=g1,g2"), VANDAAG).groepen).toBe("g1,g2");
+    expect(schrijf(stand({ groepen: "g1,g2" }))).toBe("groepen=g1%2Cg2");
+    // Alle chips uit is de standaard, en die schrijven we niet op.
+    expect(schrijf(stand({ groepen: null }), "groepen=g1")).toBe("");
+    expect(paramsNaarStand(params("groepen="), VANDAAG).groepen).toBeNull();
   });
 
   it("leest en schrijft losse waarden", () => {

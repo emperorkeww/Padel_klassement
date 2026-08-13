@@ -34,6 +34,27 @@ export type SpeeldagAgenda = {
 };
 
 /**
+ * Wanneer er voor het laatst iets aan deze speeldag veranderde (#1271).
+ *
+ * Dit voedt de SEQUENCE, en die moet omhóóg bij elke wijziging — anders laat
+ * een agenda-app het bijgewerkte event liggen. Het was
+ * `booked_at ?? locked_at ?? created_at`, en dat brak zodra je een geboekte
+ * speeldag kon verzetten: `locked_at` schuift dan op, maar `booked_at` stond
+ * er al en won de keten. Iedereen bleef een uur te vroeg op de baan staan.
+ *
+ * Het grootste van de drie dus, en niet de eerste die er is.
+ */
+export function laatsteWijziging(poll: {
+  created_at: string;
+  locked_at?: string | null;
+  booked_at?: string | null;
+}): string {
+  return [poll.created_at, poll.locked_at, poll.booked_at]
+    .filter((t): t is string => !!t)
+    .reduce((a, b) => (a >= b ? a : b));
+}
+
+/**
  * Het VCALENDAR-bestand van één speeldag.
  *
  * `STATUS:CANCELLED` krijgt bewust de klok van nú als SEQUENCE en niet die van

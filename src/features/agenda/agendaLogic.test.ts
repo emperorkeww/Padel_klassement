@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildMarkers,
+  filterLabel,
   filterOpGroepen,
   leesGroepKeuze,
   dagItems,
@@ -14,7 +15,6 @@ import {
   markersByDay,
   metHoofdletter,
   monthGrid,
-  ophaalVenster,
   schuifMaand,
   splitMarkers,
   statusChip,
@@ -204,45 +204,37 @@ describe("maandvenster", () => {
 
 });
 
-describe("ophaalVenster (#1112)", () => {
-  it("loopt zes weken voorbij het raster", () => {
-    // Het raster van augustus 2026 eindigt op 6 september; "Hierna" moet ook in
-    // een lege maand nog iets kunnen wijzen, dus we halen verder op.
-    expect(ophaalVenster({ jaar: 2026, maand: 8 })).toEqual({
-      from: "2026-07-27",
-      to: "2026-10-18",
-    });
-  });
-
-  it("begint waar het raster begint", () => {
-    // Achteruit is er geen staart: wat geweest is hoort niet in "Hierna", en
-    // een dag vóór het raster is er nooit een om naartoe te springen.
-    const m = { jaar: 2026, maand: 8 };
-    expect(ophaalVenster(m).from).toBe(windowFor(m).from);
-  });
-});
-
 describe("volgendeSpeeldagen (#1112)", () => {
+  // Elke marker een eigen poll, tenzij de test er expliciet één deelt: dat is
+  // sinds #1270 het verschil tussen twee speeldagen en twee antwoorden op
+  // dezelfde vraag.
   const m = (date: string, extra: Partial<AgendaMarker> = {}) =>
-    ({ date, optionId: date, startTime: "20:00", groupName: "A", past: false, ...extra }) as AgendaMarker;
+    ({
+      date,
+      pollId: `poll-${date}`,
+      optionId: date,
+      startTime: "20:00",
+      groupName: "A",
+      past: false,
+      ...extra,
+    }) as AgendaMarker;
+
+  const dagen = (uit: ReturnType<typeof volgendeSpeeldagen>) =>
+    uit.map((x) => x.eerste.date);
 
   it("geeft de eerstvolgende drie, op volgorde", () => {
     const uit = volgendeSpeeldagen(
       [m("2026-09-01"), m("2026-08-20"), m("2026-08-25"), m("2026-08-30")],
       "2026-08-10",
     );
-    expect(uit.map((x) => x.date)).toEqual([
-      "2026-08-20",
-      "2026-08-25",
-      "2026-08-30",
-    ]);
+    expect(dagen(uit)).toEqual(["2026-08-20", "2026-08-25", "2026-08-30"]);
   });
 
   it("laat de gekozen dag zelf weg", () => {
     // Die staat al in het paneel erboven; twee keer tonen leest als twee
     // verschillende afspraken.
     const uit = volgendeSpeeldagen([m("2026-08-10"), m("2026-08-20")], "2026-08-10");
-    expect(uit.map((x) => x.date)).toEqual(["2026-08-20"]);
+    expect(dagen(uit)).toEqual(["2026-08-20"]);
   });
 
   it("laat wat geweest is weg, ook als de datum later valt", () => {
@@ -252,18 +244,49 @@ describe("volgendeSpeeldagen (#1112)", () => {
       [m("2026-08-20", { past: true }), m("2026-08-25")],
       "2026-08-10",
     );
-    expect(uit.map((x) => x.date)).toEqual(["2026-08-25"]);
+    expect(dagen(uit)).toEqual(["2026-08-25"]);
   });
 
   it("sorteert twee speeldagen op dezelfde dag op tijd", () => {
     const uit = volgendeSpeeldagen(
       [
-        m("2026-08-20", { optionId: "laat", startTime: "20:00" }),
-        m("2026-08-20", { optionId: "vroeg", startTime: "11:00" }),
+        m("2026-08-20", { pollId: "laat", optionId: "laat", startTime: "20:00" }),
+        m("2026-08-20", { pollId: "vroeg", optionId: "vroeg", startTime: "11:00" }),
       ],
       "2026-08-10",
     );
-    expect(uit.map((x) => x.optionId)).toEqual(["vroeg", "laat"]);
+    expect(uit.map((x) => x.eerste.optionId)).toEqual(["vroeg", "laat"]);
+  });
+
+  it("geeft twee voorstellen van dezelfde poll één rij (#1270)", () => {
+    // Dít was de bug: drie wegwijzers, allemaal naar 15 augustus, waarvan twee
+    // dezelfde speeldag. Het paneel eronder bundelde ze wél.
+    const uit = volgendeSpeeldagen(
+      [
+        m("2026-08-15", { pollId: "p1", optionId: "a", startTime: "20:00" }),
+        m("2026-08-15", { pollId: "p1", optionId: "b", startTime: "21:30" }),
+        m("2026-08-22", { pollId: "p2" }),
+      ],
+      "2026-08-10",
+    );
+    expect(dagen(uit)).toEqual(["2026-08-15", "2026-08-22"]);
+    expect(tijdenLabel(uit[0].momenten)).toBe("20:00 of 21:30");
+  });
+
+  it("zet een poll over meerdere dagen op zijn vroegste dag (#1270)", () => {
+    // Eén vraag met "donderdag of zaterdag" is één speeldag, en de rij wijst
+    // naar de eerste kans. De tijd van die andere dag hoort er niet bij: "20:00
+    // of 11:00" onder "do 20" belooft twee tijden op donderdag.
+    const uit = volgendeSpeeldagen(
+      [
+        m("2026-08-22", { pollId: "p1", optionId: "za", startTime: "11:00" }),
+        m("2026-08-20", { pollId: "p1", optionId: "do", startTime: "20:00" }),
+      ],
+      "2026-08-10",
+    );
+    expect(uit).toHaveLength(1);
+    expect(uit[0].eerste.date).toBe("2026-08-20");
+    expect(tijdenLabel(uit[0].momenten)).toBe("20:00");
   });
 
   it("geeft een lege lijst als er niets meer komt", () => {
@@ -304,7 +327,7 @@ describe("telInMaand", () => {
     expect(telInMaand(markers, { jaar: 2026, maand: 8 })).toBe(3);
   });
 
-  it("telt een poll met meerdere voorstellen als één activiteit", () => {
+  it("telt een poll met meerdere voorstellen als één speeldag", () => {
     // Drie kandidaat-momenten van dezelfde poll is één vraag om te spelen; het
     // raster toont ze los, de telling niet (#1182).
     const markers = [
@@ -399,7 +422,7 @@ describe("komendeItems en wachtOpJou", () => {
     }) as AgendaMarker;
 
   it("zet de komende speeldagen op volgorde en houdt vandaag erbij", () => {
-    const items = komendeItems(
+    const { items } = komendeItems(
       [
         komend({ date: "2026-09-01", pollId: "p3" }),
         komend({ date: "2026-08-07", pollId: "p1" }),
@@ -416,6 +439,36 @@ describe("komendeItems en wachtOpJou", () => {
     ]);
   });
 
+  it("geeft één kaart per speeldag, ook als hij twee dagen voorstelt (#1270)", () => {
+    // De lijstkop telt deze items ("N speeldagen gepland") en de maandkop telt
+    // polls. Bundelde de lijst per dag, dan zei dezelfde poll hier "2" en daar
+    // "1" — met precies dezelfde data op het scherm.
+    const { items } = komendeItems(
+      [
+        komend({ pollId: "p1", date: "2026-08-13", startTime: "20:00" }),
+        komend({ pollId: "p1", date: "2026-08-15", startTime: "11:00" }),
+        komend({ pollId: "p2", date: "2026-08-20" }),
+      ],
+      "2026-08-07",
+    );
+    expect(items).toHaveLength(2);
+    expect(items[0].eerste.date).toBe("2026-08-13");
+    expect(items[1].eerste.date).toBe("2026-08-20");
+  });
+
+  it("zegt hoeveel er buiten de lijst viel (#1270)", () => {
+    // De lijst kapte stil af, en dat ziet er precies zo uit als een agenda die
+    // leeg raakt — terwijl "Wat komt eraan" alles belooft.
+    const markers = ["p1", "p2", "p3", "p4"].map((pollId, i) =>
+      komend({ pollId, date: `2026-08-1${i}` }),
+    );
+    const { items, meer } = komendeItems(markers, "2026-08-07", 2);
+    expect(items).toHaveLength(2);
+    expect(meer).toBe(2);
+    // Past alles, dan valt er niets te melden.
+    expect(komendeItems(markers, "2026-08-07").meer).toBe(0);
+  });
+
   it("groepeert per maand in de volgorde van de lijst", () => {
     const groepen = perMaand(
       komendeItems(
@@ -425,7 +478,7 @@ describe("komendeItems en wachtOpJou", () => {
           komend({ date: "2026-09-01", pollId: "p3" }),
         ],
         "2026-08-01",
-      ),
+      ).items,
     );
     expect(groepen).toHaveLength(2);
     expect(groepen[0].maand).toEqual({ jaar: 2026, maand: 8 });
@@ -945,6 +998,37 @@ describe("groepsfilter (#1121)", () => {
   });
 });
 
+describe("filterLabel (#1270)", () => {
+  const DRIE = [
+    { id: "g1", name: "Vamos!" },
+    { id: "g2", name: "Kantoorpadel" },
+    { id: "g3", name: "Zen Padel" },
+  ];
+
+  it("zwijgt zolang alles meetelt", () => {
+    // Geen chip aan en alle chips aan leveren hetzelfde beeld; er valt dan
+    // niets te vermelden bij "3 speeldagen deze maand".
+    expect(filterLabel([], DRIE)).toBeNull();
+    expect(filterLabel(["g1", "g2", "g3"], DRIE)).toBeNull();
+  });
+
+  it("noemt de groep bij één chip", () => {
+    // Dít is de zin die ontbrak: "Geen speeldagen deze maand" boven een raster
+    // vol stippen van de groep die je net wegklikte.
+    expect(filterLabel(["g2"], DRIE)).toBe("Kantoorpadel");
+  });
+
+  it("telt bij meer chips in plaats van namen op te sommen", () => {
+    // Drie namen achter elkaar passen niet op 390px, en wélke precies zeggen de
+    // chips er zelf al bij.
+    expect(filterLabel(["g1", "g3"], DRIE)).toBe("2 van je 3 groepen");
+  });
+
+  it("zwijgt over een id dat geen groep meer is", () => {
+    expect(filterLabel(["weg"], DRIE)).toBeNull();
+  });
+});
+
 describe("buildMarkers — twijfelaars en stille leden (#1121)", () => {
   it("splitst de stemmen uit en houdt over wie niets zei", () => {
     const groepen = [{ ...groep("g1", "Vamos!"), member_ids: ["p1", "p2", "p3", "p4"] }];
@@ -963,6 +1047,22 @@ describe("buildMarkers — twijfelaars en stille leden (#1121)", () => {
     expect(markers[0].maybeVoterIds).toEqual(["p2"]);
     // p3 en p4 zeiden niets — dat is per poll, niet per moment.
     expect(markers[0].nietGestemdIds).toEqual(["p3", "p4"]);
+  });
+
+  it("laat jezelf uit 'Nog niets gezegd' (#1270)", () => {
+    // Het sheet zette je eigen naam vooraan in de rij "Nog niets gezegd", pal
+    // onder een zin die je net aansprak met "Jij moet nog stemmen". Die rij
+    // beantwoordt "wie kan ik nog porren?", en dat ben jij niet.
+    const groepen = [{ ...groep("g1", "Vamos!"), member_ids: ["p1", "p2", "p3"] }];
+    const markers = buildMarkers(
+      venster({ polls: [poll()], options: [option()], votes: [vote("p2", "yes")] }),
+      groepen,
+      "p1",
+      at("2026-08-01T10:00:00Z"),
+    );
+
+    expect(markers[0].iVoted).toBe(false);
+    expect(markers[0].nietGestemdIds).toEqual(["p3"]);
   });
 });
 

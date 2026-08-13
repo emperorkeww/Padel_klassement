@@ -24,7 +24,7 @@ export function formatTime(iso: string | null | undefined): string {
 }
 
 /** Aantal hele kalenderdagen tussen twee momenten (lokale tijd). */
-function calendarDayDiff(a: Date, b: Date): number {
+export function calendarDayDiff(a: Date, b: Date): number {
   const da = new Date(a.getFullYear(), a.getMonth(), a.getDate());
   const db = new Date(b.getFullYear(), b.getMonth(), b.getDate());
   return Math.round((da.getTime() - db.getTime()) / 86_400_000);
@@ -64,7 +64,7 @@ export function formatPlannedDay(
 }
 
 /**
- * Hoe lang geleden, kort: "nu", "5 min geleden", "2 u geleden", "3 dgn
+ * Hoe lang geleden, kort: "nu", "5 min geleden", "2 u geleden", "3 dagen
  * geleden", en vanaf een week een korte datum (#1090).
  *
  * Een meldingenlijst leest op tijdsafstand, niet op klokstand: "2 u geleden"
@@ -88,7 +88,9 @@ export function formatRelatieveTijd(
   const uren = Math.floor(minuten / 60);
   if (uren < 24) return `${uren} u geleden`;
   const dagen = Math.floor(uren / 24);
-  if (dagen < 7) return `${dagen} ${dagen === 1 ? "dag" : "dgn"} geleden`;
+  // Voluit (#1273): "dgn" was de enige afkorting van zijn soort in de app, en
+  // hij staat in een kolom waar ruimte genoeg is.
+  if (dagen < 7) return `${dagen} ${dagen === 1 ? "dag" : "dagen"} geleden`;
   return formatDate(iso);
 }
 

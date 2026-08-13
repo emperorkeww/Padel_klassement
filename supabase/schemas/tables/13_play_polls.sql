@@ -15,6 +15,10 @@ create table public.play_polls (
   -- laatste-kans-push bij een naderende deadline, en de speeldag-herinnering.
   deadline_notified_at timestamptz,
   dayof_notified_at timestamptz,
+  -- Laatste handmatige "herinner de groep" (#1273). remind-group had geen enkele
+  -- rem: de knop verbergt zich alleen in client-state, en elk groepslid heeft
+  -- zijn eigen knop.
+  remind_notified_at timestamptz,
   -- Dedup voor het automatisch klaarzetten van rondes (#827): gezet zodra de
   -- cron voor deze speeldag rondes heeft aangemaakt.
   rounds_generated_at timestamptz,
@@ -95,3 +99,35 @@ create table public.play_poll_votes (
 create index play_poll_votes_player_idx on public.play_poll_votes (player_id);
 
 alter table public.play_poll_votes enable row level security;
+
+-- Wie er écht komt (#1271).
+--
+-- Stemmen is een voornemen van vóór het vastleggen; aanwezigheid is de stand
+-- van de avond zelf. Die twee liepen uiteen zodra het moment vaststond: stemmen
+-- kon niet meer, en de correcties van de organisator ("Bram komt toch niet")
+-- leefden in localStorage. Een tweede organisator zag ze niet, de speler zag
+-- zichzelf gewoon in de opstelling staan, en na een apparaatwissel was alles
+-- weg.
+--
+-- Bewaard worden de *afwijkingen* van de poll, niet de hele lijst: `aanwezig`
+-- is een expliciete ja of nee over één speler. Wie je niet aanraakte volgt de
+-- stemming, zodat een late ja-stem gewoon nog doorkomt. Zou je de volledige set
+-- bewaren, dan bevroor je de avond op het moment dat je één naam aantikte —
+-- dezelfde afweging als in aanwezigOpslag.ts, nu gedeeld.
+--
+-- Aan de optie en niet aan de poll: een dag kan twee speeldagen dragen (#1146),
+-- en een correctie op de ochtendsessie hoort de avond niet te raken.
+create table public.play_poll_presence (
+  option_id uuid not null references public.play_poll_options (id) on delete cascade,
+  group_id uuid not null references public.groups (id) on delete cascade,
+  player_id uuid not null references public.profiles (id) on delete cascade,
+  aanwezig boolean not null,
+  updated_at timestamptz not null default now(),
+  primary key (option_id, player_id)
+);
+
+-- Zelfde reden als bij de stemmen: claim_guest() hangt alle rijen van één
+-- speler om, en dat kan niet op de PK (option_id staat vooraan).
+create index play_poll_presence_player_idx on public.play_poll_presence (player_id);
+
+alter table public.play_poll_presence enable row level security;

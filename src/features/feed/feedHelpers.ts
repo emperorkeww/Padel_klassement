@@ -117,10 +117,6 @@ export function highlightText(
       return `👯 ${team(h.teamId)} ${h.count} samen op rij`;
     case "rating":
       return `📈 ${name(h.playerId)} door de ${h.threshold}`;
-    case "tier":
-      return h.richting === "promotie"
-        ? `${h.emoji} ${name(h.playerId)} promoveert naar ${h.label}`
-        : `${h.emoji} ${name(h.playerId)} zakt naar ${h.label}`;
     case "vendetta":
       return `⚔️ Vendetta ${name(h.challengerId)} ${h.winsChallenger}–${h.winsRival} ${name(h.rivalId)}`;
     case "derby":

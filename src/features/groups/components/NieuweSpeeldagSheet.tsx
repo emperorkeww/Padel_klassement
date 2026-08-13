@@ -11,10 +11,14 @@ import { PollWizardSheet } from "./PollWizardSheet";
 /* ------------------------------------------------------------------ */
 /* Een nieuwe speeldag starten (#1091).                                */
 /*                                                                     */
-/* Gedeeld door de Plannen-tab en de agenda: allebei doen ze hetzelfde  */
-/* — clubkeuze, vrije banen van die club, wizard, createPoll — en dat   */
-/* twee keer naast elkaar zetten is vragen om twee flows die uit elkaar */
-/* gaan lopen. De agenda geeft er alleen een `initialDay` bij.           */
+/* Eén plek voor de hele aanmaakflow: clubkeuze, vrije banen van die   */
+/* club, wizard, createPoll. Sinds #1121 opent de agenda hem als enige, */
+/* met een `initialDay` erbij.                                          */
+/*                                                                     */
+/* De clubkeuze staat hier en nergens anders (#1271): het plan-sheet    */
+/* ervoor vroeg hem ook, op dezelfde state, en dat is twee keer dezelfde*/
+/* vraag in twee schermen. Hier heeft ze betekenis — de vrije banen per */
+/* slot hieronder komen van deze club.                                  */
 /* ------------------------------------------------------------------ */
 
 export function NieuweSpeeldagSheet({

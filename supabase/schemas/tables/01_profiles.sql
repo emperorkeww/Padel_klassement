@@ -56,6 +56,16 @@ create table public.profiles (
   notify_result boolean not null default true,
   notify_friend_request boolean not null default true,
   notify_match_reminder boolean not null default true,
+  -- Polls en VAR kregen pas in #1273 een schakelaar: samen tien van de
+  -- negentien verstuurmomenten, en precies de twee die in een actieve groep het
+  -- vaakst afgaan. Pias houdt bewust geen eigen schakelaar (roast_schild).
+  notify_poll boolean not null default true,
+  notify_var boolean not null default true,
+  -- Stille uren (#1273), standaard aan. Tijd zonder zone, gelezen in clubtijd
+  -- (Europe/Brussels). Alleen de bezorging zwijgt: de inboxrij komt er hoe dan
+  -- ook, net als bij de notify_*-schakelaars hierboven.
+  notify_stil_van time default '23:00',
+  notify_stil_tot time default '07:30',
   -- Verplichte wachtwoordwissel (#1036): gezet door de edge function admin-users
   -- nadat een beheerder een tijdelijk wachtwoord heeft uitgedeeld. Staat hij aan,
   -- dan komt die gebruiker niet verder dan /reset-wachtwoord.

@@ -1,10 +1,10 @@
 import {
   deleteMatch,
-  setMatchResult,
   updateMatchScore,
   updatePlannedMatchTime,
   type SetScore,
 } from "@/features/matches/api";
+import { saveMatchResult } from "@/features/matches/outbox";
 import {
   corrigeerUitslag,
   verplaatsMatch,
@@ -48,11 +48,16 @@ export function slaCorrectieOp(
 /**
  * De uitslag van een nog niet afgeronde match vastleggen.
  *
- * Eén verschil met `setMatchResult`: die zet `played_at` op nu, want wie op de
- * baan staat vult in wat hij net gespeeld heeft. Een beheerder die achteraf een
- * vergeten uitslag invult, doet dat vaak dagen later — dan is het geplande
- * tijdstip het juiste, en dat blijft hier dus staan. Wil hij het echt
- * verzetten, dan is daar `verplaatsGeplandeMatch` voor.
+ * Het geplande tijdstip blijft staan — voor de beheerder omdat hij vaak dagen
+ * later invult, en sinds #1271 ook voor de speler op de baan: `played_at` ís de
+ * speeltijd van een geplande match, dus overschrijven verplaatst hem naar een
+ * andere speeldag. Geef `playedAt` mee vanaf de kaart. Wil je hem echt
+ * verzetten, dan is daar `verzetTijdstip` voor.
+ *
+ * Het spelerspad loopt sinds #1271 langs de offline-wachtrij: dit is precies de
+ * handeling die je in een kooi zonder bereik doet, en de uitlegpagina beloofde
+ * dat al. Het beheerderspad niet — die vult achteraf in, vanaf een bank met
+ * wifi, en gaat langs de edge function met zijn auditrij.
  */
 export function vulUitslagIn(
   params: {
@@ -61,10 +66,12 @@ export function vulUitslagIn(
     scoreA: number;
     scoreB: number;
     setScores?: SetScore[] | null;
+    /** De geplande speeltijd; laat weg voor een match zonder tijdstip. */
+    playedAt?: string | null;
   },
   alsBeheerder: boolean,
 ): Promise<void> {
-  if (!alsBeheerder) return setMatchResult(params);
+  if (!alsBeheerder) return saveMatchResult(params).then(() => {});
   return corrigeerUitslag({
     matchId: params.matchId,
     scoreA: params.scoreA,

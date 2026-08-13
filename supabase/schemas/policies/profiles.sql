@@ -40,5 +40,6 @@ grant update (username, full_name, avatar_url, discoverable, allow_friend_reques
               featured_badges, roast_schild, roast_intensiteit,
               toon_waarnemend_dictator, dictator_portret, pias_portret,
               notify_new_round, notify_result, notify_friend_request,
-              notify_match_reminder, notify_rank_change)
+              notify_match_reminder, notify_rank_change,
+              notify_poll, notify_var, notify_stil_van, notify_stil_tot)
   on table public.profiles to authenticated;
