@@ -471,22 +471,86 @@
    zijn kleurfamilie niet meer. De neutralen (vlakken, randen) liggen
    allemaal op C* ≈ 4-6 rond h 270 — vóór #1255 liep de chroma onbedoeld op
    naar boven (--line-strong was met C* 9,3 de blauwste "neutraal" in de
-   app, pal naast smaragd- en lime-content). */
+   app, pal naast smaragd- en lime-content).
+
+   #1264 haalt dat meubilair weer omláág. Het uit elkaar trekken van #1255
+   ging steeds één kant op, en daardoor werd het thema tegelijk minder diep
+   én minder contrastvol: een zwarte pagina met een dikke bleke band op
+   L* 16-22 erbovenop. Diepte en contrast zijn hier dezelfde knop — elk vlak
+   dat zakt geeft alles wat erop staat gratis ruimte (inkt op de kaart
+   16,0 → 16,9:1, accent 6,6 → 7,0:1). Hue en chroma blijven staan, alleen de
+   lichtheid zakt; de opeenvolgende stappen worden er juist gróter van
+   (5,8 / 4,3 / 3,4 / 4,8 L*), dus hover leest nu duidelijker dan vóór #1264.
+   Nieuw bewaakt: het hoogste meubilairniveau mag niet boven L* 19 uitkomen
+   (contrast-check.mjs) — dat is de regel die het opkruipen tegenhoudt.
+
+   De --*-soft-vlakken waren dat opkruipen in het klein: de regel "soft boven
+   het hover-niveau" is als gelijkheid uitgevoerd, en 22 van de 23 lagen op
+   L* 21,9-22,2. De badges waren daarmee het líchtste meubilair in de app en
+   de familie droeg geen hiërarchie meer. #1264 splitst ze naar wat ze moeten
+   doen:
+
+   1. Vlakken die alleen op gewoon meubilair liggen — chips, strips, de
+      gekozen spelerspil, een crest — worden een halfdoorzichtige tint van hun
+      eigen kleur (accent, lime, lef, joker, success, warn, bigdaddy). Zo'n
+      vlak ligt per definitie bóven zijn drager, op de kaart net zo goed als op
+      een sheet, en hoeft dus niet boven de líchtste drager gelegd te worden.
+   2. Al de rest blijft dekkend, om twee redenen. Gedempte families (coach,
+      poll, dorst, danger) kúnnen geen tint zijn: een 15%-waas van een al
+      gedempte kleur over bijna-zwart komt op C* 1-4 uit en draagt zijn
+      kleurfamilie niet meer. En de elf tier-vlakken mógen het niet zijn: een
+      tier-badge staat óók op de hero en op de FUT-kaart, en daar laat een tint
+      het artwork door — gemeten zakte de diamant-badge daar van 4,89 naar
+      3,79:1. Een badge op artwork heeft een eigen, dekkende bodem nodig.
+      Zij houden dus een hand-gekozen hex, maar elk op zijn eigen hoogte.
+
+   Het resultaat spreidt van L* 14,3 (accent) tot 24,4 (lime) in plaats van
+   0,3 L* over de hele familie, en de tekst wint overal: de zwakste badge
+   staat nu op 4,76:1 waar hij op 4,17 stond. contrast-check.mjs toetst de
+   tinten op élke drager, de platen op "boven zijn lichtste drager", en
+   bewaakt dat er nooit meer drie soft-vlakken op dezelfde hoogte liggen.
+
+   Tot slot de accenten zelf. #1255 gaf elke rol een eigen hue- of chroma-laan
+   maar liet de lichtheid ongemoeid, en op zwart is lichtheid juist de
+   dominante as: 27 tokens lagen tussen L* 58 en 84, twintig daarvan tussen 58
+   en 72. --accent stond met 65,1 ónder --success, --joker, --meester,
+   --platina, --dictator en --warn. Er was geen primaire stem meer, alleen een
+   koor. Sinds #1264 lopen er drie banen (alleen lichtheid — hue en chroma van
+   #1255 blijven staan):
+
+     primair      74-83  --accent, --accent-hover, --lime, --focus-ring.
+                         Mag opvallen. (--accent-strong is de ingedrukte
+                         stand en hoort per definitie eronder: 68.)
+     semantisch   70-72  --success, --danger, --warn, --poll. Duidelijk,
+                         niet luid.
+     decoratief   59-69  tiers, --chem-*, --cat-*, --effect-*, --coach,
+                         --lef, --dorst, --joker, --bigdaddy. Op de kaart
+                         eerder rustig dan schreeuwend.
+
+   Hoe laag de decoratieve baan kon, werd niet door smaak bepaald maar door de
+   badges: een tier-token moet ≥4,5:1 halen op zijn éígen soft-vlak, en dat
+   legt per token een bodem (--joker kon niet onder 67, --hout wel tot 60).
+   Dat de platen in spoor B zakten, is precies wat hier de ruimte gaf.
+   --dictator en --cat-champ staan verder uit elkaar dan hun baan zou
+   ingeven: de warme hueband was al vol (#1255), dus daar doet lichtheid het
+   werk dat hue niet meer kon doen. */
 :root[data-theme="dark"] {
   /* Canvas → kaart → verhoogd: zwart als bodem, daarna stappen ≥ 3 L* per
      opeenvolgend niveau (#1255). */
   --bg: #000000; /* puur zwart — OLED laat deze pixels uit */
-  --surface: #16191e; /* kaarten */
-  --surface-2: #1e2228; /* subtiel vlak / tracks */
-  --surface-elevated: #25292f; /* hero, sheets, popovers */
-  --surface-hover: #2c3038; /* hover op kaarten, nav-items, knoppen */
-  --surface-active: #16372a; /* gekozen nav-item — smaragd getint */
-  /* Segmentbalk (#1255): de track zakt ónder het kaartniveau (L* 5,8 — een
-     verzonken goot, waar hij ook op ligt: pagina, kaart of sheet), het gekozen
-     segment ligt er ruim bovenop (L* 17,4, het hover-niveau). Vóór dit paar
-     leende de balk --surface-2/--surface en die keren op donker juist om:
-     het actieve segment las als een gat. */
-  --track: #101317;
+  --surface: #101318; /* kaarten */
+  --surface-2: #181c22; /* subtiel vlak / tracks */
+  --surface-elevated: #1f2329; /* hero, sheets, popovers */
+  --surface-hover: #292d35; /* hover op kaarten, nav-items, knoppen */
+  --surface-active: #0e3023; /* gekozen nav-item — smaragd getint */
+  /* Segmentbalk (#1255): de track zakt ónder het kaartniveau (een verzonken
+     goot, waar hij ook op ligt: pagina, kaart of sheet), het gekozen segment
+     ligt er ruim bovenop (het hover-niveau). Vóór dit paar leende de balk
+     --surface-2/--surface en die keren op donker juist om: het actieve segment
+     las als een gat. De track zakt in #1264 mee met de kaart — anders zou hij
+     op het nieuwe kaartniveau uitkomen en juist verdwijnen; op de zwarte
+     pagina draagt zijn rand hem, niet zijn vulling. */
+  --track: #060b10;
   --track-actief: #262b33;
   --background-navigation: #000000;
   --navigation-ink: #f2f4f7;
@@ -502,10 +566,18 @@
      op zwart doet een schaduw niets, de rand moet het vlak dragen. Sinds
      #1255 net zo neutraal als de vlakken (C* ≈ 4-5); de divider zit ónder
      het subtiele vlak — hij scheidt binnen een kaart en moet zwakker blijven
-     dan élke rand. */
-  --line: #373b41;
-  --line-strong: #4e535a;
-  --divider: #1c2127;
+     dan élke rand.
+     Tot #1264 deed die rand dat werk níét: de ladder bewaakte hem op L* — en
+     --line haalde daar ruim 15 L* boven de kaart — terwijl hij in WCAG-termen
+     op 1,6:1 stond, en --divider met 1,1:1 gewoon onzichtbaar was. Voor een
+     grens is L* de verkeerde maat; WCAG 1.4.11 vraagt 3:1 voor een
+     betekenisdragende UI-grens. Beide maten staan nu in contrast-check.mjs
+     naast elkaar. De divider blijft bewust vér onder die 3:1 (1,5:1): hij
+     scheidt rijen bínnen een kaart en moet zwakker zijn dan de kaartrand —
+     maar hij moet wél bestaan. */
+  --line: #60656b;
+  --line-strong: #737980;
+  --divider: #2f353b;
 
   /* Smaragd, gedempt t.o.v. vóór #1243 (#1fb47e) maar sinds #1255 weer een
      fractie lichter (L* 62→65): de vlakken waar hij als tekst op staat —
@@ -513,10 +585,10 @@
      zakt het paar onder AA. Knellendste harde paren nu: accent op
      --accent-soft (4,6:1) en op --surface-hover (4,6:1); knoppen houden
      donkere tekst (--accent-ink), ruim boven AA op elke knopstand. */
-  --accent: #28b37e;
-  --accent-hover: #37c18b;
-  --accent-strong: #189a6a;
-  --accent-soft: #243930;
+  --accent: #49cc95;
+  --accent-hover: #56daa3;
+  --accent-strong: #44ba87;
+  --accent-soft: rgba(40, 179, 126, 0.13);
   --accent-line: #24513f;
   --accent-ink: #02120c;
 
@@ -528,8 +600,8 @@
      chroma waar de hueband vol zat, met de dictator-gouden als vast anker);
      de afstanden worden bewaakt door de ΔE-parenlijst in
      scripts/contrast-check.mjs. */
-  --coach: #e18353;
-  --coach-soft: #423128;
+  --coach: #de8051;
+  --coach-soft: #413027;
   --coach-line: #52382a;
   --coach-ink: #211207;
   --coach-diep: #fdaf81;
@@ -539,8 +611,8 @@
      zat vol (coach, dorst, inzet, dictator, goud), dus poll onderscheidt
      zich op de chroma-as: gedempt perzik (C* 32) tussen verzadigde buren
      (#1255). */
-  --poll: #e1b384;
-  --poll-soft: #423222;
+  --poll: #d2a577;
+  --poll-soft: #413121;
   --poll-diep: #f5ca9c;
 
   /* Lime (padelbal). Sinds #1243 gedempt: hij blijft het enige token dat
@@ -551,26 +623,26 @@
      donkere leesbare variant is. */
   --lime: #9ccf4a;
   --lime-deep: #b3dd63;
-  --lime-soft: #303821;
+  --lime-soft: rgba(156, 207, 74, 0.23);
 
   /* Lef-violet, licht genoeg voor leesbare tekst op donkere vlakken.
      Warmer paars (h≈315) sinds #1255: het koele violet viel samen met de
      meester-tier. */
-  --lef: #bb90d3;
-  --lef-soft: #3d3044;
+  --lef: #bc90d4;
+  --lef-soft: rgba(187, 144, 211, 0.13);
   --lef-line: #4b3955;
   --lef-ink: #160d1b;
 
   /* Dorst — donker bier-brons (h≈68, een stap donkerder dan de rest van de
      warme band), weg van dictator-goud en kampioensgoud (#1255). */
-  --dorst: #d6924c;
-  --dorst-soft: #413225;
+  --dorst: #d4914b;
+  --dorst-soft: #3d2e22;
   --dorst-line: #4f3d2d;
   --dorst-ink: #190f05;
 
   /* Jokerblauw, licht genoeg voor leesbare tekst op donkere vlakken. */
   --joker: #67aed8;
-  --joker-soft: #263743;
+  --joker-soft: rgba(103, 174, 216, 0.17);
   --joker-line: #344857;
   --joker-ink: #081420;
 
@@ -578,9 +650,9 @@
      gestapelde lagen op de kaart) wordt hard bewaakt en wint juist bij de
      donkerdere kaart. Inzet werd oranje-geel (h≈70): het oude amber lag op
      ΔE 9,7 van het dictator-goud (#1255). */
-  --effect-lef: #a78bfa;
-  --effect-joker: #60a5fa;
-  --effect-inzet: #ffb462;
+  --effect-lef: #a287f5;
+  --effect-joker: #579ef2;
+  --effect-inzet: #db9444;
 
   /* Padelveld (#427): gedempt donkergroen, lijnen zachter. De chemieschaal
      leende vóór #1255 de statuskleuren (hoog ≈ success op ΔE 1,8, laag ≈
@@ -589,10 +661,10 @@
   --court: #17392d;
   --court-deep: #122f25;
   --court-line: rgba(255, 255, 255, 0.32);
-  --chem-hoog: #25c0a7;
-  --chem-midden: #bcaa7c;
-  --chem-laag: #e78b76;
-  --chem-onbekend: #93a89b;
+  --chem-hoog: #14b9a0;
+  --chem-midden: #b19f72;
+  --chem-laag: #e18571;
+  --chem-onbekend: #8ca093;
 
   /* Structurele navigatie (zijbalk, mobiele onderbalk, glasbalk): puur zwart,
      dónkerder dan de content. Zo staat de app-inhoud vooraan en zakt het
@@ -605,56 +677,66 @@
      dit exclusieve banen: success koeler groen (h≈148, weg van accent en
      accent-hover), warn citroen-amber (h≈97, weg van de gouden); decoratie
      (chemie, tiers, categorieën) mag hier niet meer in. */
-  --success: #5ab671;
-  --success-soft: #28392c;
+  --success: #62be78;
+  --success-soft: rgba(90, 182, 113, 0.16);
   --success-line: #2e5b3c;
-  --danger: #e5878e;
-  --danger-soft: #44302e;
+  --danger: #ef9097;
+  --danger-soft: #412e2c;
   --danger-line: #5c3a3d;
-  --warn: #cebd47;
-  --warn-soft: #3a3523;
+  --warn: #c2b23c;
+  --warn-soft: rgba(206, 189, 71, 0.21);
   --warn-line: #524a2a;
 
   /* Tiers op donker (#664): zelfde materiaalladder, gedempt maar licht
-     genoeg voor leesbare badge-tekst op de donkere soft-vlakken. */
-  --slof: #9e9585;
-  --slof-soft: #3a3426;
-  --karton: #bd9459;
-  --karton-soft: #3c3426;
-  --hout: #b58351;
-  --hout-soft: #413228;
-  --gold: #b5923f;
-  --gold-soft: #3c3421;
-  --silver: #9aa4af;
-  --silver-soft: #2c3543;
-  --bronze: #c07b41;
-  --bronze-soft: #443125;
-  --platina: #6cbfd8;
-  --platina-soft: #21383f;
-  --diamant: #87a2e8;
-  --diamant-soft: #2e344b;
-  --meester: #b6a5f2;
-  --meester-soft: #37314d;
-  --legende: #e9779a;
-  --legende-soft: #472e36;
+     genoeg voor leesbare badge-tekst op de donkere soft-vlakken.
+     #1264 tilde zes van hen op: .tier-badge zet --fs-xs (12px) bold, en dat is
+     géén "large text" volgens WCAG (dat begint bij 18,66px bold). De check
+     toetste deze paren op 3,0 en stond dus groen terwijl brons (3,6:1), hout
+     (3,7:1), slof, goud, karton en legende onder AA voor kleine tekst zaten.
+     Nu ≥4,5:1 op hun eigen soft-vlak, en brons/zilver staan eindelijk in de
+     parenlijst. Brons en hout kregen er een chroma-stap bij: ópgetild vielen
+     ze midden in de volle warme band (brons kwam op ΔE 5,3 van --dorst), en
+     wat lager verzadigd is de enige uitweg die #1255' hue-lanen heel laat.
+     De rij zit hierdoor tijdelijk in één lichtheidsband — spoor D van #1264
+     trekt hem weer uit elkaar zodra de soft-vlakken tinten zijn (spoor B). */
+  --slof: #9b9282;
+  --slof-soft: #2c2619;
+  --karton: #b68e52;
+  --karton-soft: #2d2619;
+  --hout: #b4885e;
+  --hout-soft: #34251c;
+  --gold: #b79440;
+  --gold-soft: #342c19;
+  --silver: #909aa4;
+  --silver-soft: #232c39;
+  --bronze: #c78855;
+  --bronze-soft: #38261a;
+  --platina: #51a6bf;
+  --platina-soft: #1a3138;
+  --diamant: #809be0;
+  --diamant-soft: #272e44;
+  --meester: #a493df;
+  --meester-soft: #312c47;
+  --legende: #eb7a9c;
+  --legende-soft: #422931;
   /* El Padelissimo (#527): warm goud op diepbordeaux (zie light-blok). */
-  --dictator: #dcab4a;
-  --dictator-soft: #4c2b35;
+  --dictator: #d1a140;
+  --dictator-soft: #482832;
   /* De Troon (#528): warm goud op nog dieper bordeaux (zie light-blok). */
   --dictator-gold: #e8c05f;
   --dictator-wine: #6d172e;
   --dictator-deep: #1f0a11;
   /* Big Daddy (#1 van het klassement): zacht pastelroze (zie light-blok). */
-  --bigdaddy: #ee82b6;
-  --bigdaddy-soft: #462c41;
+  --bigdaddy: #ea7fb3;
+  --bigdaddy-soft: rgba(238, 130, 182, 0.15);
   --bigdaddy-ink: #310e1c;
   --bigdaddy-text: #f2abcc;
 
   /* Feed-categoriekleuren op donker (zie licht-blok). --cat-match volgt
      --accent en hoeft dus niet apart. */
-  --cat-rank: #6f9bff;
-  --cat-champ: #bd8e28;
-  --cat-roast: #ce68ac;
+  --cat-rank: #6a97fb;
+  --cat-champ: #b4861f;
+  --cat-roast: #d871b6;
 
   /* Avatar-tinten op donker (#74): zelfde hue-families, gedempte donkere
      vlakken + lichte initialen (zie licht-blok). */
@@ -668,7 +750,9 @@
   --avatar-h7-bg: #2b3441; --avatar-h7-fg: #b4bfcc;
 
   --placeholder: #929aa4;
-  --skeleton-hi: #2c3038;
+  /* De glans van het skeleton loopt over --surface-2; hij zakt in #1264 mee,
+     zodat de amplitude van de shimmer (+6,7 L*) dezelfde blijft. */
+  --skeleton-hi: #262a31;
 
   /* Op donker dragen randen de hiërarchie; schaduwen kleiner en dieper —
      op bijna-zwart doet spreiding toch niets meer. */
@@ -733,7 +817,7 @@
   --paneel-om-ink: var(--ink);
   --paneel-om-ink-soft: var(--ink-soft);
   --paneel-om-label: var(--ink-soft);
-  --paneel-om-vlak: #2c3038; /* gelijk aan surface-hover — een stap hoger */
+  --paneel-om-vlak: var(--surface-hover); /* een stap hoger dan het paneel */
   --paneel-om-lijn: #3a3f46;
 
   /* Lime als focuskleur (#1074): op donker springt hij van élk vlak af (≥9:1
