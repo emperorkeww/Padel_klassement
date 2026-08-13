@@ -203,6 +203,8 @@ describe("<DagSheet />", () => {
   });
 
   it("meldt een lege dag in het verleden zonder uitnodiging", () => {
+    // Zonder `onPlan`, want die dag valt niet meer te plannen — precies het
+    // onderscheid waar de lege staat sinds #1270 op leunt.
     toon([]);
     expect(screen.getByText("Niets gespeeld")).toBeInTheDocument();
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
@@ -295,11 +297,19 @@ describe("<DagSheet />", () => {
     expect(screen.queryByRole("button", { name: PLAN })).not.toBeInTheDocument();
   });
 
-  it("houdt de plan-knop weg bij een lege dag in het verleden", () => {
-    // Die dag komt hier alleen terecht als er niets stond; plannen loopt dan al
-    // via het plan-sheet en een tweede ingang zou de lege staat tegenspreken.
-    toon([], [], vi.fn());
+  it("biedt op een lege dag die nog komt de weg naar plannen (#1270)", async () => {
+    // `/agenda?dag=<volgende week>&open=1` kwam hier gewoon uit en zei "Deze dag
+    // is geweest" over een dag die nog moet komen — een doodlopende link,
+    // terwijl de URL sinds #1182 juist bedoeld is om te delen. Hetzelfde pad
+    // ontstaat als het groepsfilter de speeldagen van die dag wegzeeft.
+    const onPlan = vi.fn();
+    toon([], [], onPlan);
+    expect(screen.queryByText("Niets gespeeld")).not.toBeInTheDocument();
+    expect(screen.getByText("Nog niets gepland")).toBeInTheDocument();
+    // Niet "Plan hier ook": er staat nog niets om iets naast te zetten.
     expect(screen.queryByRole("button", { name: PLAN })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Speeldag plannen" }));
+    expect(onPlan).toHaveBeenCalledOnce();
   });
 });
 

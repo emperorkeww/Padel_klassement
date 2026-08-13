@@ -77,6 +77,29 @@ describe("<PlanDagSheet />", () => {
     expect(screen.getByRole("button", { name: /Kies momenten/ })).toBeEnabled();
   });
 
+  it("negeert een onthouden groep die je verliet (#1270)", () => {
+    // Met een oude id in `agenda-laatste-groep` stond er geen rij aangevinkt,
+    // was "Kies momenten →" tóch actief, en sloot de klik alles zonder iets te
+    // openen: de wizard kreeg een groep die niet meer bestaat.
+    toon({ gekozenGroep: "verlaten-groep" });
+    expect(screen.queryByRole("radio", { checked: true })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Kies momenten/ })).toBeDisabled();
+  });
+
+  it("valt bij één groep terug op die ene, ook met een oude id", () => {
+    // Daar valt niets te kiezen, dus die stap hoort niet in de weg te zitten.
+    toon({ groepen: [groep("g1", "Vamos!")], gekozenGroep: "verlaten-groep" });
+    expect(screen.getByRole("button", { name: /Kies momenten/ })).toBeEnabled();
+  });
+
+  it("noemt de club één keer, in de knop waarmee je hem verandert (#1270)", () => {
+    // De naam stond er ook als tekst links, en die kopie kortte op 390px in tot
+    // "LAG…" naast een knop die hem voluit toonde.
+    toon();
+    expect(screen.getAllByText(/Padel De Panne/)).toHaveLength(1);
+    expect(screen.queryByText("je huidige clubkeuze")).not.toBeInTheDocument();
+  });
+
   it("meldt de keuze terug en geeft daarna het stokje door", async () => {
     const { onGroep } = toon();
     await userEvent.click(screen.getByText("Kantoorpadel"));

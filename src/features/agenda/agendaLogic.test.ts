@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildMarkers,
+  filterLabel,
   filterOpGroepen,
   leesGroepKeuze,
   dagItems,
@@ -1000,6 +1001,37 @@ describe("groepsfilter (#1121)", () => {
     expect(leesGroepKeuze("g1,weg", ["g1", "g2"])).toEqual(["g1"]);
     expect(leesGroepKeuze("weg", ["g1"])).toEqual([]);
     expect(leesGroepKeuze(null, ["g1"])).toEqual([]);
+  });
+});
+
+describe("filterLabel (#1270)", () => {
+  const DRIE = [
+    { id: "g1", name: "Vamos!" },
+    { id: "g2", name: "Kantoorpadel" },
+    { id: "g3", name: "Zen Padel" },
+  ];
+
+  it("zwijgt zolang alles meetelt", () => {
+    // Geen chip aan en alle chips aan leveren hetzelfde beeld; er valt dan
+    // niets te vermelden bij "3 speeldagen deze maand".
+    expect(filterLabel([], DRIE)).toBeNull();
+    expect(filterLabel(["g1", "g2", "g3"], DRIE)).toBeNull();
+  });
+
+  it("noemt de groep bij één chip", () => {
+    // Dít is de zin die ontbrak: "Geen speeldagen deze maand" boven een raster
+    // vol stippen van de groep die je net wegklikte.
+    expect(filterLabel(["g2"], DRIE)).toBe("Kantoorpadel");
+  });
+
+  it("telt bij meer chips in plaats van namen op te sommen", () => {
+    // Drie namen achter elkaar passen niet op 390px, en wélke precies zeggen de
+    // chips er zelf al bij.
+    expect(filterLabel(["g1", "g3"], DRIE)).toBe("2 van je 3 groepen");
+  });
+
+  it("zwijgt over een id dat geen groep meer is", () => {
+    expect(filterLabel(["weg"], DRIE)).toBeNull();
   });
 });
 

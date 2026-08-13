@@ -18,6 +18,7 @@ import {
   buildMarkers,
   filterOpGroepen,
   komendeItems,
+  filterLabel,
   leesGroepKeuze,
   maandLabel,
   maandVan,
@@ -188,13 +189,34 @@ export function Agenda() {
     () => buildMarkers(venster.data ?? LEEG_VENSTER, lijst, myId, Date.now()),
     [venster.data, lijst, myId],
   );
-  // De filterkeuze staat in localStorage, maar wordt elke render gezeefd langs
-  // de groepen die je nú hebt: een groep die je verliet zou de agenda anders
-  // leeg houden zonder dat er nog een chip staat om hem uit te zetten.
+  // De filterkeuze komt uit de URL en valt terug op wat je vorige bezoek
+  // onthield (#1270). Beide worden elke render gezeefd langs de groepen die je
+  // nú hebt: een groep die je verliet — of een id uit iemand anders' link —
+  // zou de agenda anders leeg houden zonder dat er een chip staat om hem uit te
+  // zetten.
   const groepFilter = useMemo(
-    () => leesGroepKeuze(bewaardFilter, lijst.map((g) => g.id)),
-    [bewaardFilter, lijst],
+    () => leesGroepKeuze(stand.groepen ?? bewaardFilter, lijst.map((g) => g.id)),
+    [stand.groepen, bewaardFilter, lijst],
   );
+  // Wat er van jouw keuze in de koppen te merken is. Zonder dit kon er "Geen
+  // speeldagen deze maand" staan terwijl de maand vol stond met de groep die je
+  // net wegklikte.
+  const filterUitleg = useMemo(
+    () => filterLabel(groepFilter, lijst),
+    [groepFilter, lijst],
+  );
+
+  // Wat je vorige bezoek onthield hoort ook in de URL te staan, anders deel je
+  // een link die bij de ander een andere agenda toont dan bij jou (#1270). Eén
+  // keer bijschrijven zodra we weten welke groepen je hebt — met `replace`, dus
+  // zonder extra stap in je geschiedenis, en ScrollRestore laat hetzelfde pad
+  // sinds #1195 met rust. Wat er niet bij staat is de lege keuze: "alles" is de
+  // standaard en die schrijf je niet op.
+  useEffect(() => {
+    if (stand.groepen != null || lijst.length === 0) return;
+    if (groepFilter.length === 0) return;
+    zet({ groepen: groepFilter.join(",") });
+  }, [stand.groepen, lijst.length, groepFilter, zet]);
   const markers = useMemo(
     () => filterOpGroepen(alleMarkers, groepFilter),
     [alleMarkers, groepFilter],
@@ -261,11 +283,19 @@ export function Agenda() {
     lijst.find((g) => g.id === planGroep)?.id ??
     (lijst.length === 1 ? lijst[0].id : null);
 
-  /** Groepskeuze onthouden; leeg wist de vlag, zodat "alles" de standaard is. */
+  /**
+   * Groepskeuze in de URL zetten én onthouden; leeg wist allebei, zodat "alles"
+   * de standaard blijft.
+   *
+   * Twee bewaarplekken met een verschillende taak (#1270): de URL is wat je
+   * deelt en waar de terugknop op werkt, localStorage is wat je volgende bezoek
+   * begint. Ze lopen niet uit elkaar omdat dit de enige plek is die schrijft.
+   */
   function kiesGroepen(ids: string[]) {
     const waarde = ids.length > 0 ? ids.join(",") : null;
     setBewaardFilter(waarde);
     writeFlag(GROEP_FILTER, waarde);
+    zet({ groepen: waarde });
   }
 
   /** De groep waarvoor we plannen én suggesties tonen; onthouden voor later. */
@@ -420,23 +450,34 @@ export function Agenda() {
               ? "Wat komt eraan"
               : metHoofdletter(maandLabel(maand))}
           </h1>
+          {/* De telling zegt erbij waarover ze gaat zodra er chips aanstaan
+              (#1270): "Geen speeldagen deze maand" viel niet te rijmen met een
+              raster vol stippen, en niets in die zin wees naar het filter. */}
           <p className="agenda-kop__telling">
             {weergave === "lijst"
               ? lijstVenster.loading && lijstVenster.data == null
                 ? " "
-                : `${komende.length} ${komende.length === 1 ? "speeldag" : "speeldagen"} gepland`
+                : metFilter(
+                    `${komende.length} ${komende.length === 1 ? "speeldag" : "speeldagen"} gepland`,
+                    filterUitleg,
+                  )
               : laadt || verversen
               ? " "
-              : inMaand === 0
-                ? // Niet "Nog niets gepland": dat staat een halve pagina lager
-                  // ook al, in het dagpaneel, en gaat daar over de gekozen dag
-                  // (#1195). Deze regel telt de máánd, dus zegt hij dat ook.
-                  "Geen speeldagen deze maand"
-                : // "Activiteiten" was een woord voor precies dezelfde eenheid
-                  // die de lijstkop hierboven "speeldagen" noemt, en `telInMaand`
-                  // telt allebei polls (#1270). Twee woorden voor één ding leest
-                  // als twee tellingen die elkaar tegenspreken.
-                  `${inMaand} ${inMaand === 1 ? "speeldag" : "speeldagen"} deze maand`}
+              : metFilter(
+                  inMaand === 0
+                    ? // Niet "Nog niets gepland": dat staat een halve pagina
+                      // lager ook al, in het dagpaneel, en gaat daar over de
+                      // gekozen dag (#1195). Deze regel telt de maand zelf, dus
+                      // zegt hij dat ook.
+                      "Geen speeldagen deze maand"
+                    : // "Activiteiten" was een woord voor precies dezelfde
+                      // eenheid die de lijstkop hierboven "speeldagen" noemt, en
+                      // `telInMaand` telt allebei polls (#1270). Twee woorden
+                      // voor één ding leest als twee tellingen die elkaar
+                      // tegenspreken.
+                      `${inMaand} ${inMaand === 1 ? "speeldag" : "speeldagen"} deze maand`,
+                  filterUitleg,
+                )}
           </p>
         </div>
         {/* De maandnavigatie hoort bij het raster. In de lijst is er geen maand
@@ -669,10 +710,12 @@ export function Agenda() {
         onClose={() => setPlanDag(null)}
         onDoor={() => {
           // Het plan-sheet sluit en geeft de dag door aan de wizard; de
-          // groepskeuze blijft staan, ook als je 'm nooit aanpaste.
-          if (planGroep == null && lijst.length === 1) {
-            setPlanGroep(lijst[0].id);
-            writeFlag(LAATSTE_GROEP, lijst[0].id);
+          // groepskeuze blijft staan, ook als je 'm nooit aanpaste. Schrijf de
+          // groep op waarmee we straks daadwerkelijk plannen (#1270): dat wist
+          // meteen een onthouden id van een groep die je verliet, in plaats van
+          // die tot in lengte van dagen te laten staan.
+          if (planGroepId != null && planGroepId !== planGroep) {
+            kiesPlanGroep(planGroepId);
           }
           setWizardDag(planDag);
           setPlanDag(null);
@@ -710,6 +753,12 @@ export function Agenda() {
       </Sheet>
     </div>
   );
+}
+
+/** Een telling met de groep(en) erbij waarover ze gaat, of gewoon de telling
+ *  als er niets gefilterd is (#1270). */
+function metFilter(telling: string, filter: string | null): string {
+  return filter ? `${telling} in ${filter}` : telling;
 }
 
 function IconChevron({ kant }: { kant: "links" | "rechts" }) {
