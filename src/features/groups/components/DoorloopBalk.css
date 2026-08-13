@@ -1,0 +1,74 @@
+/* De doorloop van een speeldag (#1271): stemmen → moment → baan → indeling →
+   uitslagen. Rustig van toon — het is een oriëntatiepunt, geen actie. */
+.doorloop {
+  display: grid;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+
+.doorloop__stappen {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  /* Op 390px passen vijf labels niet naast elkaar; horizontaal scrollen is hier
+     beter dan afkappen — de stap waar je staat mag niet wegvallen. */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.doorloop__stappen::-webkit-scrollbar {
+  display: none;
+}
+
+.doorloop__stap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+/* Het streepje tussen twee stappen: de keten is de boodschap. */
+.doorloop__stap + .doorloop__stap::before {
+  content: "";
+  width: 12px;
+  height: 1px;
+  background: var(--line);
+  margin-right: 6px;
+}
+
+.doorloop__bol {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  line-height: 1;
+}
+.doorloop__stap.is-klaar {
+  color: var(--ink);
+}
+.doorloop__stap.is-klaar .doorloop__bol {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--ink);
+}
+.doorloop__stap.is-nu {
+  color: var(--ink);
+  font-weight: 600;
+}
+.doorloop__stap.is-nu .doorloop__bol {
+  border-color: currentColor;
+  border-width: 2px;
+}
+
+.doorloop__zin {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink);
+}

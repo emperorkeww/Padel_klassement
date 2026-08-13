@@ -353,6 +353,9 @@ export function MakeTeams({
         profielen={profiles}
         gekozen={selected}
         moment={gekozen?.option.start_time ?? null}
+        // Niet hardgecodeerd "Vandaag" (#1271): de speeldagpagina genereert
+        // net zo goed voor een avond over drie weken.
+        dagLabel={dag === today ? "Vandaag" : avondDatumLabel(dag)}
         herkomst={
           tonightYes
             ? speeldag

@@ -109,7 +109,6 @@ export function PollCard({
   const week = weekAsync.data ?? [];
   const weekLoading = weekAsync.loading;
   const [busy, setBusy] = useState(false);
-  const [confirmCancel, setConfirmCancel] = useState(false);
   const [remindedDone, setRemindedDone] = useState(false);
   const [openDetail, setOpenDetail] = useState<string | null>(null);
   const [showLosers, setShowLosers] = useState(false);
@@ -654,20 +653,35 @@ export function PollCard({
               Haal uit je agenda
             </button>
           )}
+          {/* Eén bevestigingsmechaniek op deze kaart (#1271). Dit was een
+              two-tap ("Zeker? Tik nogmaals") die op `onBlur` reset — op touch
+              onvoorspelbaar, want een scroll of een tik ernaast telt daar als
+              blur — terwijl er twee knoppen verderop een echte ConfirmDialog
+              stond voor een lichtere ingreep. */}
           {magAnnuleren && poll.status !== "cancelled" && (
             <button
-              className={`btn btn--sm proposal__withdraw${confirmCancel ? " is-confirm" : ""}`}
+              className="btn btn--sm proposal__withdraw"
               disabled={busy}
-              onClick={() => {
-                if (!confirmCancel) {
-                  setConfirmCancel(true);
-                  return;
-                }
+              onClick={async () => {
+                const ok = await confirm({
+                  title:
+                    poll.status === "open"
+                      ? "Poll annuleren?"
+                      : "Speeldag annuleren?",
+                  body:
+                    poll.status === "open"
+                      ? "De stemmen blijven bewaard, maar er wordt niets meer vastgelegd."
+                      : "Iedereen die deze speeldag in zijn agenda zette krijgt een annulering aangeboden.",
+                  confirmLabel: "Annuleren",
+                  cancelLabel: "Laat staan",
+                  danger: true,
+                });
+                if (!ok) return;
                 // Het annuleerbestand meteen aanbieden: wie het pas bij een
                 // volgend bezoek zou downloaden, laat de afspraak intussen in
                 // ieders agenda staan.
                 if (agendaDag) downloadSpeeldagIcs(agendaDag, "CANCELLED");
-                run(
+                void run(
                   () =>
                     annuleerAlsBeheerder
                       ? zetPollStatus(poll.id, "cancelled")
@@ -675,13 +689,8 @@ export function PollCard({
                   poll.status === "open" ? "Poll geannuleerd." : "Speeldag geannuleerd.",
                 );
               }}
-              onBlur={() => setConfirmCancel(false)}
             >
-              {confirmCancel
-                ? "Zeker? Tik nogmaals"
-                : poll.status === "open"
-                  ? "Annuleer poll"
-                  : "Annuleer speeldag"}
+              {poll.status === "open" ? "Annuleer poll" : "Annuleer speeldag"}
             </button>
           )}
         </div>

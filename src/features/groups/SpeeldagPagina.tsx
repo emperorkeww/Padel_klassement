@@ -30,6 +30,7 @@ import {
   openGeplandeRonde,
 } from "@/features/groups/groupDetailHelpers";
 import { PollCard } from "@/features/groups/components/PollCard";
+import { DoorloopBalk } from "@/features/groups/components/DoorloopBalk";
 import { RondeBlok } from "@/features/groups/components/RondeBlok";
 import { MakeTeams } from "@/features/groups/components/MakeTeams";
 import { VolgendeRonde } from "@/features/groups/components/VolgendeRonde";
@@ -369,6 +370,16 @@ export function SpeeldagPagina() {
           </div>
         </div>
       </header>
+
+      {/* Waar sta je in de doorloop (#1271)? De pagina droeg drie flows onder
+          elkaar zonder dat ergens stond wat de volgorde was — elke kaart wist
+          het van zichzelf, niemand van het geheel. */}
+      <DoorloopBalk
+        status={speeldag.status}
+        heeftMoment={speeldag.locked_option_id != null}
+        totaal={dagMatches.length}
+        gespeeld={dagMatches.filter((m) => m.status === "completed").length}
+      />
 
       <PollCard
         poll={speeldag}

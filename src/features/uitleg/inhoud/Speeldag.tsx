@@ -2,8 +2,10 @@ import { Link } from "react-router-dom";
 import { sectieHref } from "../secties";
 
 /** Sectie 2: de reis van een speeldag (#989). Begint sinds #1121 op de Agenda;
- *  de tabnamen daarna komen letterlijk overeen met GroupDetail, dus wijzigt
- *  daar een tab, dan hoort deze lijst mee te wijzigen. */
+ *  de namen daarna komen letterlijk overeen met wat er in de app staat, dus
+ *  verandert daar iets, dan hoort deze lijst mee te veranderen. Dat was ook
+ *  precies wat er misging (#1271): hier stond nog een "Teams"-tab beschreven
+ *  die sinds #1121 niet meer bestaat, en Mexicano kwam er niet in voor. */
 export function Speeldag() {
   return (
     <>
@@ -23,19 +25,25 @@ export function Speeldag() {
           klaar — en die is deelbaar met een link, zodat je 'm gewoon in de
           groepsapp kunt gooien.
         </dd>
-        <dt>Vandaag</dt>
+        <dt>De speeldagpagina</dt>
         <dd>
-          De avond zelf, in <strong>rondes</strong>. Per ronde zie je wie op
-          welke baan staat en wie er even uit is. Uitslagen vul je hier meteen in.
+          De hele avond op één plek, in volgorde:{" "}
+          <strong>stemmen → moment → baan → indeling → uitslagen</strong>. Een
+          balk bovenaan laat zien waar je staat. Je kiest wie er meespeelt, kiest
+          een speelvorm, en zet zoveel rondes klaar als er in de geboekte tijd
+          passen. Ging er iets mis, dan wis je een ronde in één keer en genereer
+          je opnieuw.
         </dd>
-        <dt>Teams</dt>
+        <dt>De speelvormen</dt>
         <dd>
-          De teamgenerator. <strong>Eerlijke teams</strong> sorteert de
-          aanwezigen op rating en verdeelt ze zo dat elke baan intern spannend
-          blijft. <strong>Americano</strong> laat partners en tegenstanders juist
-          zo veel mogelijk rouleren: hij kijkt naar wie al met en tegen wie
-          speelde, en houdt de bank eerlijk. Wie liever zelf schuift, kiest een
-          losse partij.
+          <strong>Eerlijk</strong> sorteert de aanwezigen op rating en verdeelt ze
+          zo dat elke baan intern spannend blijft; "Andere verdeling" wisselt de
+          teams én de banen om. <strong>Americano</strong> laat partners en
+          tegenstanders juist zo veel mogelijk rouleren: hij kijkt naar wie al met
+          en tegen wie speelde, en houdt de bank eerlijk.{" "}
+          <strong>Mexicano</strong> deelt elke ronde opnieuw in op de laatste
+          stand — sterk tegen sterk — en heeft daarom de uitslagen van de vorige
+          ronde nodig. Wie liever zelf schuift, kiest een losse partij.
         </dd>
         <dt>Historie</dt>
         <dd>Alles wat de groep gespeeld heeft, nieuwste eerst.</dd>
