@@ -508,6 +508,13 @@
     width: 30px;
     height: 30px;
   }
+  /* De bal is de enige tab zonder zichtbaar label en de enige die zijn actieve
+     staat niet als pil draagt maar als ring — bewust (#1299): hij ís het
+     merkteken, en een label onder een uitstekende cirkel duwt de balk hoger
+     zonder iets toe te voegen wat de vorm niet al zegt. Wat hij wél deelt met
+     de andere vier is de kleurtaal: dezelfde --selected-mark, en sinds #1299
+     toetst contrast-check die ring (≥3:1, beide thema's) samen met de labels
+     ernaast. Voor een schermlezer draagt aria-label de naam. */
   .tabbar__link--home.is-active .tabbar__icon {
     /* De tweede schaduw stond hardcoded op de lichte waarde en gaf de bal op
        donker een grijze halo; --shadow-ball is per thema al de juiste. */
