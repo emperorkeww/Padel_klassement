@@ -12,9 +12,12 @@
 
 .podium {
   display: grid;
-  /* Ruimte voor de kroon die boven de #1-tegel uithangt; zonder deze marge
-     loopt hij over de kaart erboven. */
-  margin-top: var(--sp-6);
+  /* Ruimte voor de kroon die boven de #1-tegel uithangt. De marge was met
+     var(--sp-6) (24px) krap de helft van wat de kroon met roast-regel echt
+     hoog is (~52px), dus hij landde over de zin erboven: op 1280px lag de pil
+     precies over "Gesorteerd op rating — …" (#1298). De roast is nu op twee
+     regels begrensd, zodat deze reservering een bovengrens is en geen gok. */
+  margin-top: 3.5rem;
   /* minmax(0, …): kolommen mogen smaller worden dan hun breedste inhoud,
      anders duwt een lange divisie-badge plek 3 het scherm af op smalle
      telefoons (de pagina clipt, dus die plek is dan onbereikbaar). */
@@ -99,13 +102,20 @@
   box-shadow: var(--shadow-sm);
 }
 .podium__roast {
-  max-width: 14ch;
+  /* 18ch i.p.v. 14: de langste roast ("iedereen is z'n padelkindje") past zo
+     in twee regels in plaats van drie, en twee regels is precies wat de
+     reservering boven het podium aankan. */
+  max-width: 18ch;
   color: var(--bigdaddy-text);
   font-size: var(--fs-2xs, 0.68rem);
   font-style: italic;
   line-height: 1.15;
   text-align: center;
   text-wrap: balance;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .podium__spot--2 {
@@ -153,10 +163,21 @@
   text-overflow: ellipsis;
 }
 
+/* De naam krimpt, de tekentjes ernaast niet (.stand-mark / .bounty-mark zijn
+   `flex: none`) — anders knipt de ellips van een lange naam het 💰-teken half
+   weg (#1298). */
+.podium__naamrij {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  max-width: 100%;
+}
 .podium__name {
   font-weight: 700;
   font-size: var(--fs-base);
   letter-spacing: -0.01em;
+  min-width: 0;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -198,8 +219,9 @@
 @media (max-width: 480px) {
   .podium {
     gap: var(--sp-2);
-    /* Zonder roast-regel is de kroon één pil hoog. */
-    margin-top: var(--sp-5);
+    /* Zonder roast-regel is de kroon één pil hoog — maar var(--sp-5) was er
+       nog 4px naast, genoeg om de zin erboven te raken (#1298). */
+    margin-top: var(--sp-7);
   }
   /* De roast kost in een kolom van ~110px twee regels en is er nauwelijks
      leesbaar; de kroonpil zegt al wie hier staat (#943). Vanaf tablet blijft

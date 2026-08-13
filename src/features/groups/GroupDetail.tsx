@@ -18,6 +18,7 @@ import { getGroupPlayerStandings } from "@/features/standings/api";
 import {
   getPlayerRatings,
   getRatingHistoriesForMatches,
+  getRatingsAsOf,
   getRecentRatingHistories,
   mergeRatingHistories,
 } from "@/features/standings/ratingsApi";
@@ -39,6 +40,7 @@ import {
   isSeasonClosed,
   listSeasons,
   seasonFromId,
+  seizoenEinddag,
 } from "@/features/rating/seasons";
 import { errorMessage } from "@/lib/utils/errors";
 import { groupByRound, openGeplandeRonde } from "./groupDetailHelpers";
@@ -277,6 +279,17 @@ function GroepPagina() {
   // kwartaal of "Alle tijden", dan is er geen kampioen om te vieren (#1216).
   const eregalerijSeizoen =
     season && isSeasonClosed(season) ? season : null;
+  // Rating × afgesloten seizoen (#1298): de ratingstand negeerde het seizoen
+  // volledig, dus onder de eregalerij van toen stonden de ratings van nu. De
+  // stand van tóén komt van de server — één rij per speler, dezelfde RPC als
+  // de tijdmachine in het klassement (#731); uit de gedeelde historie plukken
+  // kan niet, dat is een venster van de laatste matches en geen archief.
+  const eindDag = eregalerijSeizoen ? seizoenEinddag(eregalerijSeizoen) : null;
+  const seizoenRatings = useAsync(
+    () => (eindDag ? getRatingsAsOf(eindDag) : Promise.resolve(null)),
+    [eindDag],
+    { enabled: standSeen },
+  );
   const seasonStandings: PlayerStanding[] | null = season
     ? computePlayerStandings(
         matchesInSeason(completedMatches, season),
@@ -620,6 +633,7 @@ function GroepPagina() {
             teams={tmap}
             profiles={pmap}
             ratings={ratings.data ?? {}}
+            seizoenRatings={seizoenRatings.data ?? null}
             histories={hmap}
             memberList={memberList}
             myId={myId}

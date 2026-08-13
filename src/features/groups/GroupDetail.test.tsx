@@ -303,7 +303,7 @@ describe("<GroupDetail />", () => {
     );
 
     // Toggle naar punten: de vertrouwde puntentabel met Ptn-kolom.
-    await userEvent.click(screen.getByRole("button", { name: /^punten$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^punten$/i }));
     expect(await screen.findByText("Ptn")).toBeInTheDocument();
     expect(screen.queryByText(/gesorteerd op rating/i)).not.toBeInTheDocument();
   });
@@ -312,7 +312,7 @@ describe("<GroupDetail />", () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
     await userEvent.click(screen.getByRole("tab", { name: /^stand$/i }));
-    await userEvent.click(screen.getByRole("button", { name: /^toto$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^toto$/i }));
 
     expect(
       await screen.findByText(/wie tipt de meeste winnaars/i),

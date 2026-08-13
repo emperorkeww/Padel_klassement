@@ -301,7 +301,10 @@
      op de paginakleur (naam/badge). */
   --bigdaddy: #ef7fb2;
   --bigdaddy-soft: #fce2ee;
-  --bigdaddy-ink: #7d1f4d;
+  /* Was #7d1f4d: 3,84 op --bigdaddy, dus onder AA voor de 12px-kapitalen van de
+     kroonpil en het medaillecijfer. Het paar stond niet in contrast-check en
+     kwam pas boven toen dat wél gebeurde (#1298). Nu 5,0. */
+  --bigdaddy-ink: #5f1739;
   --bigdaddy-text: #b23a74;
   /* Big Daddy als FUT-kaartvlak (#625): dezelfde roze familie, maar als
      "fysiek" kaartje — roze vlak, bordeaux-roze inkt en een frame dat goud

@@ -110,10 +110,9 @@ a.group-head__journey:focus-visible {
   border-left: 3px solid var(--success);
 }
 
-/* Stand-tab: Rating/Punten-toggle in de kaartkop + rating-weergave (#52). */
-.card__head .tabs--head {
-  margin: 0;
-}
+/* Stand-tab: rating-weergave (#52). De weergavekeuze is sinds #1298 een
+   PageTabs-segmentbalk ónder de kaartkop; de seizoenskiezer staat in de kop
+   zelf — die zegt wélke periode je bekijkt, de balk hóe. */
 .rating-thin .rating-cell,
 .rating-thin .stat__delta {
   opacity: 0.55;
@@ -123,7 +122,10 @@ a.group-head__journey:focus-visible {
   color: var(--ink-soft);
 }
 .stand-season {
-  margin-bottom: var(--sp-3);
+  flex-shrink: 0;
+}
+.card__head + .tabs--segment {
+  margin-bottom: var(--sp-4);
 }
 
 /* ---- "Wie speelt er?" (aanwezigheid per speeldag) ---- */
