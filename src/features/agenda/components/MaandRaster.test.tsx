@@ -27,6 +27,8 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
     voterCount: 6,
     yesVoterIds: [],
     maybeVoterIds: [],
+    noVoterIds: [],
+    nietGereageerdIds: [],
     nietGestemdIds: [],
     courts: null,
     accessCode: null,

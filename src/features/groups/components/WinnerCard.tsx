@@ -6,6 +6,7 @@ import {
   zetMijnAanwezigheid,
 } from "@/features/groups/aanwezigheidApi";
 import { Avatar } from "@/ui/Avatar";
+import { KopieerChip } from "@/ui/KopieerChip";
 import { errorMessage } from "@/lib/utils/errors";
 import {
   downloadSpeeldagIcs,
@@ -139,17 +140,6 @@ export function WinnerCard({
     }
   }
 
-  /** Tik op de code = naar het klembord: je staat met je telefoon bij de deur. */
-  async function copyCode() {
-    if (!code) return;
-    try {
-      await navigator.clipboard.writeText(code);
-      toast.success("Code gekopieerd.");
-    } catch (err) {
-      toast.error(errorMessage(err));
-    }
-  }
-
   function exportIcs() {
     // De banen (#802) en de toegangscode (#675) horen juist hier: op het moment
     // dat je ze nodig hebt staan ze al in je agenda, zonder de app te openen.
@@ -230,20 +220,19 @@ export function WinnerCard({
   const baanEnCode = (
     <>
       {banenGeboekt != null && (
-        <span className="winner-card__code winner-card__code--static">
+        <span className="kopieer-chip kopieer-chip--stil">
           🎾 <strong>{courtsLabel(banenGeboekt)}</strong>
         </span>
       )}
+      {/* Sinds #1308 de gedeelde chip: het agenda-dag-sheet toont dezelfde code
+          en had er een dode tekstregel van gemaakt. */}
       {code != null && (
-        <button
-          type="button"
-          className="winner-card__code"
-          onClick={copyCode}
-          title="Tik om te kopiëren"
-          aria-label={`Toegangscode ${code} kopiëren`}
-        >
-          <span aria-hidden="true">🔑</span> <strong>{code}</strong>
-        </button>
+        <KopieerChip
+          waarde={code}
+          naam="Toegangscode"
+          icoon="🔑"
+          melding="Code gekopieerd."
+        />
       )}
     </>
   );
