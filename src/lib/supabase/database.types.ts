@@ -2940,7 +2940,11 @@ export type Database = {
         Returns: string[]
       }
       generate_mexicano_round: {
-        Args: { p_group_id: string; p_played_at?: string }
+        Args: {
+          p_group_id: string
+          p_played_at?: string
+          p_players?: string[]
+        }
         Returns: string[]
       }
       get_friend_suggestions: {

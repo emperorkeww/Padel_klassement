@@ -19,6 +19,7 @@ import {
   type PlayPoll,
   type PollOption,
 } from "@/features/groups/pollsApi";
+import { avondDatumLabel } from "@/features/groups/eveningPoster";
 import { tallyOption } from "@/features/groups/pollLogic";
 import { rondeStart, rondesOpDag } from "@/features/groups/speeldagRondes";
 import { FairTeamsCard } from "@/features/groups/components/FairTeams";
@@ -76,8 +77,10 @@ export function MakeTeams({
   myId: string;
   matches: Match[];
   teams: Record<string, Team>;
-  /** Ronde met nog openstaande uitslagen (blokkeert Mexicano), of null. */
-  openRound: { round: number } | null;
+  /** Ronde met nog openstaande uitslagen (blokkeert Mexicano), of null. Komt
+   *  van `openGeplandeRonde` en kijkt naar de hele groep, net als de RPC; `dag`
+   *  is de clubdag waarop die ronde staat (#1271). */
+  openRound: { round: number; dag?: string | null } | null;
   /** De speeldag waarvoor gegenereerd wordt (#1133). Zonder waarde zoekt de
    *  generator zelf de speeldag van vandaag op — het gedrag op de Spelen-tab. */
   speeldag?: GeneratorSpeeldag | null;
@@ -231,6 +234,12 @@ export function MakeTeams({
   const selectedIds = [...selected];
   const enough = selectedIds.length >= 4;
   const mexicanoBlocked = format === "mexicano" && !!openRound;
+  // De blokkerende ronde hoeft niet die van vandaag te zijn (#1271): noem de
+  // avond erbij, anders zoek je je suf naar een ronde die hier niet staat.
+  const blokkadeDag =
+    openRound?.dag && openRound.dag !== dag
+      ? ` van ${avondDatumLabel(openRound.dag)}`
+      : "";
 
   async function generate() {
     setBusy(true);
@@ -247,7 +256,14 @@ export function MakeTeams({
           applyRound(history, courts);
         }
       } else {
-        const ids = await generateMexicanoRound(groupId, startVanRonde(0));
+        // Mét de selectie (#1271): zonder deze lijst rangschikt de RPC de hele
+        // ledenlijst en staat wie afzegde alsnog op de baan — terwijl het
+        // paneel hierboven "N aan · M op de bank" belooft.
+        const ids = await generateMexicanoRound(
+          groupId,
+          startVanRonde(0),
+          selectedIds,
+        );
         total = ids.length;
       }
       if (total === 0) throw new Error("Geen wedstrijden gegenereerd.");
@@ -304,7 +320,7 @@ export function MakeTeams({
           !enough
             ? "Minimaal 4 deelnemers nodig om teams te maken."
             : mexicanoBlocked
-              ? `Vul eerst alle uitslagen van ronde ${openRound!.round} in — Mexicano paart op basis van de volledige stand.`
+              ? `Vul eerst alle uitslagen van ronde ${openRound!.round}${blokkadeDag} in — Mexicano paart op basis van de volledige stand.`
               : null
         }
         onStart={() => {

@@ -395,7 +395,15 @@ export async function settleMatchWager(params: {
  *  Mag door de aanmaker, de deelnemers en de eigenaar van de groep waarin de
  *  match hangt (RLS), en alleen op een nog niet afgeronde match: als iemand
  *  anders net eerder opsloeg, faalt dit met een duidelijke melding i.p.v. stil
- *  te overschrijven. */
+ *  te overschrijven.
+ *
+ *  played_at (#1271): een geplande match draagt zijn *speeltijd* al in deze
+ *  kolom — er is geen aparte scheduled_at. Overschrijven met now() zou de match
+ *  bij het invullen naar een andere kalenderdag verplaatsen, waardoor hij van
+ *  zijn speeldagpagina verdwijnt (matchesVoorSpeeldag) en de per-ronde
+ *  starttijden uit #827 sneuvelen. Geef daarom playedAt mee: de geplande tijd
+ *  blijft dan staan. Alleen een match zonder tijdstip valt terug op now().
+ */
 export async function setMatchResult(params: {
   matchId: string;
   winnerTeamId: string | null;
@@ -403,6 +411,8 @@ export async function setMatchResult(params: {
   scoreB?: number | null;
   setScores?: SetScore[] | null;
   courtType?: CourtType | null;
+  /** De geplande speeltijd van de match; null/weglaten = nu. */
+  playedAt?: string | null;
 }): Promise<void> {
   const patch: TablesUpdate<"matches"> = {
     status: "completed",
@@ -410,7 +420,7 @@ export async function setMatchResult(params: {
     score_a: params.scoreA ?? null,
     score_b: params.scoreB ?? null,
     set_scores: params.setScores ?? null,
-    played_at: new Date().toISOString(),
+    played_at: params.playedAt ?? new Date().toISOString(),
   };
   // Alleen aanraken als expliciet meegegeven, zodat een bij het plannen gekozen
   // baantype niet gewist wordt wanneer de uitslag zonder baan-keuze binnenkomt.

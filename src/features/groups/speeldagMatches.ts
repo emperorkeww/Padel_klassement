@@ -102,7 +102,9 @@ export function dichtstbijMoment(
  *
  * Een bovengrens zit er niet in: die doet de kalenderdag al. Wat ná het slot
  * gelogd wordt hoort er wél bij, want loggen gebeurt tijdens en na de sessie —
- * `completeMatch` zet `played_at` op het moment van invoeren.
+ * een losse partij die je om elf uur invoert krijgt dat tijdstip als
+ * `played_at` mee (`createCompletedMatch`). Een geplande ronde houdt sinds
+ * #1271 juist zijn eigen starttijd, ook als de uitslag later binnenkomt.
  */
 export function hoortBijMoment(
   tMs: number,

@@ -255,14 +255,20 @@ export async function removeGroupMember(
 /**
  * Genereert een Mexicano-ronde: paart op de huidige stand (sterk met zwak).
  * De RPC blokkeert als de vorige ronde nog niet volledig is ingevuld.
+ *
+ * `players` is wie er meespeelt (#1271). Laat je hem weg, dan deelt de RPC de
+ * hele ledenlijst in — precies de fout die maakte dat wie afzegde toch op de
+ * baan stond. Alleen de vólgorde komt uit de stand, niet uit deze lijst.
  */
 export async function generateMexicanoRound(
   groupId: string,
   playedAt?: string | null,
+  players?: string[] | null,
 ): Promise<string[]> {
   const { data, error } = await supabase.rpc("generate_mexicano_round", {
     p_group_id: groupId,
     p_played_at: playedAt ?? undefined,
+    p_players: players ?? undefined,
   });
   if (error) throw error;
   invalidate("matches", "teams");

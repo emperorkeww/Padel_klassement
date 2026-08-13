@@ -93,10 +93,10 @@ describe("matchBeheer (#1159)", () => {
   });
 
   it("laat played_at met rust bij een beheerder die achteraf invult", () => {
-    // setMatchResult zet played_at op nu — logisch voor wie net van de baan
-    // komt. Een beheerder vult dagen later in; dan is het geplande tijdstip het
-    // juiste en zou "nu" de match naar vandaag verhuizen.
-    vulUitslagIn(CORRECTIE, true);
+    // De beheerdersroute is een gewone update: alles wat niet expliciet in de
+    // payload staat blijft in de database staan. Het geplande tijdstip mag er
+    // dus niet in belanden, ook niet als de kaart het meestuurt.
+    vulUitslagIn({ ...CORRECTIE, playedAt: "2026-08-12T18:00:00Z" }, true);
     const payload = adminApi.corrigeerUitslag.mock.calls[0]?.[0];
     expect(payload).toBeDefined();
     expect(payload).not.toHaveProperty("playedAt");
@@ -107,5 +107,14 @@ describe("matchBeheer (#1159)", () => {
     vulUitslagIn(CORRECTIE, false);
     expect(matchesApi.setMatchResult).toHaveBeenCalledWith(CORRECTIE);
     expect(adminApi.corrigeerUitslag).not.toHaveBeenCalled();
+  });
+
+  it("reikt de geplande speeltijd door aan setMatchResult (#1271)", () => {
+    // Zonder dit zet setMatchResult played_at op nu en verhuist een 's ochtends
+    // ingevulde ronde naar vandaag — weg van zijn eigen speeldagpagina.
+    vulUitslagIn({ ...CORRECTIE, playedAt: "2026-08-12T18:00:00Z" }, false);
+    expect(matchesApi.setMatchResult).toHaveBeenCalledWith(
+      expect.objectContaining({ playedAt: "2026-08-12T18:00:00Z" }),
+    );
   });
 });

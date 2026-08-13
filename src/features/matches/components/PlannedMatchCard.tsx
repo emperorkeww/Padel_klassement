@@ -501,6 +501,9 @@ export function PlannedMatchCard({
           scoreA: a,
           scoreB: b,
           setScores: invoer.setScores,
+          // De geplande speeltijd blijft staan, zodat de match op zijn eigen
+          // speeldag blijft als je hem pas later invult (#1271).
+          playedAt: m.played_at,
         },
         rechten.alsBeheerder,
       );
