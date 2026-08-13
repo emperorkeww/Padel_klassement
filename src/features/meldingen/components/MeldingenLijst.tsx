@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { formatRelatieveTijd } from "@/lib/utils/format";
 import { markeerGelezen, type Melding } from "../api";
+import { groepeer } from "../groepering";
 import { soortInfo, zonderEmoji } from "../soorten";
 import "./MeldingenLijst.css";
 
@@ -45,9 +46,27 @@ export function MeldingenLijst({
     }
   }
 
-  return (
+  // Koppen alleen als er iets te scheiden valt (#1273): één tijdvak met een
+  // kop erboven is een etiket op de hele lijst, en dat zegt niets.
+  const groepen = groepeer(meldingen);
+  if (groepen.length > 1) {
+    return (
+      <div className="meldingen__groepen">
+        {groepen.map((groep) => (
+          <section className="meldingen__groep" key={groep.kop}>
+            <h3 className="meldingen__kop">{groep.kop}</h3>
+            {rijen(groep.meldingen)}
+          </section>
+        ))}
+      </div>
+    );
+  }
+  return rijen(meldingen);
+
+  function rijen(lijst: Melding[]) {
+    return (
     <ul className="meldingen__lijst">
-      {meldingen.map((m) => {
+      {lijst.map((m) => {
         const { icoon: Icoon, familie, label } = soortInfo(m.soort);
         const titel = zonderEmoji(m.title);
         // "VAR: VAR: er wordt een punt betwist" — sommige titels noemen hun
@@ -86,7 +105,8 @@ export function MeldingenLijst({
         );
       })}
     </ul>
-  );
+    );
+  }
 }
 
 export default MeldingenLijst;

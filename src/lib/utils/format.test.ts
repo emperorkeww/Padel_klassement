@@ -83,7 +83,8 @@ describe("formatRelatieveTijd", () => {
     expect(formatRelatieveTijd(geleden(2 * 3_600_000), nu)).toBe("2 u geleden");
     expect(formatRelatieveTijd(geleden(23 * 3_600_000), nu)).toBe("23 u geleden");
     expect(formatRelatieveTijd(geleden(86_400_000), nu)).toBe("1 dag geleden");
-    expect(formatRelatieveTijd(geleden(3 * 86_400_000), nu)).toBe("3 dgn geleden");
+    // Voluit sinds #1273: "dgn" was de enige afkorting van zijn soort.
+    expect(formatRelatieveTijd(geleden(3 * 86_400_000), nu)).toBe("3 dagen geleden");
   });
 
   it("valt vanaf een week terug op een korte datum", () => {

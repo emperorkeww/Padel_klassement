@@ -8,6 +8,21 @@
   padding: 0;
 }
 
+/* Tijdvakken (#1273). De koppen verschijnen alleen als er meer dan één vak in
+   beeld staat; de scheiding tussen de vakken is ruimte, niet nog een lijn. */
+.meldingen__groep + .meldingen__groep {
+  margin-top: var(--sp-4);
+}
+
+.meldingen__kop {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--melding-tijd-ink, var(--ink));
+}
+
 /* Eigen token, geen --line (#1273): de haarlijn haalt in het lichte thema 1,22
    op de kaart, en dan bestaat de scheiding tussen twee meldingen alleen nog uit
    witruimte. --line globaal donkerder maken zou élke kaartrand in de app

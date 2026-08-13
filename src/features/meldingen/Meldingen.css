@@ -9,6 +9,22 @@
   --melding-tijd-ink: var(--ink-soft-strong);
 }
 
+/* De filterrij (#1273): dezelfde chips als het clubblad, maar op de kaart en
+   niet op de pagina — dit filtert de lijst eronder, niet het scherm. */
+.meldingen__filters {
+  margin-bottom: var(--sp-3);
+}
+
+.meldingen-pagina__leeg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: var(--sp-3) 0;
+  color: var(--ink-soft-strong);
+}
+
 .meldingen-pagina__meer {
   display: flex;
   justify-content: center;
