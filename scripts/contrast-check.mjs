@@ -98,24 +98,19 @@ const PAIRS = [
   ["ink-soft-strong", "surface-2", 4.5, "kleine tekst op surface-2 (badges)"],
   ["placeholder", "surface", 4.5, "placeholder in invoerveld"],
   ["accent", "surface", 4.5, "accent als tekst/link op kaart"],
-  ["accent", "accent-soft", 4.5, "accenttekst op accentvlak (badges)"],
   ["accent-ink", "accent", 4.5, "knoptekst op accentknop"],
   ["accent-ink", "accent-hover", 4.5, "knoptekst op de knop onder de muis"],
   ["accent-ink", "accent-strong", 4.5, "knoptekst op de ingedrukte knop"],
   ["lef", "surface", 4.5, "lef-tekst op kaart"],
-  ["lef", "lef-soft", 4.5, "lef-tekst op lef-vlak"],
   ["lef-ink", "lef", 4.5, "knoptekst op ingezette lef-knop"],
   ["dorst", "surface", 4.5, "traktatie-tekst op kaart (#1004)"],
   ["dorst", "dorst-soft", 4.5, "traktatie-tekst op dorstvlak (#1004)"],
   ["dorst-ink", "dorst", 4.5, "knoptekst op ingeloste traktatie-knop (#1004)"],
   ["joker", "surface", 4.5, "joker-tekst op kaart (#1003)"],
-  ["joker", "joker-soft", 4.5, "joker-tekst op jokervlak (#1003)"],
   ["joker-ink", "joker", 4.5, "kaarttekst op gespeelde joker (#1003)"],
   ["success", "surface", 4.5, "winst-tekst op kaart"],
-  ["success", "success-soft", 4.5, "winst-tekst op winstvlak"],
   ["danger", "surface", 4.5, "verlies-tekst op kaart"],
   ["danger", "danger-soft", 4.5, "verlies-tekst op verliesvlak"],
-  ["warn", "warn-soft", 4.5, "waarschuwing op waarschuwingsvlak"],
   ["coach-diep", "coach-soft", 4.5, "coach/bounty-tekst op coachvlak (#941)"],
   // De open-poll-stip in het maandraster (#1112). Grafisch merkteken, dus 3:1 —
   // maar hij ligt op twee vlakken: een lege dag (--surface) en een dag met
@@ -127,23 +122,21 @@ const PAIRS = [
   // zet --fs-xs (12px) bold en WCAG rekent pas vanaf 18,66px bold als large
   // text: de drempel is dus 4,5. Zes van deze paren stonden daardoor groen
   // terwijl ze onder AA zaten. Brons en zilver ontbraken hier compleet.
+  // Alle elf tier-vlakken zijn dekkend gebleven (zie de toelichting in
+  // index.css: een tier-badge staat óók op kaart-artwork, en daar laat een
+  // tint het artwork door). De vijf die hier ontbreken — platina, diamant,
+  // meester, legende, dictator — worden in de soft-sectie hieronder gemeten,
+  // samen met de rest van de familie, zodat hun drempel op één plek staat.
   ["slof", "slof-soft", 4.5, "slof-tierbadge (12px bold)"],
   ["karton", "karton-soft", 4.5, "karton-tierbadge (12px bold)"],
   ["hout", "hout-soft", 4.5, "hout-tierbadge (12px bold)"],
   ["bronze", "bronze-soft", 4.5, "brons-tierbadge (12px bold)"],
   ["silver", "silver-soft", 4.5, "zilver-tierbadge (12px bold)"],
   ["gold", "gold-soft", 4.5, "goud-badge (12px bold)"],
-  ["platina", "platina-soft", 4.5, "platina-tierbadge (12px bold)"],
-  ["diamant", "diamant-soft", 4.5, "diamant-tierbadge (12px bold)"],
-  ["meester", "meester-soft", 4.5, "meester-tierbadge (12px bold)"],
-  ["legende", "legende-soft", 4.5, "legende-tierbadge (12px bold)"],
-  ["dictator", "dictator-soft", 4.5, "dictator-tierbadge (12px bold)"],
   ["lime-deep", "surface", 3.0, "lime-tekstaccent (groot/UI)"],
-  ["lime-deep", "lime-soft", 4.5, "serve-chip: 'begint' op lime-vlak (#435)"],
-  // De gekozen spelerspil (#1183). De vulling is dekkend en de blur staat uit,
-  // dus dit paar is te meten op de tokens: er schemert niets doorheen.
-  ["ink", "accent-soft", 4.5, "spelersnaam op de gekozen pil, team A (#1183)"],
-  ["ink", "lime-soft", 4.5, "spelersnaam op de gekozen pil, team B (#1183)"],
+  // De gekozen spelerspil (#1183). De vulling was dekkend; sinds #1264 is hij
+  // op donker een tint van --accent/--lime, dus de spelersnaam-op-pil wordt nu
+  // in de soft-sectie gemeten — daar staat --ink als inhoud van beide vlakken.
   // Team A's badge is wit op --accent en staat hierboven al als "knoptekst op
   // accentknop" (4,36 op licht — bekend en geaccepteerd, zie #1074).
   ["lime-ink", "lime-deep", 4.5, "teambadge B op de gekozen pil (#1183)"],
@@ -380,14 +373,26 @@ for (const [hi, lo, min, label] of RICHTING) {
   }
 }
 
-// ---- Soft-vlakken op donker (#1255) ----
-// De --*-soft-badge-vlakken (en de avatar-achtergronden, zelfde rol) moeten
-// als familie bóven het hover-niveau liggen: een badge ligt op wisselende
-// dragers — kaart, subtiel vlak, sheet — en moet boven de líchtste daarvan
-// blijven, anders leest hij als gat (les uit #1074; vóór #1255 was
-// --accent-soft zelfs donkerder dan --surface-2). Daarnaast een
-// chroma-bodem: op dit lichtheidsniveau leest C* < 8 als grijs en draagt het
-// vlak zijn kleurfamilie niet meer (--slof-soft zat op C* 4,4).
+// ---- Soft-vlakken op donker (#1255, herzien in #1264) ----
+// Een badge ligt op wisselende dragers — kaart, subtiel vlak, sheet — en mag
+// op géén daarvan donkerder zijn dan wat eronder ligt: dat leest als een gat
+// (les uit #1074). #1255 goot dat in één regel: "boven het hover-niveau", de
+// lichtste drager die er is. Dat werkte, maar dwong de hele familie omhoog en
+// als gelijkheid uitgevoerd werd het een plateau — 22 van de 23 op
+// L* 21,9-22,2, en daarmee het lichtste meubilair in de app.
+//
+// #1264 splitst de familie naar mechanisme:
+//
+//   Tint  — een halfdoorzichtige kleur uit de eigen familie. Die ligt per
+//           definitie boven élke drager, dus de eis "boven de lichtste" is
+//           overbodig; in plaats daarvan meten we hem óp elke drager: de
+//           tekst van de familie moet er overal zijn drempel halen, en de
+//           composiet moet zijn kleur nog dragen.
+//   Plaat — een dekkende hex, voor families die te gedempt zijn om als waas
+//           kleur te dragen (een 15%-waas van --slof over bijna-zwart komt op
+//           C* 1 uit). Die moeten wél boven hun lichtste drager liggen.
+//
+// Plus een plateau-toets: nooit meer dan twee soft-vlakken op dezelfde hoogte.
 // Alleen donker: op licht liggen de softs juist ónder de witte kaart — daar
 // is "donkerder dan de drager" de normale richting.
 // Let op bij uitbreiden: dit selecteert op naam. -soft-tokens die tekst zijn
@@ -406,23 +411,87 @@ function chromaOf(value) {
   return Math.hypot(500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z)));
 }
 
-const SOFT_TEKST = new Set(["ink-soft", "paneel-om-ink-soft"]); // tekst, geen vlak
+// Tekst, geen vlak — die horen niet in deze sectie. Alles wat op -ink-soft
+// eindigt is per definitie inkt (ook de kaart-eilanden, die hun eigen sectie
+// hebben).
+const SOFT_TEKST = new Set(["ink-soft", "paneel-om-ink-soft"]);
+const isSoftTekst = (k) => SOFT_TEKST.has(k) || k.endsWith("-ink-soft");
+// De dragers waar een soft-vlak in de praktijk op ligt. De hoverstaat staat er
+// bewust niet bij: een badge in een gehoverde rij schuift mee omhoog, en bij
+// een tint gebeurt dat vanzelf.
+const SOFT_DRAGERS = ["surface", "surface-2", "surface-elevated"];
+// Welke tekst er op zo'n vlak staat, met zijn drempel. Zonder dit zou een tint
+// alleen op chroma getoetst worden — en juist de leesbaarheid is de reden dat
+// de alfa niet hoger mag.
+const SOFT_INHOUD = {
+  "accent-soft": [["accent", 4.5], ["ink", 4.5]],
+  "lime-soft": [["lime-deep", 4.5], ["ink", 4.5]],
+  "lef-soft": [["lef", 4.5]],
+  "joker-soft": [["joker", 4.5]],
+  "success-soft": [["success", 4.5]],
+  "warn-soft": [["warn", 4.5]],
+  "danger-soft": [["danger", 4.5]],
+  "coach-soft": [["coach-diep", 4.5]],
+  "poll-soft": [["poll-diep", 4.5]],
+  "dorst-soft": [["dorst", 4.5]],
+  "slof-soft": [["slof", 4.5]],
+  "karton-soft": [["karton", 4.5]],
+  "hout-soft": [["hout", 4.5]],
+  "bronze-soft": [["bronze", 4.5]],
+  "silver-soft": [["silver", 4.5]],
+  "gold-soft": [["gold", 4.5]],
+  "platina-soft": [["platina", 4.5]],
+  "diamant-soft": [["diamant", 4.5]],
+  "meester-soft": [["meester", 4.5]],
+  "legende-soft": [["legende", 4.5]],
+  "dictator-soft": [["dictator", 4.5]],
+  "bigdaddy-soft": [["bigdaddy", 4.5]],
+};
+
 let softFailures = 0;
-console.log("\n— Soft-vlakken: boven hover en echt getint (donker) —");
+console.log("\n— Soft-vlakken: tint op élke drager, plaat boven zijn drager (donker) —");
+const softHoogtes = [];
 {
-  const hoverL = lightness(dark["surface-hover"]);
+  const dragers = SOFT_DRAGERS.map((d) => parseColor(dark[d]));
+  const lichtsteDrager = Math.max(...SOFT_DRAGERS.map((d) => lightness(dark[d])));
   for (const [k, v] of Object.entries(dark)) {
-    const isSoft = k.endsWith("-soft") && !SOFT_TEKST.has(k);
+    const isSoft = k.endsWith("-soft") && !isSoftTekst(k);
     const isAvatar = /^avatar-h\d-bg$/.test(k);
-    if ((!isSoft && !isAvatar) || !parseColor(v)) continue;
-    const l = lightness(v);
-    const c = chromaOf(v);
-    const okL = l > hoverL;
-    const okC = c >= 8;
-    if (!okL || !okC) softFailures++;
-    console.log(
-      `  ${okL && okC ? "ok  " : "FAIL"} L* ${l.toFixed(1).padStart(5)} > ${hoverL.toFixed(1)}  C* ${c.toFixed(1).padStart(5)} ≥ 8  ${k}`,
+    const rgba = parseColor(v);
+    if ((!isSoft && !isAvatar) || !rgba) continue;
+    const tint = rgba[3] < 1;
+    const inhoud = SOFT_INHOUD[k] ?? [];
+    const vlakken = tint ? dragers.map((d) => composite(rgba, d)) : [rgba];
+    const hex = (c) => `rgb(${c.slice(0, 3).map(Math.round).join(",")})`;
+    const cs = vlakken.map((c) => chromaOf(hex(c)));
+    const ls = vlakken.map((c) => lightness(hex(c)));
+    const rs = inhoud.flatMap(([t, min]) =>
+      vlakken.map((c) => contrast(dark[t], hex(c)) / min),
     );
+    const okC = Math.min(...cs) >= 8;
+    const okR = rs.length === 0 || Math.min(...rs) >= 1;
+    // Een dekkende plaat moet boven de lichtste drager liggen; een tint niet,
+    // want die schuift met zijn drager mee.
+    const okL = tint || ls[0] >= lichtsteDrager + 1.5;
+    if (!okC || !okR || !okL) softFailures++;
+    // De avatar-achtergronden staan bewust op één hoogte: acht hues op
+    // dezelfde lichtheid, dát is hun onderscheid. Zij tellen niet mee in de
+    // plateau-toets, de badge-vlakken wel.
+    if (!isAvatar) softHoogtes.push({ k, L: ls[0] });
+    console.log(
+      `  ${okC && okR && okL ? "ok  " : "FAIL"} ${(tint ? "tint " : "plaat").padEnd(5)} L* ${ls[0].toFixed(1).padStart(5)}${tint ? `→${ls.at(-1).toFixed(1)}` : "     "}  C* ${Math.min(...cs).toFixed(1).padStart(5)} ≥ 8  tekst ${(rs.length ? Math.min(...rs).toFixed(2) : "—").padStart(5)}× drempel  ${k}`,
+    );
+  }
+  // Plateau-toets: het probleem van #1255 was niet één te licht vlak maar de
+  // vlakke familie. Drie vlakken binnen een halve L* is geen hiërarchie meer.
+  softHoogtes.sort((a, b) => a.L - b.L);
+  for (let i = 0; i + 2 < softHoogtes.length; i++) {
+    if (softHoogtes[i + 2].L - softHoogtes[i].L <= 0.5) {
+      console.log(
+        `  FAIL plateau: ${softHoogtes[i].k}, ${softHoogtes[i + 1].k} en ${softHoogtes[i + 2].k} liggen binnen 0,5 L*`,
+      );
+      softFailures++;
+    }
   }
 }
 

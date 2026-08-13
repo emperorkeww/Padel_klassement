@@ -482,7 +482,33 @@
    lichtheid zakt; de opeenvolgende stappen worden er juist gróter van
    (5,8 / 4,3 / 3,4 / 4,8 L*), dus hover leest nu duidelijker dan vóór #1264.
    Nieuw bewaakt: het hoogste meubilairniveau mag niet boven L* 19 uitkomen
-   (contrast-check.mjs) — dat is de regel die het opkruipen tegenhoudt. */
+   (contrast-check.mjs) — dat is de regel die het opkruipen tegenhoudt.
+
+   De --*-soft-vlakken waren dat opkruipen in het klein: de regel "soft boven
+   het hover-niveau" is als gelijkheid uitgevoerd, en 22 van de 23 lagen op
+   L* 21,9-22,2. De badges waren daarmee het líchtste meubilair in de app en
+   de familie droeg geen hiërarchie meer. #1264 splitst ze naar wat ze moeten
+   doen:
+
+   1. Vlakken die alleen op gewoon meubilair liggen — chips, strips, de
+      gekozen spelerspil, een crest — worden een halfdoorzichtige tint van hun
+      eigen kleur (accent, lime, lef, joker, success, warn, bigdaddy). Zo'n
+      vlak ligt per definitie bóven zijn drager, op de kaart net zo goed als op
+      een sheet, en hoeft dus niet boven de líchtste drager gelegd te worden.
+   2. Al de rest blijft dekkend, om twee redenen. Gedempte families (coach,
+      poll, dorst, danger) kúnnen geen tint zijn: een 15%-waas van een al
+      gedempte kleur over bijna-zwart komt op C* 1-4 uit en draagt zijn
+      kleurfamilie niet meer. En de elf tier-vlakken mógen het niet zijn: een
+      tier-badge staat óók op de hero en op de FUT-kaart, en daar laat een tint
+      het artwork door — gemeten zakte de diamant-badge daar van 4,89 naar
+      3,79:1. Een badge op artwork heeft een eigen, dekkende bodem nodig.
+      Zij houden dus een hand-gekozen hex, maar elk op zijn eigen hoogte.
+
+   Het resultaat spreidt van L* 14,3 (accent) tot 24,4 (lime) in plaats van
+   0,3 L* over de hele familie, en de tekst wint overal: de zwakste badge
+   staat nu op 4,76:1 waar hij op 4,17 stond. contrast-check.mjs toetst de
+   tinten op élke drager, de platen op "boven zijn lichtste drager", en
+   bewaakt dat er nooit meer drie soft-vlakken op dezelfde hoogte liggen. */
 :root[data-theme="dark"] {
   /* Canvas → kaart → verhoogd: zwart als bodem, daarna stappen ≥ 3 L* per
      opeenvolgend niveau (#1255). */
@@ -537,7 +563,7 @@
   --accent: #28b37e;
   --accent-hover: #37c18b;
   --accent-strong: #189a6a;
-  --accent-soft: #243930;
+  --accent-soft: rgba(40, 179, 126, 0.13);
   --accent-line: #24513f;
   --accent-ink: #02120c;
 
@@ -550,7 +576,7 @@
      de afstanden worden bewaakt door de ΔE-parenlijst in
      scripts/contrast-check.mjs. */
   --coach: #e18353;
-  --coach-soft: #423128;
+  --coach-soft: #413027;
   --coach-line: #52382a;
   --coach-ink: #211207;
   --coach-diep: #fdaf81;
@@ -561,7 +587,7 @@
      zich op de chroma-as: gedempt perzik (C* 32) tussen verzadigde buren
      (#1255). */
   --poll: #e1b384;
-  --poll-soft: #423222;
+  --poll-soft: #413121;
   --poll-diep: #f5ca9c;
 
   /* Lime (padelbal). Sinds #1243 gedempt: hij blijft het enige token dat
@@ -572,26 +598,26 @@
      donkere leesbare variant is. */
   --lime: #9ccf4a;
   --lime-deep: #b3dd63;
-  --lime-soft: #303821;
+  --lime-soft: rgba(156, 207, 74, 0.23);
 
   /* Lef-violet, licht genoeg voor leesbare tekst op donkere vlakken.
      Warmer paars (h≈315) sinds #1255: het koele violet viel samen met de
      meester-tier. */
   --lef: #bb90d3;
-  --lef-soft: #3d3044;
+  --lef-soft: rgba(187, 144, 211, 0.13);
   --lef-line: #4b3955;
   --lef-ink: #160d1b;
 
   /* Dorst — donker bier-brons (h≈68, een stap donkerder dan de rest van de
      warme band), weg van dictator-goud en kampioensgoud (#1255). */
   --dorst: #d6924c;
-  --dorst-soft: #413225;
+  --dorst-soft: #3d2e22;
   --dorst-line: #4f3d2d;
   --dorst-ink: #190f05;
 
   /* Jokerblauw, licht genoeg voor leesbare tekst op donkere vlakken. */
   --joker: #67aed8;
-  --joker-soft: #263743;
+  --joker-soft: rgba(103, 174, 216, 0.17);
   --joker-line: #344857;
   --joker-ink: #081420;
 
@@ -627,13 +653,13 @@
      accent-hover), warn citroen-amber (h≈97, weg van de gouden); decoratie
      (chemie, tiers, categorieën) mag hier niet meer in. */
   --success: #5ab671;
-  --success-soft: #28392c;
+  --success-soft: rgba(90, 182, 113, 0.16);
   --success-line: #2e5b3c;
   --danger: #e5878e;
-  --danger-soft: #44302e;
+  --danger-soft: #412e2c;
   --danger-line: #5c3a3d;
   --warn: #cebd47;
-  --warn-soft: #3a3523;
+  --warn-soft: rgba(206, 189, 71, 0.21);
   --warn-line: #524a2a;
 
   /* Tiers op donker (#664): zelfde materiaalladder, gedempt maar licht
@@ -649,35 +675,35 @@
      De rij zit hierdoor tijdelijk in één lichtheidsband — spoor D van #1264
      trekt hem weer uit elkaar zodra de soft-vlakken tinten zijn (spoor B). */
   --slof: #a69d8c;
-  --slof-soft: #3a3426;
+  --slof-soft: #2c2619;
   --karton: #c1985c;
-  --karton-soft: #3c3426;
+  --karton-soft: #2d2619;
   --hout: #c3966c;
-  --hout-soft: #413228;
+  --hout-soft: #34251c;
   --gold: #bd9a46;
-  --gold-soft: #3c3421;
+  --gold-soft: #342c19;
   --silver: #9aa4af;
-  --silver-soft: #2c3543;
+  --silver-soft: #232c39;
   --bronze: #d1915e;
-  --bronze-soft: #443125;
+  --bronze-soft: #38261a;
   --platina: #6cbfd8;
-  --platina-soft: #21383f;
+  --platina-soft: #1a3138;
   --diamant: #87a2e8;
-  --diamant-soft: #2e344b;
+  --diamant-soft: #272e44;
   --meester: #b6a5f2;
-  --meester-soft: #37314d;
+  --meester-soft: #312c47;
   --legende: #ed7b9d;
-  --legende-soft: #472e36;
+  --legende-soft: #422931;
   /* El Padelissimo (#527): warm goud op diepbordeaux (zie light-blok). */
   --dictator: #dcab4a;
-  --dictator-soft: #4c2b35;
+  --dictator-soft: #482832;
   /* De Troon (#528): warm goud op nog dieper bordeaux (zie light-blok). */
   --dictator-gold: #e8c05f;
   --dictator-wine: #6d172e;
   --dictator-deep: #1f0a11;
   /* Big Daddy (#1 van het klassement): zacht pastelroze (zie light-blok). */
   --bigdaddy: #ee82b6;
-  --bigdaddy-soft: #462c41;
+  --bigdaddy-soft: rgba(238, 130, 182, 0.15);
   --bigdaddy-ink: #310e1c;
   --bigdaddy-text: #f2abcc;
 
