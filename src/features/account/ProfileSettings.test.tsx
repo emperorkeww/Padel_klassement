@@ -326,6 +326,38 @@ describe("<ProfileSettings /> — notificatie-voorkeuren (#57)", () => {
       await screen.findByText(/pushmeldingen bijgewerkt/i),
     ).toBeInTheDocument();
   });
+
+  // #1273: poll en VAR waren samen tien van de negentien verstuurmomenten en
+  // hadden geen enkele knop — wie ze wilde temperen kon alleen de hele app
+  // afzetten.
+  it("heeft ook een schakelaar voor speeldag-polls en de VAR", async () => {
+    renderPage();
+    await openTab(/meldingen & privacy/i);
+    expect(
+      await screen.findByRole("switch", { name: /speeldagen plannen/i }),
+    ).toBeChecked();
+    expect(screen.getByRole("switch", { name: /^var/i })).toBeChecked();
+  });
+
+  it("zet de stille uren standaard aan, met de tijden erbij", async () => {
+    renderPage();
+    await openTab(/meldingen & privacy/i);
+    const schakelaar = await screen.findByRole("switch", {
+      name: /stille uren/i,
+    });
+    expect(schakelaar).toBeChecked();
+    // Een speeldag om 08:00 leverde een push om 03:05; deze twee tijden zijn
+    // de bodem daaronder.
+    const van = screen.getByLabelText(/^van$/i) as HTMLInputElement;
+    const tot = screen.getByLabelText(/^tot$/i) as HTMLInputElement;
+    expect(van.value).toBe("23:00");
+    expect(tot.value).toBe("07:30");
+
+    await userEvent.click(schakelaar);
+    expect(
+      await screen.findByText(/pushmeldingen bijgewerkt/i),
+    ).toBeInTheDocument();
+  });
 });
 
 describe("<ProfileSettings /> — tabs (#70)", () => {

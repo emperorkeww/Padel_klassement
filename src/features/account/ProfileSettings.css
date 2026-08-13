@@ -181,3 +181,27 @@
 .settings-head .row-between {
   flex-wrap: wrap;
 }
+
+/* Stille uren (#1273). De twee tijden horen bij de schakelaar erboven, dus ze
+   staan ingesprongen op de tekstkolom van de toggle-rij en niet als losse
+   velden eronder. */
+.stille-uren__tijden {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0 0;
+  color: var(--ink-soft-strong);
+  font-size: var(--fs-sm);
+}
+
+.stille-uren__tijden label {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.stille-uren__tijden .input {
+  width: auto;
+  min-width: 7.5rem;
+}

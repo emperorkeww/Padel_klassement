@@ -31,6 +31,13 @@ export function Meldingen() {
         gewoon achter de bel staan — je krijgt er alleen geen duwtje meer bij.
       </p>
       <p>
+        Op dezelfde plek staan je <strong>stille uren</strong>: tussen die twee
+        tijden houdt je toestel zijn mond. Ze staan standaard aan van 23:00 tot
+        07:30, want een speeldag die om 08:00 begint zou anders midden in de
+        nacht een herinnering sturen. De meldingen zelf staan er 's ochtends
+        gewoon.
+      </p>
+      <p>
         Deze app is een <strong>webapp</strong>: je kunt hem op je beginscherm
         zetten en dan opent hij als een gewone app, zonder adresbalk.
       </p>

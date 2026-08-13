@@ -24,6 +24,7 @@ import {
 } from "./meldingen.ts";
 
 import { isAan } from "./instellingen.ts";
+import { inStilteVenster } from "./stilteUren.ts";
 
 export type { Melding, Soort } from "./meldingen.ts";
 
@@ -94,9 +95,12 @@ export async function bezorg(
     return resultaat;
   }
 
-  // 3 + 4. Per melding: filteren op de voorkeur en bezorgen.
+  // 3 + 4. Per melding: filteren op de voorkeur en de stille uren, en bezorgen.
+  //    Eén `nu` voor de hele partij, zodat twee ontvangers van dezelfde melding
+  //    niet aan weerszijden van de grens van 07:30 kunnen vallen.
+  const nu = new Date();
   for (const melding of meldingen) {
-    const ontvangers = await metVoorkeur(admin, melding);
+    const ontvangers = await metVoorkeur(admin, melding, nu);
     if (ontvangers.length === 0) continue;
     resultaat.ontvangers += ontvangers.length;
     resultaat.sent += await push(admin, ontvangers, melding);
@@ -105,26 +109,60 @@ export async function bezorg(
   return resultaat;
 }
 
-/** De ontvangers die dit soort push niet hebben uitgezet (#57). */
+/**
+ * De ontvangers die dit soort push niet hebben uitgezet (#57) en die nu niet
+ * in hun stille uren zitten (#1273).
+ *
+ * Allebei uit dezelfde profielrij, dus één query. De stille uren staan náást de
+ * schakelaar en niet erin: de schakelaar zegt "dit soort nooit", de stille uren
+ * zeggen "nu even niet" — en ze gelden voor élk soort, ook voor de drie die
+ * geen schakelaar hebben.
+ */
 async function metVoorkeur(
   admin: SupabaseClient,
   melding: Melding,
+  nu: Date,
 ): Promise<string[]> {
   const kolom = VOORKEUR_KOLOM[melding.soort];
   const ontvangers = [...new Set(melding.recipients.filter(Boolean))];
-  if (!kolom || ontvangers.length === 0) return ontvangers;
+  if (ontvangers.length === 0) return ontvangers;
 
+  const velden = ["id", "notify_stil_van", "notify_stil_tot"];
+  if (kolom) velden.push(kolom);
   const { data } = await admin
     .from("profiles")
-    .select(`id, ${kolom}`)
+    .select(velden.join(", "))
     .in("id", ontvangers);
   // Via unknown: de kolomnaam is dynamisch, dus postgrest-js kan het rijtype
   // niet afleiden en levert een ParserError-type op.
-  return zonderUitgezet(
-    ontvangers,
-    kolom,
-    (data ?? []) as unknown as Record<string, unknown>[],
-  );
+  const profielen = (data ?? []) as unknown as Record<string, unknown>[];
+
+  const wakker = zonderStilteUren(ontvangers, profielen, nu);
+  return kolom ? zonderUitgezet(wakker, kolom, profielen) : wakker;
+}
+
+/**
+ * De ontvangers voor wie het nu geen nacht is (#1273).
+ *
+ * Fail-open zoals overal in deze keten: staat er geen leesbaar venster, dan
+ * pushen we. Een ontbrekende profielrij (gast, verwijderd account) laten we
+ * hier met rust — meldingRijen slaat die al over.
+ */
+function zonderStilteUren(
+  ontvangers: string[],
+  profielen: Record<string, unknown>[],
+  nu: Date,
+): string[] {
+  const perId = new Map(profielen.map((p) => [String(p.id), p]));
+  return ontvangers.filter((id) => {
+    const rij = perId.get(id);
+    if (!rij) return true;
+    return !inStilteVenster(
+      nu,
+      rij.notify_stil_van as string | null,
+      rij.notify_stil_tot as string | null,
+    );
+  });
 }
 
 /** De web-push zelf, met opruiming van verlopen abonnementen. */
