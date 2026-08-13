@@ -139,6 +139,33 @@ describe("<PollWizard /> — de duur hoort bij het moment (#1308)", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("houdt de plek van dagen en uren vrij terwijl ze laden", () => {
+    // Zonder deze vorm stond er één dagchip en de regel "Vrije banen laden…",
+    // en sprongen er zodra het antwoord kwam zeven dagen plus een raster vol
+    // uren bij. Een bottom sheet groeit naar bóven, dus dat voel je als een
+    // stuiter onder je duim.
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <PollWizard
+            today={TODAY}
+            week={[]}
+            weekLoading
+            club={CLUB}
+            submitLabel={(n) => `Start speeldag (${n})`}
+            onSubmit={() => Promise.resolve()}
+            onClose={() => {}}
+            onDone={() => {}}
+          />
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+    expect(document.querySelectorAll(".day-chip--skelet")).toHaveLength(7);
+    expect(document.querySelectorAll(".slot-chip--skelet")).toHaveLength(10);
+    // Voor wie niet kijkt maar luistert blijft het gewoon een melding.
+    expect(screen.getByText("Vrije banen laden…")).toBeInTheDocument();
+  });
+
   it("zegt bij de baanteller waar het getal over gaat", () => {
     // "20:00 ①" liet in het midden wát er één is.
     toon(vi.fn(() => Promise.resolve()));

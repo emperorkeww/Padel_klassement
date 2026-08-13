@@ -521,6 +521,7 @@ function Speeldag({
   const naam = (id: string) => displayName(profielen[id]);
   const { vrij, prijs, wacht } = baanInfo(marker);
   const deelname = deelnameVan(marker, stemVan(marker), myId);
+  const [namenOpen, setNamenOpen] = useState(marker.status !== "open");
   // Haalbaarheid met de live baantelling erin — dezelfde afleiding als op de
   // speeldagpagina (#1308), zodat "0 mee" er niet meer bij zwijgt dat er nog
   // vier spelers nodig zijn.
@@ -687,7 +688,17 @@ function Speeldag({
           namen erachter. In een groep van twintig duwden drie namenrijen alles
           waar je voor kwam onder de vouw; wie wil weten wie hij nog kan porren,
           tikt hem open. Zonder namen valt er niets te vouwen. */}
-      <details className="dagsheet__deelname">
+      <details
+        className="dagsheet__deelname"
+        // Staat de speeldag vast, dan is "wie komt er" de hoofdvraag van dit
+        // sheet en staan de namen meteen open (#1308). Bij een open stemming
+        // gaat het eerst om jouw eigen antwoord, en blijven ze achter de rij.
+        // Via state en niet als kaal attribuut: dit sheet hertekent elke minuut
+        // (de klok tikt door), en een vast `open` zou jouw tik telkens
+        // terugdraaien.
+        open={namenOpen}
+        onToggle={(e) => setNamenOpen(e.currentTarget.open)}
+      >
         <summary className="dagsheet__deelname-kop">
           <span className="dagsheet__tegel-label">
             Wie doet er mee{leden > 0 ? ` — ${deelname.ja.length} van ${leden}` : ""}
@@ -709,10 +720,18 @@ function Speeldag({
             <span className="dagsheet__leeg">Nog niemand zei "ik kan".</span>
           )}
         </summary>
-        {/* Twijfelaars, afmelders en stille leden bij naam (#1121, #1308).
-            Juist bij "nog één speler nodig" is dat de vraag: wie kan ik nog
-            porren — en wie hoef ik niet meer te vragen? */}
+        {/* Iedereen bij naam (#1121, #1308). De gezichten in de kop zeggen hoe
+            vól het is, maar niet wie: zes initialen naast elkaar zijn op een
+            telefoon niet uit elkaar te houden, en bij twee mensen met dezelfde
+            voorletter helpt zelfs een foto niet. Wie meedoet staat daarom als
+            eerste rij, met dezelfde opvouw als de andere drie.
+
+            En dat is precies de vraag die dit blok beantwoordt: wie doet er
+            mee, wie kan ik nog porren — en wie hoef ik niet meer te vragen? */}
         <div className="dagsheet__namen">
+          {deelname.ja.length > 0 && (
+            <NamenRij label="Ik kan" namen={deelname.ja.map(naam)} />
+          )}
           {deelname.misschien.length > 0 && (
             <NamenRij label="Misschien" namen={deelname.misschien.map(naam)} />
           )}
@@ -727,12 +746,11 @@ function Speeldag({
                 namen={deelname.stil.map(naam)}
               />
             )}
-          {deelname.misschien.length === 0 &&
+          {deelname.ja.length === 0 &&
+            deelname.misschien.length === 0 &&
             deelname.nee.length === 0 &&
             deelname.stil.length === 0 && (
-              <p className="dagsheet__leeg">
-                Iedereen heeft geantwoord{deelname.ja.length > 0 ? " — dit is de hele ploeg." : "."}
-              </p>
+              <p className="dagsheet__leeg">Nog geen antwoorden.</p>
             )}
         </div>
       </details>
