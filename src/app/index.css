@@ -76,9 +76,17 @@
   --navigation-muted: #aec0b8;
   --navigation-surface: rgba(31, 180, 126, 0.16);
   /* De voorgrond die bij --surface-active hoort: het label van een gekozen
-     item, en de markering (icoon, accentstaafje) ernaast. Op licht zijn ze
-     allebei smaragd — precies wat er stond — zodat er niets verschuift. */
-  --selected-ink: var(--accent);
+     item, en de markering (icoon, accentstaafje) ernaast.
+
+     Ze waren allebei --accent, en dat brak op het label: het actieve tablabel
+     in de mobiele onderbalk is 11px/700 en haalde daarmee 4,36 op de balk (en
+     4,11 zodra een gekleurde pagina door het glas meelas) waar AA 4,5 vraagt
+     (#1299). De markering mág smaragd blijven — die valt onder de 3:1-regel
+     voor niet-tekst — maar het woord krijgt de tekstvariant van hetzelfde
+     accent: 5,80 op de balk, en 5,15 op de pil eronder. Zie de regels voor
+     --accent-tekst hieronder; TABBAR_PAREN in contrast-check.mjs houdt dit
+     paar nu in beide thema's tegen. */
+  --selected-ink: var(--accent-tekst);
   --selected-mark: var(--accent);
   /* Decoratieve wassingen: de zachte verlopen achter de hero, de bovenkant van
      het overzicht en de eerstvolgende match. Op licht zijn dit de zachte

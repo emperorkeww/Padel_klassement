@@ -352,6 +352,49 @@ for (const [rand, drager, min, label] of GRENZEN) {
   }
 }
 
+// ---- De mobiele onderbalk, in béíde thema's (#1299) ----
+// De vijf tabs zijn op een telefoon de enige navigatie die er is, en het label
+// van de actieve tab is 11px/700 — gewone tekst, dus AA vraagt 4,5. Op licht
+// haalde het 4,36 op de balk en 4,11 zodra een gekleurde pagina door het glas
+// meelas (gemeten op de gerenderde balk, #1299). Dat kon blijven staan omdat
+// de PAIRS-sectie hierboven licht alleen als let-op meldt; hier faalt het in
+// beide thema's hard.
+//
+// De drager is `--sidebar-bg`: dat is de dekkende terugval die de balken zelf
+// als `--glas-vast` zetten (DashboardLayout.css), en dus de kleur waar het glas
+// naar toe zakt zonder blur. Wat er ín het glas doorheen schemert valt niet uit
+// tokens af te leiden — dat blijft een meting op de echte balk.
+// [voorgrond, drager, minimale ratio, omschrijving]
+const TABBAR_PAREN = [
+  ["selected-ink", "sidebar-bg", 4.5, "actief tablabel (11px bold, dus AA-tekst)"],
+  ["selected-mark", "surface-active", 3.0, "icoon van de actieve tab op zijn pil"],
+  ["selected-mark", "sidebar-bg", 3.0, "ring om de bal in het midden"],
+  ["sidebar-ink", "sidebar-bg", 4.5, "labels van de inactieve tabs"],
+];
+
+let tabbarFailures = 0;
+console.log("\n— Mobiele onderbalk: actieve tab leesbaar, beide thema's —");
+for (const [voor, drager, min, label] of TABBAR_PAREN) {
+  for (const [naam, tokens] of [
+    ["licht", light],
+    ["donker", dark],
+  ]) {
+    const f = tokens[voor];
+    const b = tokens[drager];
+    if (!f || !b || !parseColor(f) || !parseColor(b)) {
+      console.error(`  FAIL ${voor} of ${drager} ontbreekt in thema ${naam}`);
+      tabbarFailures++;
+      continue;
+    }
+    const c = contrast(f, b);
+    const ok = c >= min;
+    if (!ok) tabbarFailures++;
+    console.log(
+      `  ${ok ? "ok  " : "FAIL"} ${c.toFixed(2).padStart(5)} ≥ ${min}  ${voor} op ${drager}, thema ${naam} (${label})`,
+    );
+  }
+}
+
 // ---- Plafond op het meubilair (#1264) ----
 // De ladder hierboven kent alleen ondergrenzen, en die zijn met omhoog
 // schuiven altijd te halen: sinds #1255 kroop elk niveau een stap op tot de
@@ -892,6 +935,7 @@ for (const [naam, tokens] of [
 if (
   darkFailures > 0 ||
   randFailures > 0 ||
+  tabbarFailures > 0 ||
   plafondFailures > 0 ||
   richtingFailures > 0 ||
   softFailures > 0 ||
@@ -904,6 +948,8 @@ if (
     console.error(`\n${darkFailures} donkere contrastpa(a)r(en) onder de drempel.`);
   if (randFailures > 0)
     console.error(`${randFailures} rand(en) onder de 1.4.11-drempel of verkeerd om.`);
+  if (tabbarFailures > 0)
+    console.error(`${tabbarFailures} pa(a)r(en) op de mobiele onderbalk onder de drempel.`);
   if (plafondFailures > 0)
     console.error(`${plafondFailures} meubilairvlak(ken) boven het lichtheidsplafond.`);
   if (richtingFailures > 0)
