@@ -371,23 +371,21 @@
     position: absolute;
     inset: -11px;
   }
-  /* Rechterkant van de topbalk: de ?-knop (#989) en de avatar. Genoeg tussen-
-     ruimte dat de vergrote tapvlakken van beide elkaar niet overlappen. */
+  /* Rechterkant van de topbalk: de bel (#1090), de ?-knop (#989) en de avatar.
+     Genoeg tussenruimte dat de vergrote tapvlakken elkaar niet overlappen.
+
+     Met vier knoppen lukte dat niet meer: op 320px stonden ze op een steek van
+     40px met tapvlakken van 44px, dus vier pixels overlap — bewust, want een
+     knop die je niet kunt raken is erger. Met de joker eruit (#1299) is er weer
+     ruimte, en --sp-4 maakt het sluitend: de knoppen zijn 32px, hun tapvlakken
+     44 (bel, ?) en 48 (avatar, die een pixel royaler is), dus met 16px ertussen
+     houden de krapste buren — avatar en ? — twee pixels over. Nagemeten op
+     320px: nul overlap, en de rij begint op x=176 terwijl de langste titel
+     ("Klassement") op 136 eindigt. */
   .topbar__acties {
     display: flex;
     align-items: center;
-    gap: var(--sp-3);
-  }
-  /* Vijf knoppen sinds de bel erbij kwam (#1090): joker, agenda, bel, ?, avatar.
-     Nagemeten in een iframe op echte telefoonbreedtes — merk (90) + acties (208)
-     + padding (32) is 330, dus onder ~330px liep de balk over en verdween de
-     avatar buiten beeld. Met --sp-2 past het tot 320. De vergrote tapvlakken
-     overlappen elkaar dan met een paar pixels; dat weegt niet op tegen een knop
-     die je helemaal niet kunt raken. */
-  @media (max-width: 359px) {
-    .topbar__acties {
-      gap: var(--sp-2);
-    }
+    gap: var(--sp-4);
   }
   .topbar__profile {
     position: relative;

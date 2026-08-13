@@ -798,6 +798,21 @@ describe("topbalk zegt waar je bent (#1299)", () => {
     expect(topbalk().querySelector(".topbar__merk")).not.toBeNull();
   });
 
+  it("houdt drie ingangen rechts; de joker staat in de zijbalkvoet", async () => {
+    // Vier even zware cirkels voor vier ongelijke dingen (#1299): de joker is
+    // een stand van zaken en hoort niet naast de twee ingangen te wegen.
+    const { container } = renderShell();
+    await screen.findByText("pagina-inhoud");
+    // Wat er wél staat: bel, ?, avatar.
+    const acties = topbalk().querySelector(".topbar__acties") as HTMLElement;
+    expect(acties.children).toHaveLength(3);
+    expect(topbalk().querySelector(".joker-knop")).toBeNull();
+    // De zijbalkvoet houdt hem; dat hij daar niets rendert komt doordat de
+    // jokerdata in deze suite niet geladen wordt (de knop toont zich pas als
+    // hij zijn maand kent) — het gaat hier om de plek, niet om de stand.
+    expect(container.querySelector(".sidebar__foot")).not.toBeNull();
+  });
+
   it("draagt de terugweg ook buiten de topbalk, voor desktop", async () => {
     // Daar is de topbalk verborgen en heeft een geïnstalleerde PWA geen
     // browserknop; beide knoppen komen uit dezelfde component.
