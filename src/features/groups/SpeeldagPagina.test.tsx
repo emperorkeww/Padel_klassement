@@ -314,8 +314,10 @@ describe("<SpeeldagPagina />", () => {
     ).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("tab", { name: /americano/i }));
+    // Het aantal rondes volgt sinds #1271 de geboekte duur, dus de knop zegt
+    // hoeveel er klaargezet worden in plaats van kaal "Start Americano".
     await userEvent.click(
-      screen.getByRole("button", { name: /^start americano$/i }),
+      screen.getByRole("button", { name: /^start (\d+ )?americano/i }),
     );
 
     const call = vi

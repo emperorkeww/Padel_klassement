@@ -156,3 +156,46 @@ describe("<FairTeamsCard /> meerdere rondes (#1141)", () => {
     expect(onGenerated).toHaveBeenCalled();
   });
 });
+
+describe("<FairTeamsCard ingebed /> (#1271)", () => {
+  beforeEach(() => {
+    rpcState.createFairRound = ["m1", "m2"];
+    vi.clearAllMocks();
+  });
+
+  it("houdt het voorstel staan na succes", async () => {
+    // In ingebedde modus is "Stel eerlijke teams voor" verborgen — het paneel
+    // eromheen doet die stap. Zette `play()` dan `variant = null`, dan bleef er
+    // een lege <section class="card"> over: geen voorstel, geen knoppen, geen
+    // uitleg, en de CTA in het paneel was een no-op omdat `eerlijkGevraagd` al
+    // true stond. Op de speeldagpagina bleef dat gemaskeerd doordat MakeTeams
+    // unmount; in de "+ Volgende ronde"-sheet niet, die blijft bewust open.
+    const userEvent = (await import("@testing-library/user-event")).default;
+    render(
+      <AuthProvider>
+        <ToastProvider>
+          <FairTeamsCard
+            groupId="g1"
+            playerIds={PLAYER_IDS}
+            profiles={PROFILE_MAP}
+            ingebed
+          />
+        </ToastProvider>
+      </AuthProvider>,
+    );
+
+    const spelen = await screen.findByRole("button", {
+      name: /speel deze teams/i,
+    });
+    await waitFor(() => expect(spelen).toBeEnabled());
+    await userEvent.click(spelen);
+
+    // Het voorstel staat er nog: je kunt meteen een volgende ronde klaarzetten.
+    expect(
+      await screen.findByRole("button", { name: /speel deze teams/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /andere verdeling/i }),
+    ).toBeInTheDocument();
+  });
+});

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
@@ -21,7 +21,11 @@ import {
 } from "@/features/groups/pollsApi";
 import { avondDatumLabel } from "@/features/groups/eveningPoster";
 import { tallyOption } from "@/features/groups/pollLogic";
-import { rondeStart, rondesOpDag } from "@/features/groups/speeldagRondes";
+import {
+  rondeStart,
+  rondesOpDag,
+  rondesVoorDuur,
+} from "@/features/groups/speeldagRondes";
 import { FairTeamsCard } from "@/features/groups/components/FairTeams";
 import {
   haalKeuzes,
@@ -32,7 +36,7 @@ import {
 import { SpelersKiezer } from "@/features/groups/components/SpelersKiezer";
 import { SpeelformaatKaart } from "@/features/groups/components/SpeelformaatKaart";
 import type { KiesbareSpeler } from "@/features/groups/spelersKiezer";
-import type { Speelvorm } from "@/features/groups/speelformaat";
+import { klemRondes, type Speelvorm } from "@/features/groups/speelformaat";
 import type { GroupMember, Match, Profile, Team } from "@/types";
 import "@/features/groups/Proposals.css";
 
@@ -167,6 +171,24 @@ export function MakeTeams({
 
   const tonightYes = gekozen?.yes ?? null;
 
+  // Hoeveel rondes er nog in de geboekte tijd passen (#1271). `rondesVoorDuur`
+  // bestond al maar had alleen de cron als caller; de kiezer in de UI was een
+  // vaste 1–10 die niets van de boeking wist. De rondes die al klaarstaan gaan
+  // eraf: die zijn al gespeeld of ingepland.
+  const alKlaar = rondesTotNu ?? rondesOpDag(matches, club.timezone, dag);
+  const rondesInBoeking = gekozen
+    ? Math.max(0, rondesVoorDuur(gekozen.option.duration) - alKlaar)
+    : null;
+  // Eén keer per moment de standaard zetten, daarna is het jouw getal.
+  const standaardVoor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!gekozen || standaardVoor.current === gekozen.option.id) return;
+    standaardVoor.current = gekozen.option.id;
+    if (rondesInBoeking != null && rondesInBoeking > 0) {
+      setRoundsToGen(klemRondes(rondesInBoeking));
+    }
+  }, [gekozen, rondesInBoeking]);
+
   // Starttijd van de eerstvolgende ronde: tien minuten per al klaargezette
   // ronde opschuivend vanaf het gekozen moment. De rondes die er op die dag al
   // staan tellen mee, dus een tweede generatie landt niet bovenop de eerste.
@@ -267,6 +289,12 @@ export function MakeTeams({
 
   async function generate() {
     setBusy(true);
+    // Hoeveel rondes er al staan als het halverwege misgaat (#1271). N rondes
+    // zijn N losse RPC-calls; faalt call 3 van 5, dan blijven 1 en 2 staan met
+    // een rode toast erboven en weet je niet wat er nu klaarstaat. De cron
+    // erkent dat expliciet ("liever een halve reeks die de groep zelf aanvult
+    // dan dubbele rondes"), dus de reeks blijft — de melding wordt eerlijk.
+    let gelukt = 0;
     try {
       let total = 0;
       if (format === "americano") {
@@ -277,6 +305,7 @@ export function MakeTeams({
           if (courts.length === 0) break;
           const ids = await createFairRound(groupId, courts, startVanRonde(i));
           total += ids.length;
+          gelukt += 1;
           applyRound(history, courts);
         }
       } else {
@@ -300,7 +329,14 @@ export function MakeTeams({
             : `${roundsToGen} Americano-rondes gegenereerd.`,
       );
     } catch (err) {
-      toast.error(errorMessage(err));
+      // Wat er wél staat hoort in beeld te komen, en de lijst moet meteen
+      // kloppen: anders zet je er nog vijf bovenop.
+      if (gelukt > 0) onGenerated();
+      const staat =
+        gelukt > 0
+          ? ` ${gelukt} van de ${roundsToGen} ${gelukt === 1 ? "ronde staat" : "rondes staan"} al klaar; wis ze of vul aan.`
+          : "";
+      toast.error(`${errorMessage(err)}${staat}`);
     } finally {
       setBusy(false);
     }
@@ -339,6 +375,7 @@ export function MakeTeams({
         aanwezig={selectedIds.length}
         aantalRondes={roundsToGen}
         onAantalRondes={setRoundsToGen}
+        rondesInBoeking={rondesInBoeking}
         bezig={busy}
         blokkade={
           !enough

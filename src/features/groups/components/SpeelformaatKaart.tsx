@@ -42,6 +42,7 @@ export function SpeelformaatKaart({
   aanwezig,
   aantalRondes,
   onAantalRondes,
+  rondesInBoeking = null,
   bezig,
   blokkade,
   onStart,
@@ -58,10 +59,19 @@ export function SpeelformaatKaart({
   bezig: boolean;
   /** Reden waarom starten nu niet kan, of null. Blokkeert ook de knop. */
   blokkade: string | null;
+  /** Hoeveel rondes er nog in de geboekte tijd passen (#1271); null als er geen
+   *  boeking is om tegen af te zetten. */
+  rondesInBoeking?: number | null;
   onStart: () => void;
 }) {
   const [uitlegOpen, setUitlegOpen] = useState(false);
   const bank = reserves(aanwezig);
+  // De kiezer wist niets van de boeking: je kon rustig tien rondes van tien
+  // minuten in een uur zetten, zonder één woord waarschuwing (#1271). De
+  // rekensom bestond al (`rondesVoorDuur`) maar werd alleen door de cron
+  // gebruikt.
+  const teVeel =
+    rondesInBoeking != null && rondesInBoeking > 0 && aantalRondes > rondesInBoeking;
 
   return (
     <section className="paneel-om speelvorm" aria-labelledby="speelvorm-titel">
@@ -169,6 +179,14 @@ export function SpeelformaatKaart({
               </button>
             </span>
           </div>
+        )}
+
+        {vorm !== "mexicano" && teVeel && (
+          <p className="speelvorm__waarschuwing">
+            In de geboekte tijd passen er{" "}
+            {rondesInBoeking === 1 ? "nog 1 ronde" : `nog ${rondesInBoeking} rondes`}.
+            Meer klaarzetten mag — dan loop je uit.
+          </p>
         )}
 
         {blokkade && <p className="speelvorm__waarschuwing">{blokkade}</p>}

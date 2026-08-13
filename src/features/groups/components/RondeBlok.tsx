@@ -1,6 +1,7 @@
 import { DeletableMatchCard } from "@/features/matches/components/MatchList";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { teamLabel } from "@/features/matches/api";
+import { displayName } from "@/features/profiles/api";
 import { useMatchEffecten } from "@/features/matches/useMatchEffecten";
 import { formatTime } from "@/lib/utils/format";
 import { rondeWinnaars } from "../dagStatus";
@@ -27,6 +28,10 @@ import "./RondeBlok.css";
 /*     geplande houdt haar diepte, de afgeronde blijft compact.        */
 /* ------------------------------------------------------------------ */
 
+/** Gedeeld en leeg: een verse Set per render zou elk kind opnieuw laten
+ *  renderen. */
+const EMPTY: ReadonlySet<string> = new Set();
+
 export function RondeBlok({
   round,
   list,
@@ -40,6 +45,9 @@ export function RondeBlok({
   intensiteit,
   upsets,
   onMatches,
+  onWissen,
+  wisBezig = false,
+  afgemeld = EMPTY,
 }: {
   round: number;
   list: Match[];
@@ -54,6 +62,12 @@ export function RondeBlok({
   intensiteit: RoastIntensiteit;
   upsets: Map<string, Upset>;
   onMatches: () => void;
+  /** Wist de hele ronde (#1271). Weglaten = geen wisknop; de knop verschijnt
+   *  alleen bij een ronde zonder uitslagen. */
+  onWissen?: () => void;
+  wisBezig?: boolean;
+  /** Spelers die zich voor deze speeldag afmeldden (#1271). */
+  afgemeld?: ReadonlySet<string>;
 }) {
   const done = list.filter((m) => m.status === "completed").length;
   const roundDone = done === list.length;
@@ -66,6 +80,22 @@ export function RondeBlok({
   // plaats van een fetch per kaart. De geplande kaarten halen hun eigen
   // (gedeelde, gecachte) inzetten al op voor de kop-pil.
   const extras = useMatchEffecten({ matches: list, teams, profiles, myId });
+
+  // Wie in deze ronde staat maar zich intussen afmeldde. Alleen bij geplande
+  // matches: bij een gespeelde ronde is het geen waarschuwing meer maar een
+  // feit (#1271).
+  const afgemeldHier = [
+    ...new Set(
+      list
+        .filter((m) => m.status === "scheduled")
+        .flatMap((m) =>
+          [teams[m.team_a_id], teams[m.team_b_id]].flatMap((t) =>
+            t ? [t.player1_id, t.player2_id] : [],
+          ),
+        )
+        .filter((id): id is string => !!id && afgemeld.has(id)),
+    ),
+  ].map((id) => displayName(profiles[id]));
 
   return (
     <div
@@ -96,10 +126,36 @@ export function RondeBlok({
         >
           {roundDone ? "Afgerond" : `${done}/${list.length} uitslagen`}
         </span>
+        {/* Een weg terug (#1271). Alleen zolang er nog geen uitslag in staat:
+            daarna raakt wissen de stand en de Elo-keten, en dat gaat per match
+            met de undo-strook erbij. De bevestiging is een ConfirmDialog en
+            geen two-tap: dat laatste is op touch onvoorspelbaar. */}
+        {onWissen && done === 0 && round !== 0 && (
+          <button
+            type="button"
+            className="btn btn--sm round-head__wissen"
+            disabled={wisBezig}
+            onClick={onWissen}
+          >
+            {wisBezig ? "Bezig…" : "Wissen"}
+          </button>
+        )}
       </div>
 
       {/* Ingeklapt vertelt de ronde wat er te weten valt: wie won. */}
       {!open && winnaars && <p className="round__winnaars">🏆 {winnaars}</p>}
+
+      {/* Een late afmelding ging nergens over (#1271): de ja-stemmen werden
+          netjes herladen, maar dat veranderde alleen de standaardselectie voor
+          de vólgende generatie. De ronde die al klaarstond bleef staan, met
+          iemand erin die niet komt. */}
+      {afgemeldHier.length > 0 && (
+        <p className="round__afgemeld" role="status">
+          ⚠ {afgemeldHier.join(", ")}{" "}
+          {afgemeldHier.length === 1 ? "heeft" : "hebben"} zich afgemeld
+          {onWissen ? " — wis deze ronde en genereer opnieuw." : "."}
+        </p>
+      )}
 
       {open && (
         <div className="stack" id={bodyId}>

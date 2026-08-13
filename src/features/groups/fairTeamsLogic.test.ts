@@ -84,3 +84,55 @@ describe("fairTeams", () => {
     expect(reserves).toEqual(["a", "b", "c"]);
   });
 });
+
+describe("andere verdeling (#1271)", () => {
+  // Acht spelers = twee volle banen en geen reserves. Precies het geval waarin
+  // "Andere verdeling" niets deed: `variant` koos alleen een andere
+  // 2-2-splitsing bínnen een viertal, dus je speelde elke ronde tegen dezelfde
+  // drie mensen.
+  const ACHT = ["a", "b", "c", "d", "e", "f", "g", "h"];
+  const R = ratings({
+    a: 1400, b: 1300, c: 1200, d: 1100,
+    e: 1000, f: 900, g: 800, h: 700,
+  });
+
+  /** Wie deelt met wie een baan, als sets per baan. */
+  const banen = (variant: number) =>
+    fairTeams(ACHT, R, variant).courts.map((c) =>
+      [...c.teamA.playerIds, ...c.teamB.playerIds].sort().join(","),
+    );
+
+  it("zet bij variant 0 de sterksten bij elkaar", () => {
+    expect(banen(0)).toEqual(["a,b,c,d", "e,f,g,h"]);
+  });
+
+  it("wisselt spelers over de baangrens bij een volgende verdeling", () => {
+    expect(banen(1)).not.toEqual(banen(0));
+    expect(banen(2)).not.toEqual(banen(1));
+    expect(banen(3)).not.toEqual(banen(2));
+  });
+
+  it("houdt de banen op rating bij elkaar", () => {
+    // De ruil begint bij de spelers die qua rating het dichtst bij de grens
+    // zitten, dus de sterkste en de zwakste komen nooit samen op één baan.
+    for (const v of [1, 2, 3]) {
+      const samen = banen(v).find((baan) => baan.includes("a"));
+      expect(samen).not.toContain("h");
+    }
+  });
+
+  it("komt na vier verdelingen weer bij het begin uit", () => {
+    expect(banen(4)).toEqual(banen(0));
+  });
+
+  it("laat één baan met rust — daar valt niets te wisselen", () => {
+    const vier = ["a", "b", "c", "d"];
+    const een = fairTeams(vier, R, 0).courts[0];
+    const twee = fairTeams(vier, R, 1).courts[0];
+    // Dezelfde vier mensen, maar wél een andere teamindeling.
+    expect(
+      [...twee.teamA.playerIds, ...twee.teamB.playerIds].sort(),
+    ).toEqual(["a", "b", "c", "d"]);
+    expect(twee.teamA.playerIds).not.toEqual(een.teamA.playerIds);
+  });
+});

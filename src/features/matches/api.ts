@@ -158,11 +158,18 @@ export function getGroupMatches(groupId: string): Promise<Match[]> {
     // De stand van een groep telt élke match mee, dus deze lijst mag niet
     // stilletjes op max_rows eindigen (#731). `id` als laatste sorteersleutel
     // maakt de paginering deterministisch.
+    //
+    // Nieuwste eerst, en dat is sinds #1271 de speeltijd en niet het
+    // rondenummer: rondes tellen nu binnen hún speeldag, dus "ronde 8" van
+    // vorige week zou anders boven "ronde 1" van vanavond komen te staan. Het
+    // rondenummer blijft de tweede sleutel, zodat de rondes van één avond in de
+    // goede volgorde onder elkaar staan.
     return fetchAllPages((from, to) =>
       supabase
         .from("matches")
         .select("*")
         .eq("group_id", groupId)
+        .order("played_at", { ascending: false, nullsFirst: false })
         .order("round_number", { ascending: false })
         .order("created_at", { ascending: true })
         .order("id")

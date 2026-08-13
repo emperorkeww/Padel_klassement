@@ -8,14 +8,18 @@ import type { Speelvorm } from "@/features/groups/speelformaat";
 function Harness({
   aanwezig = 8,
   blokkade = null,
+  rondesInBoeking = null,
+  startRondes = 1,
   onStart = () => {},
 }: {
   aanwezig?: number;
   blokkade?: string | null;
+  rondesInBoeking?: number | null;
+  startRondes?: number;
   onStart?: () => void;
 }) {
   const [vorm, setVorm] = useState<Speelvorm>("eerlijk");
-  const [rondes, setRondes] = useState(1);
+  const [rondes, setRondes] = useState(startRondes);
   return (
     <SpeelformaatKaart
       vorm={vorm}
@@ -23,6 +27,7 @@ function Harness({
       aanwezig={aanwezig}
       aantalRondes={rondes}
       onAantalRondes={setRondes}
+      rondesInBoeking={rondesInBoeking}
       bezig={false}
       blokkade={blokkade}
       onStart={onStart}
@@ -186,5 +191,36 @@ describe("SpeelformaatKaart", () => {
       "aria-selected",
       "true",
     );
+  });
+});
+
+describe("de boeking telt mee (#1271)", () => {
+  // `rondesVoorDuur` bestond al maar had alleen de cron als caller: in de UI
+  // kon je rustig tien rondes van tien minuten in een boeking van een uur
+  // zetten, zonder één woord waarschuwing.
+  it("waarschuwt zodra je meer rondes zet dan er geboekt is", () => {
+    render(<Harness rondesInBoeking={5} startRondes={8} />);
+    expect(screen.getByText(/in de geboekte tijd passen er nog 5 rondes/i))
+      .toBeInTheDocument();
+  });
+
+  it("zwijgt zolang het past", () => {
+    render(<Harness rondesInBoeking={5} startRondes={5} />);
+    expect(screen.queryByText(/in de geboekte tijd/i)).toBeNull();
+  });
+
+  it("blokkeert niet — uitlopen mag, je moet het alleen weten", async () => {
+    const onStart = vi.fn();
+    render(<Harness rondesInBoeking={1} startRondes={8} onStart={onStart} />);
+    await userEvent.click(
+      screen.getByRole("button", { name: /stel 8 eerlijke rondes voor/i }),
+    );
+    expect(onStart).toHaveBeenCalled();
+  });
+
+  it("zwijgt bij Mexicano — die kiest zijn eigen tempo", async () => {
+    render(<Harness rondesInBoeking={1} startRondes={8} />);
+    await userEvent.click(screen.getByRole("tab", { name: "Mexicano" }));
+    expect(screen.queryByText(/in de geboekte tijd/i)).toBeNull();
   });
 });

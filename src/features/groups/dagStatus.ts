@@ -90,8 +90,10 @@ export function rondeWinnaars(
 export function speeldagStand(v: DagVoortgang): string {
   if (v.totaal === 0) return "nog niets ingedeeld";
   if (v.gespeeld === v.totaal) return "alle uitslagen binnen";
-  // "Ronde 2 van 3" alleen als dat klopt; bij losse nummering (bv. een ronde
-  // verwijderd) zou "ronde 4 van 3" onzin zijn — zelfde afspraak als de dagkop.
+  // "Ronde 2 van 3" alleen als dat klopt. Sinds #1271 telt een ronde binnen
+  // zijn eigen speeldag, dus de tiende avond begint niet meer bij 37 — maar
+  // gaten blijven bestaan: een ronde wissen laat 1 en 3 achter, en dan zou
+  // "ronde 3 van 2" er staan. Zelfde afspraak als de dagkop.
   if (v.openRonde == null) {
     return `${v.gespeeld} van ${v.totaal} uitslagen binnen`;
   }
