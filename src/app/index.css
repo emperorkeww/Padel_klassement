@@ -508,7 +508,32 @@
    0,3 L* over de hele familie, en de tekst wint overal: de zwakste badge
    staat nu op 4,76:1 waar hij op 4,17 stond. contrast-check.mjs toetst de
    tinten op élke drager, de platen op "boven zijn lichtste drager", en
-   bewaakt dat er nooit meer drie soft-vlakken op dezelfde hoogte liggen. */
+   bewaakt dat er nooit meer drie soft-vlakken op dezelfde hoogte liggen.
+
+   Tot slot de accenten zelf. #1255 gaf elke rol een eigen hue- of chroma-laan
+   maar liet de lichtheid ongemoeid, en op zwart is lichtheid juist de
+   dominante as: 27 tokens lagen tussen L* 58 en 84, twintig daarvan tussen 58
+   en 72. --accent stond met 65,1 ónder --success, --joker, --meester,
+   --platina, --dictator en --warn. Er was geen primaire stem meer, alleen een
+   koor. Sinds #1264 lopen er drie banen (alleen lichtheid — hue en chroma van
+   #1255 blijven staan):
+
+     primair      74-83  --accent, --accent-hover, --lime, --focus-ring.
+                         Mag opvallen. (--accent-strong is de ingedrukte
+                         stand en hoort per definitie eronder: 68.)
+     semantisch   70-72  --success, --danger, --warn, --poll. Duidelijk,
+                         niet luid.
+     decoratief   59-69  tiers, --chem-*, --cat-*, --effect-*, --coach,
+                         --lef, --dorst, --joker, --bigdaddy. Op de kaart
+                         eerder rustig dan schreeuwend.
+
+   Hoe laag de decoratieve baan kon, werd niet door smaak bepaald maar door de
+   badges: een tier-token moet ≥4,5:1 halen op zijn éígen soft-vlak, en dat
+   legt per token een bodem (--joker kon niet onder 67, --hout wel tot 60).
+   Dat de platen in spoor B zakten, is precies wat hier de ruimte gaf.
+   --dictator en --cat-champ staan verder uit elkaar dan hun baan zou
+   ingeven: de warme hueband was al vol (#1255), dus daar doet lichtheid het
+   werk dat hue niet meer kon doen. */
 :root[data-theme="dark"] {
   /* Canvas → kaart → verhoogd: zwart als bodem, daarna stappen ≥ 3 L* per
      opeenvolgend niveau (#1255). */
@@ -560,9 +585,9 @@
      zakt het paar onder AA. Knellendste harde paren nu: accent op
      --accent-soft (4,6:1) en op --surface-hover (4,6:1); knoppen houden
      donkere tekst (--accent-ink), ruim boven AA op elke knopstand. */
-  --accent: #28b37e;
-  --accent-hover: #37c18b;
-  --accent-strong: #189a6a;
+  --accent: #49cc95;
+  --accent-hover: #56daa3;
+  --accent-strong: #44ba87;
   --accent-soft: rgba(40, 179, 126, 0.13);
   --accent-line: #24513f;
   --accent-ink: #02120c;
@@ -575,7 +600,7 @@
      chroma waar de hueband vol zat, met de dictator-gouden als vast anker);
      de afstanden worden bewaakt door de ΔE-parenlijst in
      scripts/contrast-check.mjs. */
-  --coach: #e18353;
+  --coach: #de8051;
   --coach-soft: #413027;
   --coach-line: #52382a;
   --coach-ink: #211207;
@@ -586,7 +611,7 @@
      zat vol (coach, dorst, inzet, dictator, goud), dus poll onderscheidt
      zich op de chroma-as: gedempt perzik (C* 32) tussen verzadigde buren
      (#1255). */
-  --poll: #e1b384;
+  --poll: #d2a577;
   --poll-soft: #413121;
   --poll-diep: #f5ca9c;
 
@@ -603,14 +628,14 @@
   /* Lef-violet, licht genoeg voor leesbare tekst op donkere vlakken.
      Warmer paars (h≈315) sinds #1255: het koele violet viel samen met de
      meester-tier. */
-  --lef: #bb90d3;
+  --lef: #bc90d4;
   --lef-soft: rgba(187, 144, 211, 0.13);
   --lef-line: #4b3955;
   --lef-ink: #160d1b;
 
   /* Dorst — donker bier-brons (h≈68, een stap donkerder dan de rest van de
      warme band), weg van dictator-goud en kampioensgoud (#1255). */
-  --dorst: #d6924c;
+  --dorst: #d4914b;
   --dorst-soft: #3d2e22;
   --dorst-line: #4f3d2d;
   --dorst-ink: #190f05;
@@ -625,9 +650,9 @@
      gestapelde lagen op de kaart) wordt hard bewaakt en wint juist bij de
      donkerdere kaart. Inzet werd oranje-geel (h≈70): het oude amber lag op
      ΔE 9,7 van het dictator-goud (#1255). */
-  --effect-lef: #a78bfa;
-  --effect-joker: #60a5fa;
-  --effect-inzet: #ffb462;
+  --effect-lef: #a287f5;
+  --effect-joker: #579ef2;
+  --effect-inzet: #db9444;
 
   /* Padelveld (#427): gedempt donkergroen, lijnen zachter. De chemieschaal
      leende vóór #1255 de statuskleuren (hoog ≈ success op ΔE 1,8, laag ≈
@@ -636,10 +661,10 @@
   --court: #17392d;
   --court-deep: #122f25;
   --court-line: rgba(255, 255, 255, 0.32);
-  --chem-hoog: #25c0a7;
-  --chem-midden: #bcaa7c;
-  --chem-laag: #e78b76;
-  --chem-onbekend: #93a89b;
+  --chem-hoog: #14b9a0;
+  --chem-midden: #b19f72;
+  --chem-laag: #e18571;
+  --chem-onbekend: #8ca093;
 
   /* Structurele navigatie (zijbalk, mobiele onderbalk, glasbalk): puur zwart,
      dónkerder dan de content. Zo staat de app-inhoud vooraan en zakt het
@@ -652,13 +677,13 @@
      dit exclusieve banen: success koeler groen (h≈148, weg van accent en
      accent-hover), warn citroen-amber (h≈97, weg van de gouden); decoratie
      (chemie, tiers, categorieën) mag hier niet meer in. */
-  --success: #5ab671;
+  --success: #62be78;
   --success-soft: rgba(90, 182, 113, 0.16);
   --success-line: #2e5b3c;
-  --danger: #e5878e;
+  --danger: #ef9097;
   --danger-soft: #412e2c;
   --danger-line: #5c3a3d;
-  --warn: #cebd47;
+  --warn: #c2b23c;
   --warn-soft: rgba(206, 189, 71, 0.21);
   --warn-line: #524a2a;
 
@@ -674,44 +699,44 @@
      wat lager verzadigd is de enige uitweg die #1255' hue-lanen heel laat.
      De rij zit hierdoor tijdelijk in één lichtheidsband — spoor D van #1264
      trekt hem weer uit elkaar zodra de soft-vlakken tinten zijn (spoor B). */
-  --slof: #a69d8c;
+  --slof: #9b9282;
   --slof-soft: #2c2619;
-  --karton: #c1985c;
+  --karton: #b68e52;
   --karton-soft: #2d2619;
-  --hout: #c3966c;
+  --hout: #b4885e;
   --hout-soft: #34251c;
-  --gold: #bd9a46;
+  --gold: #b79440;
   --gold-soft: #342c19;
-  --silver: #9aa4af;
+  --silver: #909aa4;
   --silver-soft: #232c39;
-  --bronze: #d1915e;
+  --bronze: #c78855;
   --bronze-soft: #38261a;
-  --platina: #6cbfd8;
+  --platina: #51a6bf;
   --platina-soft: #1a3138;
-  --diamant: #87a2e8;
+  --diamant: #809be0;
   --diamant-soft: #272e44;
-  --meester: #b6a5f2;
+  --meester: #a493df;
   --meester-soft: #312c47;
-  --legende: #ed7b9d;
+  --legende: #eb7a9c;
   --legende-soft: #422931;
   /* El Padelissimo (#527): warm goud op diepbordeaux (zie light-blok). */
-  --dictator: #dcab4a;
+  --dictator: #d1a140;
   --dictator-soft: #482832;
   /* De Troon (#528): warm goud op nog dieper bordeaux (zie light-blok). */
   --dictator-gold: #e8c05f;
   --dictator-wine: #6d172e;
   --dictator-deep: #1f0a11;
   /* Big Daddy (#1 van het klassement): zacht pastelroze (zie light-blok). */
-  --bigdaddy: #ee82b6;
+  --bigdaddy: #ea7fb3;
   --bigdaddy-soft: rgba(238, 130, 182, 0.15);
   --bigdaddy-ink: #310e1c;
   --bigdaddy-text: #f2abcc;
 
   /* Feed-categoriekleuren op donker (zie licht-blok). --cat-match volgt
      --accent en hoeft dus niet apart. */
-  --cat-rank: #6f9bff;
-  --cat-champ: #bd8e28;
-  --cat-roast: #ce68ac;
+  --cat-rank: #6a97fb;
+  --cat-champ: #b4861f;
+  --cat-roast: #d871b6;
 
   /* Avatar-tinten op donker (#74): zelfde hue-families, gedempte donkere
      vlakken + lichte initialen (zie licht-blok). */
