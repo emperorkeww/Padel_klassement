@@ -1628,6 +1628,7 @@ export type Database = {
           id: string
           locked_at: string | null
           locked_option_id: string | null
+          remind_notified_at: string | null
           rounds_generated_at: string | null
           status: string
         }
@@ -1647,6 +1648,7 @@ export type Database = {
           id?: string
           locked_at?: string | null
           locked_option_id?: string | null
+          remind_notified_at?: string | null
           rounds_generated_at?: string | null
           status?: string
         }
@@ -1666,6 +1668,7 @@ export type Database = {
           id?: string
           locked_at?: string | null
           locked_option_id?: string | null
+          remind_notified_at?: string | null
           rounds_generated_at?: string | null
           status?: string
         }
@@ -2068,6 +2071,7 @@ export type Database = {
           endpoint: string
           id: string
           p256dh: string
+          user_agent: string | null
           user_id: string
         }
         Insert: {
@@ -2076,6 +2080,7 @@ export type Database = {
           endpoint: string
           id?: string
           p256dh: string
+          user_agent?: string | null
           user_id: string
         }
         Update: {
@@ -2084,6 +2089,7 @@ export type Database = {
           endpoint?: string
           id?: string
           p256dh?: string
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: [

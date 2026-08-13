@@ -16,6 +16,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { bezorg } from "../_shared/meldingenBezorger.ts";
+import { magPorren, POR_COOLDOWN_MIN } from "../_shared/porCooldown.ts";
 import {
   GROEP_HERINNERING,
   kiesTitel,
@@ -71,7 +72,7 @@ Deno.serve(async (req) => {
   // De poll moet bij de groep horen en nog open staan.
   const { data: poll } = await admin
     .from("play_polls")
-    .select("group_id, status")
+    .select("group_id, status, remind_notified_at")
     .eq("id", pollId)
     .maybeSingle();
   if (!poll || poll.group_id !== groupId) {
@@ -79,6 +80,20 @@ Deno.serve(async (req) => {
   }
   if (poll.status !== "open") {
     return json({ error: "Poll is niet meer open" }, 400);
+  }
+
+  // De rem (#1273). Op de poll en niet op de speler: het gaat om hoe vaak een
+  // groep over dezelfde poll gepord wordt, niet om wie er drukt.
+  const cooldownMin = Number(Deno.env.get("REMIND_COOLDOWN_MIN") ?? POR_COOLDOWN_MIN);
+  const oordeel = magPorren(poll.remind_notified_at, new Date(), cooldownMin);
+  if (!oordeel.mag) {
+    return json(
+      {
+        error: "Net al herinnerd",
+        minuten_resterend: oordeel.minutenResterend,
+      },
+      429,
+    );
   }
 
   // Alle leden van de groep.
@@ -121,6 +136,14 @@ Deno.serve(async (req) => {
     soort: "poll",
     tag: `poll-${pollId}`,
   }]);
+
+  // Stempel ná de bezorging, net zoals poll-deadline zijn dedup-kolommen zet.
+  // Ook als er niemand meer te porren viel: de knop is dan alsnog gebruikt, en
+  // een lege por elke seconde herhalen hoort net zomin.
+  await admin
+    .from("play_polls")
+    .update({ remind_notified_at: new Date().toISOString() })
+    .eq("id", pollId);
 
   return json({ reminded: recipients.length, sent });
 });

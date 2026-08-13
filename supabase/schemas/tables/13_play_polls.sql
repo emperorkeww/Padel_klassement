@@ -15,6 +15,10 @@ create table public.play_polls (
   -- laatste-kans-push bij een naderende deadline, en de speeldag-herinnering.
   deadline_notified_at timestamptz,
   dayof_notified_at timestamptz,
+  -- Laatste handmatige "herinner de groep" (#1273). remind-group had geen enkele
+  -- rem: de knop verbergt zich alleen in client-state, en elk groepslid heeft
+  -- zijn eigen knop.
+  remind_notified_at timestamptz,
   -- Dedup voor het automatisch klaarzetten van rondes (#827): gezet zodra de
   -- cron voor deze speeldag rondes heeft aangemaakt.
   rounds_generated_at timestamptz,

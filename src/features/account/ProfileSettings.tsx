@@ -39,10 +39,14 @@ import type { RoastIntensiteit } from "@/types";
 import { formatDate } from "@/lib/utils/format";
 import { errorMessage } from "@/lib/utils/errors";
 import {
+  apparaatNaam,
   disablePush,
   enablePush,
+  getMijnApparaten,
   getPushSubscription,
+  herstelAbonnement,
   pushAvailability,
+  vergeetApparaat,
 } from "@/lib/supabase/push";
 import {
   getThemePreference,
@@ -494,6 +498,87 @@ const NOTIFY_OPTIES: {
 ];
 
 /**
+ * De apparaten die meldingen kunnen ontvangen (#1273).
+ *
+ * De kaart heette "Pushmeldingen op dit apparaat" en toonde er precies nul.
+ * Dat was niet alleen kaal: browsers roteren hun push-endpoint periodiek, en
+ * de schakelaar hierboven leest de brówser. Die kon dus "aan" staan terwijl er
+ * in de databank niets bruikbaars meer stond — meldingen aan, en er komt niets.
+ * Daarom herstelt deze lijst meteen wat er ontbreekt, en laat hij zien wat er
+ * nog leeft.
+ */
+function Apparatenlijst({
+  userId,
+  sleutel,
+}: {
+  userId: string;
+  /** Verandert zodra de schakelaar hierboven om is: dan opnieuw ophalen. */
+  sleutel: boolean | null;
+}) {
+  const toast = useToast();
+  const [hersteld, setHersteld] = useState(false);
+  const apparaten = useAsync(
+    () => (userId ? getMijnApparaten(userId) : Promise.resolve([])),
+    [userId, sleutel, hersteld],
+  );
+
+  // Zelfheling: staat het endpoint van deze browser niet in de databank, dan
+  // schrijven we het alsnog weg. Geen permissieprompt — die is al gegeven.
+  useEffect(() => {
+    let leeft = true;
+    void herstelAbonnement(userId)
+      .then((gedaan) => {
+        if (gedaan && leeft) setHersteld(true);
+      })
+      .catch(() => {});
+    return () => {
+      leeft = false;
+    };
+  }, [userId]);
+
+  const lijst = apparaten.data ?? [];
+  if (apparaten.loading || lijst.length === 0) return null;
+
+  async function vergeet(endpoint: string) {
+    try {
+      await vergeetApparaat(endpoint);
+      apparaten.reload();
+      toast.success("Apparaat verwijderd.");
+    } catch (err) {
+      toast.error(errorMessage(err));
+    }
+  }
+
+  return (
+    <div className="apparaten">
+      <h3 className="apparaten__kop">Toestellen die meldingen krijgen</h3>
+      <ul className="apparaten__lijst">
+        {lijst.map((a) => (
+          <li key={a.endpoint} className="apparaten__rij">
+            <span className="apparaten__naam">
+              {apparaatNaam(a.user_agent, a.endpoint)}
+              {a.ditApparaat && (
+                <span className="apparaten__hier"> · dit apparaat</span>
+              )}
+            </span>
+            <span className="apparaten__sinds">
+              sinds {formatDate(a.created_at)}
+            </span>
+            <button
+              type="button"
+              className="btn btn--sm"
+              onClick={() => void vergeet(a.endpoint)}
+            >
+              Intrekken
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
  * Stille uren (#1273).
  *
  * De app pusht op tijden die niemand gekozen heeft: een speeldag om 08:00
@@ -657,6 +742,8 @@ function NotificationsCard({ userId }: { userId: string }) {
               : "Pushmeldingen aanzetten"}
         </button>
       )}
+
+      <Apparatenlijst userId={userId} sleutel={enabled} />
     </section>
 
     {/* Per-type voorkeuren (#57): server-side, dus voor ál je apparaten —
