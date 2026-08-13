@@ -515,10 +515,18 @@
      op zwart doet een schaduw niets, de rand moet het vlak dragen. Sinds
      #1255 net zo neutraal als de vlakken (C* ≈ 4-5); de divider zit ónder
      het subtiele vlak — hij scheidt binnen een kaart en moet zwakker blijven
-     dan élke rand. */
-  --line: #373b41;
-  --line-strong: #4e535a;
-  --divider: #1c2127;
+     dan élke rand.
+     Tot #1264 deed die rand dat werk níét: de ladder bewaakte hem op L* — en
+     --line haalde daar ruim 15 L* boven de kaart — terwijl hij in WCAG-termen
+     op 1,6:1 stond, en --divider met 1,1:1 gewoon onzichtbaar was. Voor een
+     grens is L* de verkeerde maat; WCAG 1.4.11 vraagt 3:1 voor een
+     betekenisdragende UI-grens. Beide maten staan nu in contrast-check.mjs
+     naast elkaar. De divider blijft bewust vér onder die 3:1 (1,5:1): hij
+     scheidt rijen bínnen een kaart en moet zwakker zijn dan de kaartrand —
+     maar hij moet wél bestaan. */
+  --line: #60656b;
+  --line-strong: #737980;
+  --divider: #2f353b;
 
   /* Smaragd, gedempt t.o.v. vóór #1243 (#1fb47e) maar sinds #1255 weer een
      fractie lichter (L* 62→65): de vlakken waar hij als tekst op staat —
@@ -629,18 +637,28 @@
   --warn-line: #524a2a;
 
   /* Tiers op donker (#664): zelfde materiaalladder, gedempt maar licht
-     genoeg voor leesbare badge-tekst op de donkere soft-vlakken. */
-  --slof: #9e9585;
+     genoeg voor leesbare badge-tekst op de donkere soft-vlakken.
+     #1264 tilde zes van hen op: .tier-badge zet --fs-xs (12px) bold, en dat is
+     géén "large text" volgens WCAG (dat begint bij 18,66px bold). De check
+     toetste deze paren op 3,0 en stond dus groen terwijl brons (3,6:1), hout
+     (3,7:1), slof, goud, karton en legende onder AA voor kleine tekst zaten.
+     Nu ≥4,5:1 op hun eigen soft-vlak, en brons/zilver staan eindelijk in de
+     parenlijst. Brons en hout kregen er een chroma-stap bij: ópgetild vielen
+     ze midden in de volle warme band (brons kwam op ΔE 5,3 van --dorst), en
+     wat lager verzadigd is de enige uitweg die #1255' hue-lanen heel laat.
+     De rij zit hierdoor tijdelijk in één lichtheidsband — spoor D van #1264
+     trekt hem weer uit elkaar zodra de soft-vlakken tinten zijn (spoor B). */
+  --slof: #a69d8c;
   --slof-soft: #3a3426;
-  --karton: #bd9459;
+  --karton: #c1985c;
   --karton-soft: #3c3426;
-  --hout: #b58351;
+  --hout: #c3966c;
   --hout-soft: #413228;
-  --gold: #b5923f;
+  --gold: #bd9a46;
   --gold-soft: #3c3421;
   --silver: #9aa4af;
   --silver-soft: #2c3543;
-  --bronze: #c07b41;
+  --bronze: #d1915e;
   --bronze-soft: #443125;
   --platina: #6cbfd8;
   --platina-soft: #21383f;
@@ -648,7 +666,7 @@
   --diamant-soft: #2e344b;
   --meester: #b6a5f2;
   --meester-soft: #37314d;
-  --legende: #e9779a;
+  --legende: #ed7b9d;
   --legende-soft: #472e36;
   /* El Padelissimo (#527): warm goud op diepbordeaux (zie light-blok). */
   --dictator: #dcab4a;

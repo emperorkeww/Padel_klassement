@@ -123,14 +123,21 @@ const PAIRS = [
   ["poll", "surface", 3.0, "open-poll-stip op de rasterkaart (#1112)"],
   ["poll", "surface-2", 3.0, "open-poll-stip op een dag met speeldagen (#1112)"],
   ["poll-diep", "poll-soft", 4.5, "tekst van de open-poll-chip (#1112)"],
-  ["slof", "slof-soft", 3.0, "slof-tierbadge (groot/UI)"],
-  ["karton", "karton-soft", 3.0, "karton-tierbadge (groot/UI)"],
-  ["hout", "hout-soft", 3.0, "hout-tierbadge (groot/UI)"],
-  ["gold", "gold-soft", 3.0, "goud-badge (groot/UI)"],
-  ["platina", "platina-soft", 3.0, "platina-tierbadge (groot/UI)"],
-  ["diamant", "diamant-soft", 3.0, "diamant-tierbadge (groot/UI)"],
-  ["meester", "meester-soft", 3.0, "meester-tierbadge (groot/UI)"],
-  ["legende", "legende-soft", 3.0, "legende-tierbadge (groot/UI)"],
+  // Tier-badges (#1264). Stonden hier op 3,0 als "groot/UI", maar .tier-badge
+  // zet --fs-xs (12px) bold en WCAG rekent pas vanaf 18,66px bold als large
+  // text: de drempel is dus 4,5. Zes van deze paren stonden daardoor groen
+  // terwijl ze onder AA zaten. Brons en zilver ontbraken hier compleet.
+  ["slof", "slof-soft", 4.5, "slof-tierbadge (12px bold)"],
+  ["karton", "karton-soft", 4.5, "karton-tierbadge (12px bold)"],
+  ["hout", "hout-soft", 4.5, "hout-tierbadge (12px bold)"],
+  ["bronze", "bronze-soft", 4.5, "brons-tierbadge (12px bold)"],
+  ["silver", "silver-soft", 4.5, "zilver-tierbadge (12px bold)"],
+  ["gold", "gold-soft", 4.5, "goud-badge (12px bold)"],
+  ["platina", "platina-soft", 4.5, "platina-tierbadge (12px bold)"],
+  ["diamant", "diamant-soft", 4.5, "diamant-tierbadge (12px bold)"],
+  ["meester", "meester-soft", 4.5, "meester-tierbadge (12px bold)"],
+  ["legende", "legende-soft", 4.5, "legende-tierbadge (12px bold)"],
+  ["dictator", "dictator-soft", 4.5, "dictator-tierbadge (12px bold)"],
   ["lime-deep", "surface", 3.0, "lime-tekstaccent (groot/UI)"],
   ["lime-deep", "lime-soft", 4.5, "serve-chip: 'begint' op lime-vlak (#435)"],
   // De gekozen spelerspil (#1183). De vulling is dekkend en de blur staat uit,
@@ -260,6 +267,54 @@ for (const [name, tokens, strict] of [
       `${ok ? "  ok  " : strict ? "  FAIL" : "  let-op"} ${d.toFixed(1).padStart(5)} L* ≥ ${min}  ${hi} boven ${lo} (${label})`,
     );
   }
+}
+
+// ---- Randen op een ratio (#1264) ----
+// De ladder hierboven meet randen op L*, en dat is voor een grens de verkeerde
+// maat: --line stond ruim 15 L* boven de kaart (ruim door de ladderregel) en
+// tegelijk op 1,6:1 (ruim onvoldoende), --divider zelfs op 1,1:1. WCAG 1.4.11
+// vraagt 3:1 voor een grens die betekenis draagt — en een kaart die vooral
+// dankzij zijn rand bestaat, valt daaronder. De L*-regels blijven staan; ze
+// meten iets anders (de waarneembare stap tussen twee vlakken, niet de
+// zichtbaarheid van een lijn). De drager is hier geen keuze maar een feit: een
+// kaartrand ligt tussen de kaart en de pagina, dus hij moet tegen béíde
+// bestaan. Ontbrekende tokens zijn een harde fout, geen stille overslag.
+// [rand, drager, minimale ratio, omschrijving]
+const RANDEN = [
+  ["line", "surface", 3.0, "kaartrand tegen de kaart (1.4.11)"],
+  ["line", "bg", 3.0, "kaartrand tegen de pagina (1.4.11)"],
+  ["border-elevated", "surface-elevated", 3.0, "rand van een verhoogd vlak (1.4.11)"],
+];
+// De divider is bewust géén 3:1-grens: hij scheidt rijen bínnen een kaart en
+// moet zwakker blijven dan de kaartrand. Onzichtbaar mag hij niet zijn, dus een
+// ondergrens plus de eis dat hij onder --line blijft.
+const DIVIDER_MIN = 1.4;
+
+let randFailures = 0;
+console.log("\n— Randen: ≥3:1 op hun drager, WCAG 1.4.11 (donker) —");
+for (const [rand, drager, min, label] of RANDEN) {
+  const f = dark[rand];
+  const b = dark[drager];
+  if (!f || !b || !parseColor(f) || !parseColor(b)) {
+    console.error(`  FAIL ${rand} of ${drager} ontbreekt of is onleesbaar`);
+    randFailures++;
+    continue;
+  }
+  const c = contrast(f, b);
+  const ok = c >= min;
+  if (!ok) randFailures++;
+  console.log(
+    `  ${ok ? "ok  " : "FAIL"} ${c.toFixed(2).padStart(5)} ≥ ${min}  ${rand} op ${drager} (${label})`,
+  );
+}
+{
+  const d = contrast(dark["divider"], dark["surface"]);
+  const l = contrast(dark["line"], dark["surface"]);
+  const ok = d >= DIVIDER_MIN && d < l;
+  if (!ok) randFailures++;
+  console.log(
+    `  ${ok ? "ok  " : "FAIL"} ${d.toFixed(2).padStart(5)} ≥ ${DIVIDER_MIN} én < ${l.toFixed(2)}  divider op surface (zichtbaar, zwakker dan de kaartrand)`,
+  );
 }
 
 // ---- Plafond op het meubilair (#1264) ----
@@ -414,6 +469,9 @@ const DELTA_PAREN = [
   ["poll", "effect-inzet"], ["poll", "chem-midden"],
   ["dorst", "dictator"], ["dorst", "cat-champ"], ["dorst", "chem-midden"],
   ["dorst", "karton"], ["dorst", "gold"],
+  // Brons kwam in #1264 mee omhoog en landde daarmee in dezelfde warme band;
+  // zijn buren horen daarom vanaf nu bewaakt.
+  ["dorst", "bronze"], ["coach", "bronze"], ["poll", "hout"],
   ["dictator", "cat-champ"], ["dictator-gold", "effect-inzet"],
   ["dictator-gold", "cat-champ"],
   ["cat-champ", "chem-midden"], ["cat-champ", "gold"], ["cat-champ", "effect-inzet"],
@@ -722,6 +780,7 @@ for (const [naam, tokens] of [
 
 if (
   darkFailures > 0 ||
+  randFailures > 0 ||
   plafondFailures > 0 ||
   richtingFailures > 0 ||
   softFailures > 0 ||
@@ -732,6 +791,8 @@ if (
 ) {
   if (darkFailures > 0)
     console.error(`\n${darkFailures} donkere contrastpa(a)r(en) onder de drempel.`);
+  if (randFailures > 0)
+    console.error(`${randFailures} rand(en) onder de 1.4.11-drempel of verkeerd om.`);
   if (plafondFailures > 0)
     console.error(`${plafondFailures} meubilairvlak(ken) boven het lichtheidsplafond.`);
   if (richtingFailures > 0)
