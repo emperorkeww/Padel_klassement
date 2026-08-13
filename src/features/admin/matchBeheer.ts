@@ -48,11 +48,11 @@ export function slaCorrectieOp(
 /**
  * De uitslag van een nog niet afgeronde match vastleggen.
  *
- * Eén verschil met `setMatchResult`: die zet `played_at` op nu, want wie op de
- * baan staat vult in wat hij net gespeeld heeft. Een beheerder die achteraf een
- * vergeten uitslag invult, doet dat vaak dagen later — dan is het geplande
- * tijdstip het juiste, en dat blijft hier dus staan. Wil hij het echt
- * verzetten, dan is daar `verplaatsGeplandeMatch` voor.
+ * Het geplande tijdstip blijft staan — voor de beheerder omdat hij vaak dagen
+ * later invult, en sinds #1271 ook voor de speler op de baan: `played_at` ís de
+ * speeltijd van een geplande match, dus overschrijven verplaatst hem naar een
+ * andere speeldag. Geef `playedAt` mee vanaf de kaart. Wil je hem echt
+ * verzetten, dan is daar `verzetTijdstip` voor.
  */
 export function vulUitslagIn(
   params: {
@@ -61,6 +61,8 @@ export function vulUitslagIn(
     scoreA: number;
     scoreB: number;
     setScores?: SetScore[] | null;
+    /** De geplande speeltijd; laat weg voor een match zonder tijdstip. */
+    playedAt?: string | null;
   },
   alsBeheerder: boolean,
 ): Promise<void> {

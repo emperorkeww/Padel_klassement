@@ -25,7 +25,10 @@ import {
   speeldagMoment,
 } from "@/features/groups/speeldagMatches";
 import { rondesOpDag } from "@/features/groups/speeldagRondes";
-import { groupByRound } from "@/features/groups/groupDetailHelpers";
+import {
+  groupByRound,
+  openGeplandeRonde,
+} from "@/features/groups/groupDetailHelpers";
 import { PollCard } from "@/features/groups/components/PollCard";
 import { RondeBlok } from "@/features/groups/components/RondeBlok";
 import { MakeTeams } from "@/features/groups/components/MakeTeams";
@@ -228,11 +231,13 @@ export function SpeeldagPagina() {
   const eigenOpties = pollOptions(speeldag, alleOpties);
   const rondes = groupByRound(dagMatches);
   const intensiteit = groep.roast_intensiteit ?? "radioactief";
-  // Een ronde van deze dag met openstaande uitslagen blokkeert Mexicano: die
-  // vorm paart op de volledige stand en heeft dus alle uitslagen nodig.
-  const openRonde =
-    rondes.find(({ list }) => list.some((m) => m.status !== "completed")) ??
-    null;
+  // Een openstaande ronde blokkeert Mexicano: die vorm paart op de volledige
+  // stand en heeft dus alle uitslagen nodig. De RPC kijkt daarbij naar de hele
+  // groep, dus deze check ook (#1271) — een ronde die vorige week is blijven
+  // hangen gaf anders een groene knop en dan een onbegrijpelijke serverfout.
+  const openRonde = moment
+    ? openGeplandeRonde(matches.data ?? [], moment.tz)
+    : null;
 
   // Groepsleden als profiel: de kiesbare spelers bij een losse partij.
   const groepSpelers = leden

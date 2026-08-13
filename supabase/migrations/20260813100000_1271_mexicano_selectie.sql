@@ -1,23 +1,31 @@
--- RPC: genereer een Mexicano-ronde voor een groep.
+-- #1271 Mexicano gebruikt de spelerselectie — spiegel van
+-- supabase/schemas/functions/10_mexicano.sql; zie dat bestand voor de volledige
+-- motivatie.
 --
--- Verschil met Americano: de partners/tegenstanders worden niet willekeurig
--- gekozen maar op basis van de huidige stand. Spelers worden gerangschikt op
--- punten (en saldo), en per court van 4 speelt rang 1&4 tegen 2&3 — zo spelen
--- gelijkwaardige spelers tegen elkaar.
+-- Twee dingen gingen mis in dezelfde functie:
 --
--- Blokkade: er mag geen geplande match meer openstaan in de groep. Anders zou
--- de volgende ronde op een halve (onvolledige) stand gepaird worden. Een
--- geannuleerde match telt daar niet in mee (#1271): die levert nooit meer een
--- uitslag op en zou de groep anders permanent blokkeren.
+-- 1. De RPC kende geen spelerslijst en rangschikte álle group_members. De
+--    selectie die je op de speeldag maakt ("Wie speelt er mee?") en de meta-rij
+--    "8 aan · 1 op de bank" waren daarmee onwaar bij Mexicano: wie afzegde
+--    stond gewoon op de baan. Eerlijk en Americano gaven hun lijst wél mee, via
+--    create_fair_round(p_players). Mexicano krijgt nu dezelfde parameter — als
+--    pool, niet als indeling: de volgorde blijft uit de stand komen.
 --
--- p_played_at is het (optionele) starttijdstip van de ronde (#827): bij een
--- gelockte speeldag-poll is dat de echte starttijd, anders null zoals voorheen.
+-- 2. De ronde-blokkade keek naar `status <> 'completed'`, en dat is ook waar
+--    voor een geannuleerde match. Eén cancelled rij blokkeerde de Mexicano van
+--    een groep dus permanent, met een serverfout die nergens op sloeg. De
+--    blokkade hoort te gaan over uitslagen die nog moeten komen: 'scheduled'.
 --
--- p_players is wie er vanavond meespeelt (#1271). Laat hem weg en de hele
--- ledenlijst wordt ingedeeld — het oude gedrag, dat wie afzegde gewoon op de
--- baan zette terwijl de kaart "8 aan · 1 op de bank" beloofde. Anders dan bij
--- create_fair_round is dit een pool en geen indeling: de volgorde komt uit de
--- stand, niet uit de lijst.
+-- Met de hand geschreven en niet via `supabase db diff`: dat commando draait op
+-- develop niet meer door bestaande schema-drift (zie de kop van
+-- 20260805120000_1036_adminpaneel.sql). Deze migratie vervangt één functie en
+-- is één-op-één na te lezen naast het schemabestand.
+
+-- De oude signatuur eerst weg: `create or replace` maakt van een extra
+-- parameter met default een tweede functie in plaats van een vervanging, en
+-- dan wordt generate_mexicano_round(uuid, timestamptz) dubbelzinnig.
+drop function if exists public.generate_mexicano_round(uuid, timestamptz);
+
 create or replace function public.generate_mexicano_round(
   p_group_id uuid,
   p_played_at timestamptz default null,

@@ -41,7 +41,7 @@ import {
   seasonFromId,
 } from "@/features/rating/seasons";
 import { errorMessage } from "@/lib/utils/errors";
-import { groupByRound } from "./groupDetailHelpers";
+import { groupByRound, openGeplandeRonde } from "./groupDetailHelpers";
 import { journeyFor } from "./journey";
 import { ledenLabel } from "./groepHelpers";
 import { MemberStack } from "./components/MemberStack";
@@ -322,10 +322,10 @@ function GroepPagina() {
   // De Vandaag-tab toont enkel de rondes van vandaag; de volledige historie
   // staat op de Historie-tab (#342).
   const rounds = groupByRound(todaysMatches);
-  // Ronde met openstaande uitslagen (blokkeert Mexicano in MakeTeams).
-  const openRound = rounds.find(({ list }) =>
-    list.some((m) => m.status !== "completed"),
-  );
+  // Ronde met openstaande uitslagen (blokkeert Mexicano in MakeTeams). Over de
+  // hele groep, net als de RPC (#1271): een ronde die vorige week is blijven
+  // hangen blokkeert evengoed, en die staat niet in `rounds` van vandaag.
+  const openRound = openGeplandeRonde(matches.data ?? [], club.timezone);
 
   // Reisstatus voor de kop (#917): dezelfde functie als de hub, zodat er niet
   // twee definities van "wanneer wordt er weer gespeeld" ontstaan. Null zolang

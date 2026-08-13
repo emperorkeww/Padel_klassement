@@ -78,6 +78,7 @@ export function NextMatchCard({
         scoreA: a,
         scoreB: b,
         setScores: invoer.setScores,
+        playedAt: match.played_at, // geplande speeltijd behouden (#1271)
       },
       rechten.alsBeheerder,
     );
