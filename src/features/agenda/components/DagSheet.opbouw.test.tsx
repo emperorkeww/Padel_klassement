@@ -215,7 +215,8 @@ describe("<DagSheet /> — opbouw (#1308)", () => {
   /* ---- Afmelden bij een vastgelegde speeldag (#1271, hier sinds #1308) ---- */
 
   it("laat je je afmelden voor een geboekte speeldag", async () => {
-    toon([marker({ status: "booked" })]);
+    // "me" stemde ja, dus staat in de indeling.
+    toon([marker({ status: "booked", myVote: "yes", yesVoterIds: ["me"] })]);
     await userEvent.click(
       await screen.findByRole("button", { name: "Ik kan toch niet" }),
     );
@@ -225,6 +226,20 @@ describe("<DagSheet /> — opbouw (#1308)", () => {
       "me",
       false,
     );
+    expect(screen.getByText("Je staat niet in de indeling.")).toBeInTheDocument();
+  });
+
+  it("vraagt niet af te melden bij een speeldag waar je niet bij staat", async () => {
+    // De indeling begint bij de ja-stemmers; stemde je nee (of niets), dan sta
+    // je er niet bij — en dan is "Ik kan toch niet" een knop over iets wat al
+    // zo is. Meedoen kan wél: dat is precies de uitweg die ontbrak.
+    toon([marker({ status: "booked", myVote: "no", noVoterIds: ["me"] })]);
+    expect(
+      await screen.findByRole("button", { name: "Toch meedoen" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Ik kan toch niet" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Je staat niet in de indeling.")).toBeInTheDocument();
   });
 

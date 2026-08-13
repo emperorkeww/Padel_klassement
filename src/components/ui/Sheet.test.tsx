@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   render,
   screen,
@@ -369,5 +369,40 @@ describe("<Sheet /> initiële focus (#1271)", () => {
     fireEvent.click(opener);
     fireEvent.keyDown(window, { key: "Escape" });
     expect(opener).toHaveFocus();
+  });
+});
+
+/* ---- #1308: de pagina eronder staat stil ---- */
+
+describe("<Sheet /> — de pagina eronder (#1308)", () => {
+  afterEach(() => {
+    document.body.style.cssText = "";
+  });
+
+  it("zet het document vast op de plek waar je stond", () => {
+    // `overflow: hidden` alleen houdt de documentscroll op iOS niet tegen: veeg
+    // je in een sheet die zelf niets te scrollen heeft, dan schuift de pagina
+    // eráchter. Dat viel op in de speeldag-wizard, die bij het openen precies
+    // in beeld past.
+    Object.defineProperty(window, "scrollY", { value: 240, configurable: true });
+    render(<Host />);
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+
+    expect(document.body.style.position).toBe("fixed");
+    expect(document.body.style.top).toBe("-240px");
+    expect(document.body.style.overflow).toBe("hidden");
+  });
+
+  it("geeft die plek terug bij het sluiten", () => {
+    Object.defineProperty(window, "scrollY", { value: 240, configurable: true });
+    const scrollTo = vi.fn();
+    Object.defineProperty(window, "scrollTo", { value: scrollTo, configurable: true });
+    render(<Host />);
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(document.body.style.position).toBe("");
+    expect(document.body.style.top).toBe("");
+    expect(scrollTo).toHaveBeenCalledWith(0, 240);
   });
 });

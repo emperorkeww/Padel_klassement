@@ -13,14 +13,24 @@ export function AfmeldRegel({
   optionId,
   groupId,
   myId,
+  standaardMee,
   className,
 }: {
   optionId: string;
   groupId: string;
   myId: string;
+  /** Sta je standaard in de indeling? (Je stemde "ik kan".) Zonder dat gegeven
+   *  bood deze regel "Ik kan toch niet" aan iemand die er niet bij stond
+   *  (#1308) — en wie er wél bij wil komen had helemaal geen knop. */
+  standaardMee: boolean;
   className?: string;
 }) {
-  const { ikKomNiet, bezig, zet } = useAanwezigheid(optionId, groupId, myId);
+  const { mee, bezig, zet } = useAanwezigheid(
+    optionId,
+    groupId,
+    myId,
+    standaardMee,
+  );
   return (
     <p className={`winner-card__afmelden${className ? ` ${className}` : ""}`}>
       <button
@@ -29,13 +39,14 @@ export function AfmeldRegel({
         disabled={bezig}
         onClick={zet}
       >
-        {ikKomNiet ? "Toch weer mee" : "Ik kan toch niet"}
+        {/* Drie gevallen, en het verschil zit in waar je vandaan komt: wie in
+            de indeling stond en zich afmeldde gaat "toch weer mee"; wie er
+            nooit bij stond kan "toch meedoen" (#1271, #1308). */}
+        {mee ? "Ik kan toch niet" : standaardMee ? "Toch weer mee" : "Toch meedoen"}
       </button>
-      {ikKomNiet && (
-        <span className="winner-card__afmeld-uitleg">
-          Je staat niet in de indeling.
-        </span>
-      )}
+      <span className="winner-card__afmeld-uitleg">
+        {mee ? "Je staat in de indeling." : "Je staat niet in de indeling."}
+      </span>
     </p>
   );
 }
