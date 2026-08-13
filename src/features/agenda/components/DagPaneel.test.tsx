@@ -29,6 +29,8 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
     voterCount: 4,
     yesVoterIds: ["a", "b"],
     maybeVoterIds: [],
+    noVoterIds: [],
+    nietGereageerdIds: [],
     nietGestemdIds: [],
     courts: null,
     accessCode: null,
@@ -108,7 +110,7 @@ describe("<DagPaneel />", () => {
 
   it("toont bij een open poll de tussenstand, niet een spelersaantal", () => {
     toon({ vandaagItems: [item(marker({ status: "open" }))] });
-    expect(screen.getByText("Open poll")).toBeInTheDocument();
+    expect(screen.getByText("Stemmen open")).toBeInTheDocument();
     // "2 spelers" zou suggereren dat het rond is; dat is het niet.
     expect(screen.getByText("2 van 4 kunnen")).toBeInTheDocument();
     expect(screen.getByText(/baan nog te kiezen/)).toBeInTheDocument();

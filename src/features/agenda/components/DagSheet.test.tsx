@@ -68,6 +68,8 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
     voterCount: 6,
     yesVoterIds: [],
     maybeVoterIds: [],
+    noVoterIds: [],
+    nietGereageerdIds: [],
     nietGestemdIds: [],
     courts: "3 & 4",
     accessCode: "4821",
@@ -257,7 +259,7 @@ describe("<DagSheet />", () => {
         open({ optionId: "opt-9", pollId: "poll-9", date: "2026-08-16" }),
       ],
     );
-    expect(screen.getByText("Andere momenten in deze poll")).toBeInTheDocument();
+    expect(screen.getByText("Andere momenten voor deze speeldag")).toBeInTheDocument();
     expect(screen.getByText("za 15 aug · 18:30")).toBeInTheDocument();
     expect(screen.queryByText(/16 aug/)).not.toBeInTheDocument();
 
@@ -270,7 +272,7 @@ describe("<DagSheet />", () => {
   it("laat het kopje weg als de poll maar één moment heeft", () => {
     toon([open()]);
     expect(
-      screen.queryByText("Andere momenten in deze poll"),
+      screen.queryByText("Andere momenten voor deze speeldag"),
     ).not.toBeInTheDocument();
   });
 
@@ -373,7 +375,10 @@ describe("<DagSheet />", () => {
       wedstrijdenPerPoll: { "poll-1": 6 },
     });
     expect(screen.getByText("6 wedstrijden")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /wedstrijden/ })).toBeNull();
+    // Geen losse rij ernaast: de teller staat als chip óp de speeldag. Die chip
+    // is sinds #1308 zelf een link, dus het onderscheid zit in de lijst.
+    expect(document.querySelector(".dagsheet__wedstrijden")).toBeNull();
+    expect(screen.getAllByText(/wedstrijden$/)).toHaveLength(1);
   });
 });
 
@@ -406,7 +411,7 @@ describe("<DagSheet /> — twijfelaars en stille leden (#1121)", () => {
 
   it("noemt wie er nog helemaal niets zei", () => {
     toon(
-      [marker({ status: "open", myVote: "yes", nietGestemdIds: ["p3"] })],
+      [marker({ status: "open", myVote: "yes", nietGereageerdIds: ["p3"] })],
       [],
       undefined,
       PROFIELEN,
@@ -417,13 +422,154 @@ describe("<DagSheet /> — twijfelaars en stille leden (#1121)", () => {
 
   // Een vastgelegde dag stelt de vraag niet meer, dus dan blijft die rij weg.
   it("laat de stille leden weg zodra het moment vastligt", () => {
-    toon([marker({ status: "locked", nietGestemdIds: ["p3"] })], [], undefined, PROFIELEN);
+    toon([marker({ status: "locked", nietGereageerdIds: ["p3"] })], [], undefined, PROFIELEN);
     expect(screen.queryByText("Nog niets gezegd")).not.toBeInTheDocument();
   });
 
   it("zegt waar de speeldag op wacht", () => {
     toon([marker({ status: "open", myVote: null })]);
     expect(screen.getByText("Jij moet nog stemmen.")).toBeInTheDocument();
+  });
+});
+
+/* ---- #1308: één waarheid over de deelname ---- */
+
+describe("<DagSheet /> — wie doet er mee (#1308)", () => {
+  const NAMEN = Object.fromEntries(
+    [
+      ["p2", "Bob Boers"],
+      ["p3", "Carol Claes"],
+      ["p4", "Dave De Vos"],
+      ["p5", "Erik Elzinga"],
+      ["me", "Alice Anders"],
+    ].map(([id, naam]) => [
+      id,
+      {
+        id,
+        username: id,
+        full_name: naam,
+        avatar_url: null,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ]),
+  ) as unknown as Record<string, Profile>;
+
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-08-07T09:00:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const gemengd = () =>
+    marker({
+      status: "open",
+      myVote: "no",
+      yesVoterIds: ["p2"],
+      maybeVoterIds: ["p3"],
+      noVoterIds: ["p4", "me"],
+      nietGereageerdIds: ["p5"],
+    });
+
+  it("noemt elk lid precies één keer, in de bak die hij zelf koos", () => {
+    // Hiervoor stond er "Ik kan — 1 van 8" met "+7 nog niet" eronder: de
+    // twijfelaar, de afmelder en jijzelf werden allemaal "nog niet" genoemd,
+    // terwijl ze twee regels lager bij naam in een andere rij stonden.
+    toon([gemengd()], [], undefined, NAMEN);
+
+    expect(screen.getByText("Wie doet er mee — 1 van 8")).toBeInTheDocument();
+    expect(screen.getByText("Misschien")).toBeInTheDocument();
+    expect(screen.getByText("Carol Claes")).toBeInTheDocument();
+    expect(screen.getByText("Kan niet")).toBeInTheDocument();
+    // Jijzelf hoort in die rij thuis — je zei het net. Alleen bij "nog niets
+    // gezegd" blijf je weg (#1270): die rij vraagt wie je nog kunt porren.
+    expect(screen.getByText("Dave De Vos, Alice Anders")).toBeInTheDocument();
+    expect(screen.getByText("Nog niets gezegd")).toBeInTheDocument();
+    expect(screen.getByText("Erik Elzinga")).toBeInTheDocument();
+    // En de telling die iedereen op één hoop gooide bestaat niet meer.
+    expect(screen.queryByText(/nog niet$/)).not.toBeInTheDocument();
+  });
+
+  it("verhuist je eigen stem meteen naar de juiste rij", async () => {
+    // De overlay is optimistisch: je tik is meteen zichtbaar, de server volgt.
+    // Zonder die correctie stond je nog onder "Kan niet" terwijl je duim al op
+    // ✓ lag.
+    toon([gemengd()], [], undefined, NAMEN);
+    expect(screen.getByText("Wie doet er mee — 1 van 8")).toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /^Ik kan — donderdag 13 augustus/ }),
+    );
+    expect(screen.getByText("Wie doet er mee — 2 van 8")).toBeInTheDocument();
+  });
+
+  it("zegt het gewoon als er nog niemand meedoet", () => {
+    toon([marker({ status: "open" })]);
+    expect(screen.getByText('Nog niemand zei "ik kan".')).toBeInTheDocument();
+  });
+
+  it("noemt de spelersdrempel in plaats van een kaal aantal", () => {
+    // "0 mee" zei niets over de vier spelers die er nodig zijn; dat getal
+    // stond alleen op de speeldagpagina.
+    toon([marker({ status: "open", yesVoterIds: ["p2"] })]);
+    expect(screen.getByText(/1 mee · nog 3 spelers nodig/)).toBeInTheDocument();
+  });
+
+  it("zet geen tweede drempel naast die van een geboekte speeldag", () => {
+    // "ja + misschien ≥ 4" beslist of een speeldag doorgaat; ná het boeken
+    // gaat het om bevestigde spelers voor de wedstrijden. Allebei tonen gaf
+    // "nog 1 speler nodig" pal boven "Nog 2 bevestigde spelers nodig".
+    toon([marker({ yesVoterIds: ["p2", "p3"], maybeVoterIds: ["p4"] })]);
+    expect(
+      screen.getByText(/Nog 2 bevestigde spelers nodig/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/nog 1 speler nodig/)).not.toBeInTheDocument();
+  });
+
+  it("zegt van een moment buiten het venster dat de banen onbekend zijn", () => {
+    // Daar stond tot nu toe niets — en niets leest als "geen banen vrij".
+    toon([marker({ status: "open", date: "2026-09-30" })]);
+    expect(screen.getByText(/beschikbaarheid onbekend/)).toBeInTheDocument();
+  });
+});
+
+/* ---- #1308: chips die ergens heen gaan, code die kopieert ---- */
+
+describe("<DagSheet /> — ingangen en toegangscode (#1308)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-08-07T09:00:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("maakt van groep en club een ingang", () => {
+    // Ze zagen eruit als aantikbare pillen en waren spans, terwijl een
+    // groepsnaam elders in de app juist wél de weg naar die groep is.
+    toon([marker()]);
+    expect(screen.getByRole("link", { name: "Vamos!" })).toHaveAttribute(
+      "href",
+      "/groepen/g1",
+    );
+    expect(
+      screen.getByRole("link", { name: "Padel De Panne" }),
+    ).toHaveAttribute("href", "/banen?datum=2026-08-13");
+  });
+
+  it("kopieert de toegangscode bij een tik", async () => {
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.assign(navigator, { clipboard: { writeText } });
+    toon([marker()]);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /toegangscode 4821 kopiëren/i }),
+    );
+    expect(writeText).toHaveBeenCalledWith("4821");
+  });
+
+  it("schrijft de status net zo als de kaart erachter", () => {
+    // Dezelfde tekst uit dezelfde functie stond op de kaart als "Stemmen open" en
+    // hier als "stemmen open" — allebei tegelijk in beeld.
+    toon([marker({ status: "open" })]);
+    expect(screen.getByText("Stemmen open")).toBeInTheDocument();
   });
 });
 
@@ -466,7 +612,7 @@ describe("<DagSheet /> — kop en opbouw (#1180)", () => {
         marker({
           status: "open",
           myVote: "yes",
-          nietGestemdIds: ["n0", "n1", "n2", "n3", "n4", "n5"],
+          nietGereageerdIds: ["n0", "n1", "n2", "n3", "n4", "n5"],
         }),
       ],
       [],
@@ -506,7 +652,7 @@ describe("<DagSheet /> — kop en opbouw (#1180)", () => {
         yesVoterIds: ["n0", "n1", "n2", "n3", "n4", "n5", "n6"],
       }),
     ]);
-    expect(screen.getByText("Ik kan — 7 van 8")).toBeInTheDocument();
+    expect(screen.getByText("Wie doet er mee — 7 van 8")).toBeInTheDocument();
     expect(screen.getByText("+1")).toBeInTheDocument();
   });
 
@@ -523,20 +669,24 @@ describe("<DagSheet /> — kop en opbouw (#1180)", () => {
     expect(document.querySelector(".dagsheet__speeldag.glas")).not.toBeInTheDocument();
   });
 
-  /* -------- De baanregel houdt zijn ruimte vast (#1233) --------
+  /* -------- De cijferregel houdt zijn ruimte vast (#1233, #1308) --------
 
      De vrije banen en de prijs komen van Playtomic en landen dus ná het
      openen. Stonden ze tussen de chips van groep en club, dan sprong die rij
      naar twee regels en groeide het sheet — dat onderaan verankerd staat —
      omhoog weg onder je vinger. Hoogte valt in jsdom niet te meten; wat hier
      getoetst wordt is de structuur die het mogelijk maakt: de regel staat er
-     vóór, tijdens en ná het antwoord, en de chips zitten er niet meer tussen. */
+     vóór, tijdens en ná het antwoord, hij is als wachtende regel gemarkeerd
+     (die klasse reserveert twee regels), en de chips zitten er niet tussen. */
 
-  it("reserveert de baanregel vóór er baaninfo is", () => {
+  it("reserveert de cijferregel vóór er baaninfo is", () => {
     toon([marker({ status: "open", courts: null, accessCode: null })]);
-    expect(document.querySelector(".dagsheet__baan")).toBeInTheDocument();
-    // Nog niets ín die regel: het antwoord van Playtomic staat nog open.
-    expect(screen.queryByText(/vrij$/)).not.toBeInTheDocument();
+    expect(
+      document.querySelector(".dagsheet__meta--wacht"),
+    ).toBeInTheDocument();
+    // Wat er al vaststaat staat er meteen; de banen nog niet.
+    expect(screen.getByText(/^0 mee/)).toBeInTheDocument();
+    expect(screen.queryByText(/banen vrij/)).not.toBeInTheDocument();
   });
 
   it("houdt de regel staan als het antwoord binnenkomt", async () => {
@@ -544,9 +694,11 @@ describe("<DagSheet /> — kop en opbouw (#1180)", () => {
     await act(async () => {
       baanAntwoord?.resolve(dagMetVrijeBaan());
     });
-    expect(document.querySelector(".dagsheet__baan")).toBeInTheDocument();
-    expect(screen.getByText("1 baan vrij")).toBeInTheDocument();
-    expect(screen.getByText("± € 7,50 p.p.")).toBeInTheDocument();
+    expect(
+      document.querySelector(".dagsheet__meta--wacht"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/1 baan vrij, 1 nodig/)).toBeInTheDocument();
+    expect(screen.getByText(/± € 7,50 p\.p\./)).toBeInTheDocument();
     // En niet meer in de rij met groep en club: daar zat de sprong.
     const chips = document.querySelector(".dagsheet__chips");
     expect(chips?.textContent).toBe("Vamos!Padel De Panne");
@@ -557,7 +709,9 @@ describe("<DagSheet /> — kop en opbouw (#1180)", () => {
     await act(async () => {
       baanAntwoord?.reject(new Error("Playtomic plat"));
     });
-    expect(document.querySelector(".dagsheet__baan")).toBeInTheDocument();
+    expect(
+      document.querySelector(".dagsheet__meta--wacht"),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/baan vrij/)).not.toBeInTheDocument();
   });
 
@@ -565,13 +719,13 @@ describe("<DagSheet /> — kop en opbouw (#1180)", () => {
     toon([
       marker({ status: "open", courts: null, accessCode: null, courtsFree: 3 }),
     ]);
-    expect(screen.getByText("3 banen vrij")).toBeInTheDocument();
+    expect(screen.getByText(/3 banen vrij, 1 nodig/)).toBeInTheDocument();
     // De live-telling vervangt hem stil: dezelfde regel, ander getal.
     await act(async () => {
       baanAntwoord?.resolve(dagMetVrijeBaan());
     });
-    expect(screen.getByText("1 baan vrij")).toBeInTheDocument();
-    expect(screen.queryByText("3 banen vrij")).not.toBeInTheDocument();
+    expect(screen.getByText(/1 baan vrij, 1 nodig/)).toBeInTheDocument();
+    expect(screen.queryByText(/3 banen vrij/)).not.toBeInTheDocument();
   });
 
   it("laat de baantelling weg bij een geboekte speeldag naast een open poll", async () => {
@@ -592,15 +746,24 @@ describe("<DagSheet /> — kop en opbouw (#1180)", () => {
       baanAntwoord?.resolve(dagMetVrijeBaan());
     });
     const blokken = document.querySelectorAll(".dagsheet__speeldag");
-    expect(blokken[0].querySelector(".dagsheet__baan")).not.toBeInTheDocument();
-    expect(blokken[1].querySelector(".dagsheet__baan")).toBeInTheDocument();
-    expect(screen.getAllByText("1 baan vrij")).toHaveLength(1);
+    expect(
+      blokken[0].querySelector(".dagsheet__meta--wacht"),
+    ).not.toBeInTheDocument();
+    expect(
+      blokken[1].querySelector(".dagsheet__meta--wacht"),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/1 baan vrij, 1 nodig/)).toHaveLength(1);
   });
 
   it("reserveert niets bij een dag waar geen baaninfo bij hoort", () => {
     // Geboekt: dan is "is er nog een baan?" geen vraag meer, en er wordt dus
-    // ook niets opgehaald. Een lege regel zou daar alleen maar gat zijn.
+    // ook niets opgehaald. Twee gereserveerde regels zouden daar alleen maar
+    // gat zijn — de cijferregel zelf blijft staan, zonder banen erin.
     toon([marker()]);
-    expect(document.querySelector(".dagsheet__baan")).not.toBeInTheDocument();
+    expect(document.querySelector(".dagsheet__meta")).toBeInTheDocument();
+    expect(
+      document.querySelector(".dagsheet__meta--wacht"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/beschikbaarheid onbekend/)).not.toBeInTheDocument();
   });
 });

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -311,5 +312,37 @@ describe("<Feed />", () => {
       name: /zijn nu vrienden/i,
     });
     expect(items[0]).toHaveAttribute("href", expect.stringContaining("/spelers/"));
+  });
+});
+
+// De filterrij is een horizontale scroller, en overflow-x maakt hem per spec
+// óók verticaal een clippende doos. Stond die padding op nul, dan zat een chip
+// van 44px in een clip-box van precies 44px: de focusring (4px buiten de knop)
+// en de schaduw van de actieve chip vielen er helemaal af, en op iOS werd de
+// bovenkant van de actieve pil plat afgesneden (#1309). jsdom rekent geen
+// overflow door, dus de regel die dat bepaalt wordt uit de stylesheet gelezen.
+describe("verticale speling in de filterrij (#1309)", () => {
+  // Zonder de commentaren te strippen leest een regex de uitleg mee: die noemt
+  // de eigenschappen waar het over gaat, en dan matcht de toelichting in plaats
+  // van de regel.
+  const FEED_CSS = readFileSync("src/features/feed/Feed.css", "utf8").replace(
+    /\/\*[\s\S]*?\*\//g,
+    "",
+  );
+  const blok = FEED_CSS.slice(
+    FEED_CSS.indexOf(".feed__filters {"),
+    FEED_CSS.indexOf(".feed__filters[data-schaduw"),
+  );
+
+  it("geeft de scroller verticale padding", () => {
+    const padding = blok.match(/^\s*padding:\s*([^;]+);/m)?.[1];
+    expect(padding).toBeDefined();
+    // Horizontaal blijft 0 — de chips moeten tot de rand kunnen schuiven.
+    expect(padding).toMatch(/^var\(--sp-2\)\s+0$/);
+  });
+
+  it("compenseert die padding met een negatieve marge", () => {
+    // Anders wordt de filterbar 16px hoger en verspringt de hele feed.
+    expect(blok).toMatch(/margin-block:\s*calc\(var\(--sp-2\) \* -1\)/);
   });
 });

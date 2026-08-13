@@ -359,9 +359,9 @@ export function MakeTeams({
         herkomst={
           tonightYes
             ? speeldag
-              ? "Deelnemers uit de poll van deze speeldag."
-              : "Deelnemers uit de poll van vandaag."
-            : "Geen poll voor vandaag — alle leden staan aan."
+              ? "Deelnemers uit de stemming van deze speeldag."
+              : "Deelnemers uit de stemming van vandaag."
+            : "Geen stemming voor vandaag — alle leden staan aan."
         }
         onToggle={toggle}
         onAlles={kiesAllen}

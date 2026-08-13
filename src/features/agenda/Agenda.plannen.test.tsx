@@ -1,14 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { ToastProvider } from "@/ui/ToastProvider";
 import type { PollWindow } from "@/features/groups/pollsApi";
 
 // Een dag met een speeldag erop kon tot #1104 niets nieuws krijgen: kiesDag
 // stuurde 'm naar het detail en daar hield het op. Deze test loopt de hele
-// keten af — bezette dag → detail → plan-sheet — want dat is precies het stuk
-// dat in Agenda.tsx zit en niet in DagSheet.
+// keten af — bezette dag → detail → wizard — want dat is precies het stuk dat
+// in Agenda.tsx zit en niet in DagSheet.
+//
+// Sinds #1308 is die keten één sheet korter: het plan-sheet dat alleen om een
+// groep vroeg is opgegaan in de kop van de wizard.
 
 const CLUB = {
   id: "club-1",
@@ -27,7 +30,11 @@ vi.mock("@/features/auth/AuthProvider", () => ({
   useAuth: () => ({ user: { id: "me" } }),
 }));
 
-vi.mock("@/features/availability/club", () => ({
+// Sinds #1308 rendert de wizard rechtstreeks in deze keten (er zit geen
+// plan-sheet meer tussen), en die leest méér uit deze module dan alleen de
+// clubkeuze — vandaar de rest van de echte module erbij.
+vi.mock("@/features/availability/club", async (orig) => ({
+  ...(await orig<typeof import("@/features/availability/club")>()),
   useClub: () => CLUB,
 }));
 
@@ -91,14 +98,28 @@ vi.mock("@/features/groups/pollsApi", async (orig) => ({
 
 import { Agenda } from "./Agenda";
 
+/** De querystring van de router zichtbaar maken: MemoryRouter raakt
+ *  `window.location` niet, en de agenda schrijft juist daar zijn stand. */
+function UrlSonde() {
+  const { search } = useLocation();
+  return <output data-testid="url">{search}</output>;
+}
+
 function toon(url = "/agenda") {
   render(
     <MemoryRouter initialEntries={[url]}>
       <ToastProvider>
         <Agenda />
+        <UrlSonde />
       </ToastProvider>
     </MemoryRouter>,
   );
+}
+
+/** De terugknop van de telefoon: in MemoryRouter is dat een stap terug in de
+ *  router-geschiedenis, niet in `window.history`. */
+function terug() {
+  fireEvent.keyDown(window, { key: "Escape" });
 }
 
 /**
@@ -129,10 +150,9 @@ describe("<Agenda /> — plannen op een bezette dag (#1104)", () => {
     await userEvent.click(
       screen.getByRole("button", { name: "Plan hier ook een speeldag" }),
     );
-    // Het detail sluit en dezelfde keten als bij een lege dag neemt het over.
-    expect(await screen.findByText("Plan een speeldag")).toBeInTheDocument();
+    // Het detail sluit en dezelfde wizard als bij een lege dag neemt het over.
     expect(
-      screen.getByRole("button", { name: /Kies momenten/ }),
+      await screen.findByRole("dialog", { name: "Speeldag plannen" }),
     ).toBeInTheDocument();
   });
 
@@ -178,11 +198,15 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
     ).toBeInTheDocument();
   });
 
-  it("stuurt één tik op een lege dag naar het plan-sheet", async () => {
+  it("stuurt één tik op een lege dag meteen naar de wizard", async () => {
     toon();
-    // 20 augustus is leeg en ligt in de toekomst: daar valt te plannen.
+    // 20 augustus is leeg en ligt in de toekomst: daar valt te plannen. Sinds
+    // #1308 zonder tussenscherm — dat vroeg alleen om een groep.
     await openDag(/donderdag 20 augustus, niets gepland/);
-    expect(await screen.findByText("Plan een speeldag")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("dialog", { name: "Speeldag plannen" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/donderdag 20 augustus/i)).toBeInTheDocument();
   });
 
   it("opent een lege dag die geweest is toch, met het eerlijke antwoord", async () => {
@@ -241,7 +265,7 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
     // poll" en "Vastgelegd" bij zet, legt vormen uit die nergens staan (#1182).
     toon();
     expect(await screen.findByText("Geboekt")).toBeInTheDocument();
-    expect(screen.queryByText("Open poll")).not.toBeInTheDocument();
+    expect(screen.queryByText("Stemmen open")).not.toBeInTheDocument();
     expect(screen.queryByText("Vastgelegd")).not.toBeInTheDocument();
   });
 
@@ -264,7 +288,9 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
     await userEvent.click(
       await screen.findByRole("button", { name: "+ Speeldag" }),
     );
-    expect(await screen.findByText("Plan een speeldag")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("dialog", { name: "Speeldag plannen" }),
+    ).toBeInTheDocument();
   });
 
   it("laat de lijst zien wat eraan komt, en opent daar hetzelfde sheet", async () => {
@@ -300,18 +326,24 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
 
   // #1213: de terugweg vanaf Banen. Daar staat per dag "Plan een speeldag";
   // die link landt hier en opent meteen dezelfde keten als een lege dag.
-  it("opent het plan-sheet uit een ?plan=1-link", async () => {
+  it("opent de wizard uit een ?plan=1-link", async () => {
     toon("/agenda?dag=2026-08-20&plan=1");
-    expect(await screen.findByText("Plan een speeldag")).toBeInTheDocument();
     expect(
-      screen.getByText(/donderdag 20 augustus/i, { selector: ".dagsheet__datum" }),
+      await screen.findByRole("dialog", { name: "Speeldag plannen" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/donderdag 20 augustus/i, {
+        selector: ".wizard-sheet__dag",
+      }),
     ).toBeInTheDocument();
   });
 
   it("plant niet op een dag die geweest is", async () => {
     toon("/agenda?dag=2026-08-01&plan=1");
     await screen.findByRole("heading", { level: 1 });
-    expect(screen.queryByText("Plan een speeldag")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("dialog", { name: "Speeldag plannen" }),
+    ).not.toBeInTheDocument();
   });
 
   it("laat het sheet weer los zonder de agenda te verlaten", async () => {
@@ -383,5 +415,76 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
     expect(
       await screen.findByRole("dialog", { name: /maandag 27 juli/i }),
     ).toBeInTheDocument();
+  });
+});
+
+/* ---- #1308: één doorloop, en de terugknop sluit wat bovenop ligt ---- */
+
+describe("<Agenda /> — de plan-doorloop (#1308)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-08-07T09:00:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("zet de wizard in de URL, zodat je hem kunt delen en terugvinden", async () => {
+    // Was een instapvlag die de agenda meteen wiste: de wizard leefde daarna
+    // alleen in component-state, en dus buiten de geschiedenis.
+    toon();
+    await openDag(/donderdag 20 augustus, niets gepland/);
+    await screen.findByRole("dialog", { name: "Speeldag plannen" });
+    const url = screen.getByTestId("url").textContent ?? "";
+    expect(url).toContain("plan=1");
+    expect(url).toContain("dag=2026-08-20");
+  });
+
+  it("sluit met de terugknop de wizard en niet de agenda", async () => {
+    // Het dag-sheet duwde een history-entry en de wizard niet: één tik op terug
+    // haalde de pagina onder een openstaande wizard vandaan zonder hem te
+    // sluiten.
+    toon();
+    await openDag(/donderdag 20 augustus, niets gepland/);
+    await screen.findByRole("dialog", { name: "Speeldag plannen" });
+
+    terug();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Speeldag plannen" }),
+      ).not.toBeInTheDocument(),
+    );
+    // De agenda staat er nog, en de vlag is uit de URL.
+    expect(screen.getByTestId("url").textContent).not.toContain("plan=1");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Augustus 2026",
+    );
+  });
+
+  it("brengt de terugknop je van de wizard terug in het dag-sheet", async () => {
+    // "Plan hier ook een speeldag" vervangt het dag-sheet in beeld, maar laat
+    // de entry eronder staan — dus terug brengt je waar je vandaan kwam.
+    toon();
+    await openDag(/donderdag 13 augustus, speeldag geboekt/);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Plan hier ook een speeldag" }),
+    );
+    await screen.findByRole("dialog", { name: "Speeldag plannen" });
+
+    terug();
+    expect(
+      await screen.findByRole("dialog", { name: /donderdag 13 augustus/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("noemt de groep en de dag waarvoor je plant", async () => {
+    // De wizard wist niet meer voor wie hij plande: met twee groepen die
+    // allebei op donderdag spelen was dat de enige keuze die je nog fout kon
+    // hebben, en ze stond nergens. Bij één groep is het een regel en geen
+    // keuze — er valt niets te kiezen.
+    toon();
+    await openDag(/donderdag 20 augustus, niets gepland/);
+    const sheet = await screen.findByRole("dialog", { name: "Speeldag plannen" });
+    expect(sheet).toHaveTextContent("Vamos!");
+    expect(sheet).toHaveTextContent("4 leden");
+    expect(sheet).toHaveTextContent("donderdag 20 augustus");
   });
 });

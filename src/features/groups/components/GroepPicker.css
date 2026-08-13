@@ -1,0 +1,18 @@
+/* Groepskeuze in de kop van de wizard (#1308). Leunt op de ClubPicker ernaast
+   (dat bestand wordt meegeïmporteerd): twee knoppen die hetzelfde soort keuze
+   openen, horen er hetzelfde uit te zien. Alleen wat afwijkt staat hier. */
+.groep-picker {
+  /* De ClubPicker draagt een margin-top voor de Banen-pagina; in een koprij
+     naast elkaar hoort die er niet. */
+  margin-top: 0;
+}
+
+/* Eén groep: geen knop maar een regel die zegt voor wie je plant. */
+.groep-picker--vast {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}

@@ -12,6 +12,7 @@ import {
   komendeItems,
   maandLabel,
   maandVan,
+  markerHaalbaarheid,
   markersByDay,
   metHoofdletter,
   monthGrid,
@@ -306,7 +307,7 @@ describe("labels van het dagpaneel (#1112)", () => {
   it("geeft het statuswoord voor een chip", () => {
     expect(statusChip("booked")).toBe("Geboekt");
     expect(statusChip("locked")).toBe("Vastgelegd");
-    expect(statusChip("open")).toBe("Open poll");
+    expect(statusChip("open")).toBe("Stemmen open");
     expect(statusChip("booked", true)).toBe("Gespeeld");
   });
 
@@ -846,7 +847,7 @@ describe("dagLabel", () => {
     );
     const vastgelegd = markerVoor({}, { status: "locked", locked_option_id: "opt-1" });
     expect(dagLabel("2026-08-13", vastgelegd)).toContain("speeldag vastgelegd om 20:00");
-    expect(dagLabel("2026-08-13", markerVoor({}))).toContain("speeldag open poll om 20:00");
+    expect(dagLabel("2026-08-13", markerVoor({}))).toContain("speeldag stemmen open om 20:00");
   });
 
   it("zegt bij een open poll of jij al stemde (#1104)", () => {
@@ -924,6 +925,8 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
     voterCount: 0,
     yesVoterIds: [],
     maybeVoterIds: [],
+    noVoterIds: [],
+    nietGereageerdIds: [],
     nietGestemdIds: [],
     courts: null,
     accessCode: null,
@@ -1063,6 +1066,93 @@ describe("buildMarkers — twijfelaars en stille leden (#1121)", () => {
 
     expect(markers[0].iVoted).toBe(false);
     expect(markers[0].nietGestemdIds).toEqual(["p3"]);
+  });
+
+  /* ---- #1308: alle vier de antwoorden, per moment ---- */
+
+  it("houdt de nee-stemmers apart in plaats van ze op te tellen", () => {
+    // "Kan niet" viel tot nu toe alleen in `voterCount`, en het sheet telde
+    // iedereen zonder "ik kan" als "nog niet" — inclusief wie net gezegd had
+    // dat hij niet kon.
+    const groepen = [
+      { ...groep("g1", "Vamos!"), member_ids: ["p1", "p2", "p3", "p4", "p5"] },
+    ];
+    const markers = buildMarkers(
+      venster({
+        polls: [poll()],
+        options: [option()],
+        votes: [
+          vote("p2", "yes"),
+          vote("p3", "maybe"),
+          vote("p4", "no"),
+        ],
+      }),
+      groepen,
+      "p1",
+      at("2026-08-01T10:00:00Z"),
+    );
+
+    expect(markers[0].yesVoterIds).toEqual(["p2"]);
+    expect(markers[0].maybeVoterIds).toEqual(["p3"]);
+    expect(markers[0].noVoterIds).toEqual(["p4"]);
+    // Alleen p5 zei niets over dít moment; p1 ben jijzelf.
+    expect(markers[0].nietGereageerdIds).toEqual(["p5"]);
+  });
+
+  it("scheidt 'niets over dit moment' van 'niets over deze poll'", () => {
+    // Twee momenten, en p2 beantwoordde alleen het eerste. Voor de poll heeft
+    // hij gestemd (de "wacht op n leden"-zin telt hem niet mee), voor het
+    // tweede moment zei hij niets — en dáár gaat de namenrij over.
+    const groepen = [{ ...groep("g1", "Vamos!"), member_ids: ["p1", "p2"] }];
+    const markers = buildMarkers(
+      venster({
+        polls: [poll()],
+        options: [option(), option({ id: "opt-2", date: "2026-08-09" })],
+        votes: [vote("p2", "yes")],
+      }),
+      groepen,
+      "p1",
+      at("2026-08-01T10:00:00Z"),
+    );
+
+    const tweede = markers.find((m) => m.optionId === "opt-2")!;
+    expect(tweede.nietGestemdIds).toEqual([]);
+    expect(tweede.nietGereageerdIds).toEqual(["p2"]);
+  });
+});
+
+/* ---- #1308: dezelfde haalbaarheid als op de speeldagpagina ---- */
+
+describe("markerHaalbaarheid (#1308)", () => {
+  it("telt ja plus misschien mee, zoals de cron", () => {
+    // De drempel waarop `poll-deadline` beslist is ja + misschien ≥ 4
+    // (pollBeslissing.ts); de agenda mag daar geen eigen som naast zetten.
+    const h = markerHaalbaarheid(
+      marker({ yesVoterIds: ["a", "b"], maybeVoterIds: ["c"] }),
+      3,
+    );
+    expect(h.mee).toBe(3);
+    expect(h.tekort).toBe(1);
+  });
+
+  it("weegt de banen tegen het aantal ja-stemmers", () => {
+    const krap = markerHaalbaarheid(
+      marker({ yesVoterIds: ["a", "b", "c", "d"] }),
+      1,
+    );
+    expect(krap.banenNodig).toBe(1);
+    expect(krap.state).toBe("krap");
+
+    const vol = markerHaalbaarheid(
+      marker({ yesVoterIds: ["a", "b", "c", "d", "e"] }),
+      1,
+    );
+    expect(vol.banenNodig).toBe(2);
+    expect(vol.state).toBe("onhaalbaar");
+  });
+
+  it("noemt de haalbaarheid onbekend zonder baangegevens", () => {
+    expect(markerHaalbaarheid(marker(), null).state).toBe("onbekend");
   });
 });
 

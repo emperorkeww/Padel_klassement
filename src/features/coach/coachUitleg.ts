@@ -51,11 +51,11 @@ export const UITLEG_REGELS: Record<UitlegSleutel, Pools> = {
     zacht: [
       "Een speeldag begint op de agenda, gaat dan naar de groep: spelen, en dan de stand.",
       "Plannen doe je op de agenda, de avond zelf op de groepspagina. Twee plekken, meer niet.",
-      "Poll, rondes, teams, historie. In die volgorde gaat het vanzelf.",
+      "Speeldag, rondes, teams, historie. In die volgorde gaat het vanzelf.",
     ],
     scherp: [
       "Agenda, spelen, stand. Drie stappen, en toch gaat het elke week ergens mis.",
-      "Zet die poll op tijd open. Anders staan er zaterdag vier man voor een dichte baan.",
+      "Zet die speeldag op tijd open. Anders staan er zaterdag vier man voor een dichte baan.",
       "De tabs lopen van links naar rechts. Net als jouw verdediging, maar dan wél volgens plan.",
     ],
   },
@@ -195,12 +195,12 @@ export const UITLEG_REGELS: Record<UitlegSleutel, Pools> = {
   },
   meldingen: {
     zacht: [
-      "Meldingen aanzetten helpt: dan mis je geen poll of uitslag.",
+      "Meldingen aanzetten helpt: dan mis je geen speeldag of uitslag.",
       "Je kunt de app ook op je beginscherm zetten. Werkt net zo fijn als een echte app.",
       "Kies zelf waarvoor je een seintje wilt. Alles uit mag ook.",
     ],
     scherp: [
-      "Zet meldingen aan, dan heb je geen excuus meer om die poll te missen.",
+      "Zet meldingen aan, dan heb je geen excuus meer om die speeldag te missen.",
       "Installeer 'm op je beginscherm. Scheelt je weer een smoes.",
       "Geen meldingen aan én dan klagen dat je niks wist? Nee.",
     ],

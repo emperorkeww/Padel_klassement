@@ -346,7 +346,7 @@ export async function createPoll(input: {
     .select();
   if (error) throw error;
   const poll = data?.[0];
-  if (!poll) throw new Error("Poll aanmaken mislukte.");
+  if (!poll) throw new Error("Speeldag aanmaken mislukte.");
   const { error: e2 } = await supabase
     .from("play_poll_options")
     .insert(

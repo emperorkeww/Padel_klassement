@@ -2,7 +2,7 @@ import { Sheet } from "@/ui/Sheet";
 import type { PollOption, PollVote } from "@/features/groups/pollsApi";
 import { optionState, tallyOption, vastlegbaar } from "@/features/groups/pollLogic";
 import { shortDay } from "../planPollHelpers";
-import { PollStateIcon } from "./pollIconen";
+import { MomentMeta, MomentMeter } from "./MomentMeta";
 /* De kaart die deze sheet opent woont op /speeldag, maar een component brengt
    zijn eigen stijlen mee: anders staat hij ongestyled zodra hij elders belandt. */
 import "@/features/groups/Proposals.css";
@@ -62,10 +62,6 @@ export function MomentKiezer({
     const state = optionState(t.yes.length, vrij);
     const prijs = prijsOp(o);
     const kan = vastlegbaar(o, today);
-    const banen =
-      vrij == null
-        ? "beschikbaarheid onbekend"
-        : `${vrij} ${vrij === 1 ? "baan" : "banen"} vrij, ${t.needed} nodig`;
     return (
       <li key={o.id}>
         <button
@@ -78,18 +74,18 @@ export function MomentKiezer({
             <span className="moment-kiezer__when">
               {shortDay(o.date)} · {o.start_time}
             </span>
-            <span
-              className={`moment-kiezer__meter poll-state--${state}`}
-              aria-hidden="true"
-            >
-              <PollStateIcon state={state} />
-            </span>
+            <MomentMeter state={state} className="moment-kiezer__meter" />
           </span>
-          <span className="moment-kiezer__meta">
-            {t.yes.length} mee
-            {t.maybe.length > 0 && ` · ${t.maybe.length}?`} · {banen}
-            {prijs && ` · ± ${prijs} p.p.`}
-          </span>
+          {/* Sinds #1308 dezelfde regel als in het agenda-dag-sheet. */}
+          <MomentMeta
+            className="moment-kiezer__meta"
+            ja={t.yes.length}
+            misschien={t.maybe.length}
+            tekort={t.tekort}
+            vrij={vrij}
+            banenNodig={t.needed}
+            prijs={prijs}
+          />
           {(o.id === huidigId || o.id === aanbevolenId || !kan) && (
             <span className="moment-kiezer__badges">
               {o.id === huidigId && (
@@ -123,7 +119,7 @@ export function MomentKiezer({
         <p className="empty">
           {voorbij.length > 0
             ? "Alle voorgestelde momenten zijn voorbij. Pas de dagen aan om er een toe te voegen."
-            : "Deze poll heeft geen momenten om uit te kiezen."}
+            : "Deze speeldag heeft geen momenten om uit te kiezen."}
         </p>
       ) : (
         <ul className="moment-kiezer">{kiesbaar.map(rij)}</ul>

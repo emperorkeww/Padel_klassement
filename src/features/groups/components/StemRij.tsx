@@ -1,6 +1,7 @@
 import type { PollVoteStatus } from "@/features/groups/pollsApi";
+import type { OptionState } from "@/features/groups/pollLogic";
 import { VOTE_SEGMENTS } from "../planPollHelpers";
-import { PollJaIcon, PollNeeIcon } from "./pollIconen";
+import { PollJaIcon, PollNeeIcon, PollStateIcon } from "./pollIconen";
 import "@/features/groups/Proposals.css";
 import "./StemRij.css";
 
@@ -28,6 +29,8 @@ export function StemRij({
   omschrijving,
   aantal,
   banen,
+  meter,
+  tekort = 0,
   mine,
   onVote,
 }: {
@@ -44,6 +47,12 @@ export function StemRij({
   aantal: number | null;
   /** Vrije banen op dit moment; null zolang (of omdat) we het niet weten. */
   banen?: number | null;
+  /** Haalbaarheid als ring (#1308) — dezelfde als op de speeldagpagina. De
+   *  betekenis staat in de naam, niet in de kleur; de rij zelf blijft kort. */
+  meter?: OptionState;
+  /** Spelers die er nog bij moeten. Voedt alleen de naam van de meter: in de
+   *  rij zelf is geen plek voor die zin, en het hoofdmoment zegt hem al. */
+  tekort?: number;
   mine: PollVoteStatus | null;
   onVote: (status: PollVoteStatus) => void;
 }) {
@@ -57,16 +66,24 @@ export function StemRij({
       ) : (
         <span className="stemrij__wanneer">{titel}</span>
       )}
-      {aantal != null && (
-        <span className="stemrij__aantal">
-          {aantal} {aantal === 1 ? "kan" : "kunnen"}
-        </span>
-      )}
+      {/* "mee" en niet "kan/kunnen" (#1308): hetzelfde moment heette op de
+          speeldagpagina al "2 mee", en één sheet met twee woorden voor dezelfde
+          telling laat je rekenen in plaats van kiezen. */}
+      {aantal != null && <span className="stemrij__aantal">{aantal} mee</span>}
       {banen != null && (
         <span
           className={`stemrij__banen${banen === 0 ? " is-vol" : ""}`}
         >
           {banen === 0 ? "vol" : `${banen} vrij`}
+        </span>
+      )}
+      {meter && (
+        <span
+          className={`stemrij__meter poll-state--${meter}`}
+          role="img"
+          aria-label={`Haalbaarheid: ${meter}${tekort > 0 ? `, nog ${tekort} ${tekort === 1 ? "speler" : "spelers"} nodig` : ""}`}
+        >
+          <PollStateIcon state={meter} />
         </span>
       )}
       <span className="seg" role="group" aria-label={`Jouw stem — ${omschrijving}`}>

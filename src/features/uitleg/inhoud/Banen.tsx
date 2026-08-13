@@ -19,7 +19,7 @@ export function Banen() {
       <p>
         De <strong>deelknop</strong> maakt een poster van de beschikbaarheid die
         je zo in de groepschat kunt plakken. Handig als je wilt polsen zonder
-        meteen een hele poll op te tuigen.
+        meteen een hele speeldag op te tuigen.
       </p>
       <p className="uitleg__noot">
         De beschikbaarheid komt van de club en kan even achterlopen. Staat er een

@@ -1,0 +1,192 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
+import { ToastProvider } from "@/ui/ToastProvider";
+import type { AgendaMarker } from "../agendaLogic";
+
+/* #1308 — de beslissing bovenaan, de acties in één balk.
+ *
+ * Het sheet zette de stemrij — het enige wat je hier zelf kunt afmaken — onder
+ * twee namenlijsten, en de enige accentknop eronder ("Open speeldag")
+ * navigeert juist wég. In een groep van twintig lag de stemrij daardoor onder
+ * de vouw op 390×844.
+ *
+ * Bij een geboekte speeldag was er hélemaal geen handeling: "Nog 2 bevestigde
+ * spelers nodig" zonder enige manier om er een te worden — afmelden kon alleen
+ * op de speeldagpagina.
+ */
+
+const presence = vi.hoisted(() => ({
+  getAanwezigheid: vi.fn(async () => ({}) as Record<string, boolean>),
+  zetMijnAanwezigheid: vi.fn(async () => {}),
+  zetAanwezigheid: vi.fn(async () => {}),
+}));
+vi.mock("@/features/groups/aanwezigheidApi", () => presence);
+
+vi.mock("@/lib/supabase/client", async () => {
+  const { makeSupabaseMock } = await import("@/test/supabaseMock");
+  const { SESSION } = await import("@/test/fixtures");
+  return { supabase: makeSupabaseMock({ session: SESSION, tables: {} }) };
+});
+
+vi.mock("@/features/availability/api", async (orig) => ({
+  ...(await orig<typeof import("@/features/availability/api")>()),
+  // Blijft hangen: zo staat het sheet in de toestand waarin je hem het eerst
+  // ziet, en de baanregel is hier niet het onderwerp.
+  getClubAvailability: () => new Promise(() => {}),
+}));
+
+import { DagSheet } from "./DagSheet";
+
+function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
+  return {
+    pollId: "poll-1",
+    optionId: "opt-1",
+    groupId: "g1",
+    groupName: "Vamos!",
+    clubName: "Padel De Panne",
+    clubId: "club-1",
+    clubCity: "Beveren",
+    clubTimezone: "Europe/Brussels",
+    date: "2026-08-13",
+    startTime: "20:00",
+    duration: 90,
+    status: "open",
+    past: false,
+    iVoted: false,
+    myVote: null,
+    voterCount: 0,
+    yesVoterIds: [],
+    maybeVoterIds: [],
+    noVoterIds: [],
+    nietGereageerdIds: [],
+    nietGestemdIds: [],
+    courts: null,
+    accessCode: null,
+    courtsFree: null,
+    changedAt: "2026-08-01T18:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function toon(markers: AgendaMarker[], onPlan?: () => void) {
+  render(
+    <MemoryRouter>
+      <ToastProvider>
+        <DagSheet
+          datum="2026-08-13"
+          markers={markers}
+          momentenPerPoll={{ "poll-1": markers }}
+          ledenPerGroep={{ g1: 8 }}
+          profielen={{}}
+          myId="me"
+          onGestemd={vi.fn()}
+          onPlan={onPlan}
+          onClose={vi.fn()}
+        />
+      </ToastProvider>
+    </MemoryRouter>,
+  );
+}
+
+/** Waar staat dit blok in de leesvolgorde van het sheet? */
+function positie(selector: string): number {
+  const el = document.querySelector(selector);
+  if (!el) throw new Error(`niet gevonden: ${selector}`);
+  return [...document.querySelectorAll("*")].indexOf(el);
+}
+
+describe("<DagSheet /> — opbouw (#1308)", () => {
+  beforeEach(() => {
+    presence.getAanwezigheid.mockClear();
+    presence.zetMijnAanwezigheid.mockClear();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-08-07T09:00:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("zet jouw stem boven de namen en de cijfers", () => {
+    toon([marker({ nietGereageerdIds: ["p2"] })]);
+    expect(positie(".dagsheet__stemmen")).toBeLessThan(
+      positie(".dagsheet__deelname"),
+    );
+    expect(positie(".dagsheet__stemmen")).toBeLessThan(
+      positie(".dagsheet__meta"),
+    );
+  });
+
+  it("vouwt de namen op achter de telling", async () => {
+    toon([marker({ yesVoterIds: ["p2"], nietGereageerdIds: ["p3"] })]);
+    const blok = document.querySelector(".dagsheet__deelname");
+    expect(blok?.tagName).toBe("DETAILS");
+    // De telling en de gezichten blijven staan, de namen gaan erachter.
+    expect(blok?.querySelector("summary")?.textContent).toContain(
+      "Wie doet er mee — 1 van 8",
+    );
+    expect(
+      blok?.querySelector("summary")?.textContent?.includes("Nog niets gezegd"),
+    ).toBe(false);
+    expect(
+      document.querySelector(".dagsheet__namen")?.textContent,
+    ).toContain("Nog niets gezegd");
+  });
+
+  it("zet de acties in een plakkende voetbalk, primair rechts", () => {
+    toon([marker({ status: "booked", courts: "3 & 4" })]);
+    const voet = document.querySelector(".dagsheet__voet");
+    expect(voet).toBeInTheDocument();
+    // Zelfde vorm als het match-sheet (#1144).
+    expect(voet).toHaveClass("sheet__foot", "glas", "glas--balk");
+    const knoppen = [...(voet?.querySelectorAll("a, button") ?? [])].map(
+      (e) => e.textContent,
+    );
+    expect(knoppen).toEqual(["Zet in je agenda", "Open speeldag"]);
+    // En het sheet houdt onderaan geen eigen padding, anders schemert de
+    // inhoud onder de balk door.
+    expect(document.querySelector(".sheet--dag")).toBeInTheDocument();
+  });
+
+  it("houdt de acties ín het blok bij twee speeldagen op één dag", () => {
+    // Eén plakbalk kan niet over twee speeldagen gaan.
+    toon([marker(), marker({ optionId: "opt-2", pollId: "poll-2" })]);
+    expect(document.querySelector(".dagsheet__voet")).not.toBeInTheDocument();
+    expect(document.querySelectorAll(".dagsheet__acties")).toHaveLength(2);
+  });
+
+  it("maakt van 'plan hier ook' een stille tekstknop", () => {
+    toon([marker()], vi.fn());
+    const knop = screen.getByRole("button", {
+      name: "Plan hier ook een speeldag",
+    });
+    // Geen tweede knop met hetzelfde gewicht als de hoofdactie.
+    expect(knop).not.toHaveClass("btn");
+    expect(positie(".dagsheet__ookplannen")).toBeLessThan(
+      positie(".dagsheet__voet"),
+    );
+  });
+
+  /* ---- Afmelden bij een vastgelegde speeldag (#1271, hier sinds #1308) ---- */
+
+  it("laat je je afmelden voor een geboekte speeldag", async () => {
+    toon([marker({ status: "booked" })]);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Ik kan toch niet" }),
+    );
+    expect(presence.zetMijnAanwezigheid).toHaveBeenCalledWith(
+      "opt-1",
+      "g1",
+      "me",
+      false,
+    );
+    expect(screen.getByText("Je staat niet in de indeling.")).toBeInTheDocument();
+  });
+
+  it("biedt geen afmeldknop zolang er nog gestemd wordt", () => {
+    // Zolang de poll open is, is jouw stem het antwoord — niet presence.
+    toon([marker()]);
+    expect(
+      screen.queryByRole("button", { name: "Ik kan toch niet" }),
+    ).not.toBeInTheDocument();
+  });
+});

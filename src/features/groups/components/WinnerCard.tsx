@@ -1,11 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useToast } from "@/ui/ToastProvider";
-import { useRealtime } from "@/lib/hooks/useRealtime";
-import {
-  getAanwezigheid,
-  zetMijnAanwezigheid,
-} from "@/features/groups/aanwezigheidApi";
 import { Avatar } from "@/ui/Avatar";
+import { KopieerChip } from "@/ui/KopieerChip";
 import { errorMessage } from "@/lib/utils/errors";
 import {
   downloadSpeeldagIcs,
@@ -23,6 +19,7 @@ import {
   type PlayPoll,
   type PollOption,
 } from "@/features/groups/pollsApi";
+import { AfmeldRegel } from "./AfmeldRegel";
 import { BookingSheet } from "./BookingSheet";
 import { DeelSpeeldag } from "./DeelSpeeldag";
 import type { OptionTally } from "@/features/groups/pollLogic";
@@ -99,55 +96,6 @@ export function WinnerCard({
         ? "Boekgegevens opgeslagen."
         : "Boekgegevens gewist.",
     );
-  }
-
-  // Mijn eigen aanwezigheid op dit moment (#1271). Alleen de afwijking staat in
-  // de database; geen rij betekent "volg de stemming".
-  const [ikKomNiet, setIkKomNiet] = useState(false);
-  const [afmeldBezig, setAfmeldBezig] = useState(false);
-  useEffect(() => {
-    let levend = true;
-    void getAanwezigheid(o.id)
-      .then((k) => {
-        if (levend) setIkKomNiet(k[myId] === false);
-      })
-      .catch(() => {
-        /* onbekend blijft "ik doe mee": de stemming is de bron */
-      });
-    return () => {
-      levend = false;
-    };
-  }, [o.id, myId]);
-  useRealtime("play_poll_presence", () => {
-    void getAanwezigheid(o.id).then((k) => setIkKomNiet(k[myId] === false));
-  }, `option_id=eq.${o.id}`);
-
-  async function zetAanwezig() {
-    const volgende = !ikKomNiet;
-    setAfmeldBezig(true);
-    setIkKomNiet(volgende);
-    try {
-      await zetMijnAanwezigheid(o.id, poll.group_id, myId, volgende ? false : null);
-      toast.success(
-        volgende ? "Afgemeld — de groep ziet het." : "Je doet weer mee.",
-      );
-    } catch (err) {
-      setIkKomNiet(!volgende);
-      toast.error(errorMessage(err));
-    } finally {
-      setAfmeldBezig(false);
-    }
-  }
-
-  /** Tik op de code = naar het klembord: je staat met je telefoon bij de deur. */
-  async function copyCode() {
-    if (!code) return;
-    try {
-      await navigator.clipboard.writeText(code);
-      toast.success("Code gekopieerd.");
-    } catch (err) {
-      toast.error(errorMessage(err));
-    }
   }
 
   function exportIcs() {
@@ -230,20 +178,19 @@ export function WinnerCard({
   const baanEnCode = (
     <>
       {banenGeboekt != null && (
-        <span className="winner-card__code winner-card__code--static">
+        <span className="kopieer-chip kopieer-chip--stil">
           🎾 <strong>{courtsLabel(banenGeboekt)}</strong>
         </span>
       )}
+      {/* Sinds #1308 de gedeelde chip: het agenda-dag-sheet toont dezelfde code
+          en had er een dode tekstregel van gemaakt. */}
       {code != null && (
-        <button
-          type="button"
-          className="winner-card__code"
-          onClick={copyCode}
-          title="Tik om te kopiëren"
-          aria-label={`Toegangscode ${code} kopiëren`}
-        >
-          <span aria-hidden="true">🔑</span> <strong>{code}</strong>
-        </button>
+        <KopieerChip
+          waarde={code}
+          naam="Toegangscode"
+          icoon="🔑"
+          melding="Code gekopieerd."
+        />
       )}
     </>
   );
@@ -320,22 +267,10 @@ export function WinnerCard({
             zeggen: de organisator zette het in zijn eigen browser, en de speler
             zag zichzelf gewoon in de opstelling staan. Dit schrijft naar
             play_poll_presence, dezelfde bron waaruit de indeling put. */}
+        {/* Sinds #1308 gedeeld met het agenda-dag-sheet, dat dezelfde geboekte
+            speeldag toont en er geen enkele handeling bij had. */}
         {!compact && (
-          <p className="winner-card__afmelden">
-            <button
-              type="button"
-              className="btn btn--sm"
-              disabled={afmeldBezig}
-              onClick={zetAanwezig}
-            >
-              {ikKomNiet ? "Toch weer mee" : "Ik kan toch niet"}
-            </button>
-            {ikKomNiet && (
-              <span className="winner-card__afmeld-uitleg">
-                Je staat niet in de indeling.
-              </span>
-            )}
-          </p>
+          <AfmeldRegel optionId={o.id} groupId={poll.group_id} myId={myId} />
         )}
 
         {/* Fase-secties (#349): kiezen → boeken → klaarzetten; alleen de

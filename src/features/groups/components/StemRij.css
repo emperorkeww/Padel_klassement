@@ -50,6 +50,16 @@
   color: var(--warn);
 }
 
+/* Haalbaarheid als ring (#1308), zoals in de rij op de speeldagpagina. Hij
+   staat tussen de cijfers en de stemknoppen: eerst wat er is, dan wat het
+   betekent, dan wat jij ermee doet. De kleur komt van `poll-state--*`
+   (Proposals.css) — die klassen brengt StemRij zelf al mee. */
+.stemrij__meter {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+}
+
 /* Knoppen rechts uitlijnen, ook als de telling ontbreekt. */
 .stemrij .seg {
   margin-left: auto;

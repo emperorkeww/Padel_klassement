@@ -5,7 +5,7 @@ import {
   fromMinutes,
   toMinutes,
 } from "@/lib/utils/time";
-import { longDay } from "@/features/groups/planPollHelpers";
+import { duurLabel, longDay } from "@/features/groups/planPollHelpers";
 import { hoortBijMoment } from "@/features/groups/speeldagMatches";
 import { laatsteWijziging } from "@/features/groups/speeldagIcs";
 import type {
@@ -14,7 +14,13 @@ import type {
   PollVoteStatus,
   PollWindow,
 } from "@/features/groups/pollsApi";
-import { PLAYERS_PER_COURT, momentEindeMs } from "@/features/groups/pollLogic";
+import {
+  PLAYERS_PER_COURT,
+  courtsNeeded,
+  momentEindeMs,
+  optionState,
+  type OptionState,
+} from "@/features/groups/pollLogic";
 import type { GroupSummary } from "@/features/groups/api";
 
 /* ------------------------------------------------------------------ */
@@ -72,6 +78,15 @@ export type AgendaMarker = {
    *  nodig" wil je weten wie je nog kunt porren — de Plannen-tab toonde die
    *  rij wel, de agenda niet. */
   maybeVoterIds: string[];
+  /** Spelers met "kan niet" op dít moment (#1308). Die stem viel tot nu toe
+   *  alleen in `voterCount`, en het dag-sheet telde iedereen zonder "ik kan"
+   *  als "nog niet" — inclusief wie net had gezegd dat hij niet kon. */
+  noVoterIds: string[];
+  /** Groepsleden die over dít moment niets zeiden (#1308). Naast — niet in
+   *  plaats van — `nietGestemdIds`: die gaat over de hele poll en voedt de
+   *  "wacht op n leden"-zin, deze over de ene rij die je voor je ziet. Jezelf
+   *  staat er nooit bij, om dezelfde reden als hieronder. */
+  nietGereageerdIds: string[];
   /** Groepsleden die op deze poll nog helemaal niets zeiden. Per poll en niet
    *  per moment: wie één kandidaat beantwoordde, heeft gestemd. Jezelf staat
    *  er nooit bij (#1270): "Nog niets gezegd" zette je eigen naam vooraan in
@@ -154,6 +169,10 @@ export function buildMarkers(
   // stemmen dragen).
   const yesByOption = new Map<string, string[]>();
   const maybeByOption = new Map<string, string[]>();
+  // Nee-stemmen worden sinds #1308 net zo bewaard als ja en misschien: het
+  // dag-sheet toont alle vier de toestanden, en "kan niet" was de enige die
+  // nergens landde behalve in `voterCount`.
+  const noByOption = new Map<string, string[]>();
   const votersByPoll = new Map<string, Set<string>>();
   const mineByOption = new Map<string, PollVoteStatus>();
   const optionPoll = new Map(window.options.map((o) => [o.id, o.poll_id]));
@@ -167,6 +186,11 @@ export function buildMarkers(
       const list = maybeByOption.get(vote.option_id);
       if (list) list.push(vote.player_id);
       else maybeByOption.set(vote.option_id, [vote.player_id]);
+    }
+    if (vote.status === "no") {
+      const list = noByOption.get(vote.option_id);
+      if (list) list.push(vote.player_id);
+      else noByOption.set(vote.option_id, [vote.player_id]);
     }
     if (vote.player_id === myId) mineByOption.set(vote.option_id, vote.status);
     const pollId = optionPoll.get(vote.option_id);
@@ -190,6 +214,13 @@ export function buildMarkers(
     if (!vastgelegd && past) continue;
 
     const voters = votersByPoll.get(poll.id);
+    const jaIds = yesByOption.get(option.id) ?? [];
+    const misschienIds = maybeByOption.get(option.id) ?? [];
+    const neeIds = noByOption.get(option.id) ?? [];
+    // Wie zei er niets over dít moment? Alles wat geen stem op deze optie
+    // draagt (#1308) — jezelf uitgezonderd, want jouw eigen antwoord staat in
+    // de stemrij en hoort niet in de rij "wie kan ik nog porren".
+    const gereageerd = new Set([...jaIds, ...misschienIds, ...neeIds]);
     markers.push({
       pollId: poll.id,
       optionId: option.id,
@@ -207,8 +238,12 @@ export function buildMarkers(
       iVoted: voters?.has(myId) ?? false,
       myVote: mineByOption.get(option.id) ?? null,
       voterCount: voters?.size ?? 0,
-      yesVoterIds: yesByOption.get(option.id) ?? [],
-      maybeVoterIds: maybeByOption.get(option.id) ?? [],
+      yesVoterIds: jaIds,
+      maybeVoterIds: misschienIds,
+      noVoterIds: neeIds,
+      nietGereageerdIds: (groupMembers.get(poll.group_id) ?? []).filter(
+        (id) => id !== myId && !gereageerd.has(id),
+      ),
       nietGestemdIds: (groupMembers.get(poll.group_id) ?? []).filter(
         (id) => id !== myId && !voters?.has(id),
       ),
@@ -781,7 +816,7 @@ export function toetsStap(date: string, key: string): string | null {
 const STATUS_WOORD: Record<AgendaStatus, string> = {
   booked: "geboekt",
   locked: "vastgelegd, nog te boeken",
-  open: "open poll",
+  open: "stemmen open",
 };
 
 /** "20:00 — 21:30": het tijdvak van een moment. Een slot dat over middernacht
@@ -840,15 +875,44 @@ export function volgendeStap(m: AgendaMarker): string | null {
 }
 
 /**
- * Hoe lang een speeldag duurt, als losse regel naast de begintijd (#1112).
- * Hele uren lezen als uren ("2 uur"), de rest blijft in minuten ("90 min") —
- * "1,5 uur" is precies de omrekening die je niet wil moeten maken.
+ * Haalbaarheid van één moment, zoals de speeldagpagina hem al kent (#1308).
+ *
+ * De agenda telde tot nu toe alleen ja-stemmers en noemde geen drempel: "0
+ * kunnen" op een moment zei niet dat er nog vier nodig waren. Deze helper leidt
+ * hetzelfde af als `tallyOption` — dezelfde `mee` (ja + misschien, de telling
+ * waarop de cron beslist) en dezelfde `optionState` — maar dan uit een marker,
+ * die zijn stemmen al uitgesplitst draagt. Bewust geen eigen drempel: wat een
+ * poll haalbaar maakt hoort op één plek te staan (pollLogic.ts).
+ *
+ * `vrij` is de live baantelling als die er is; anders de momentopname van de
+ * marker, en `null` betekent "onbekend" — dan zegt de meter dat ook.
  */
-export function duurLabel(duration: number): string {
-  if (duration % 60 !== 0) return `${duration} min`;
-  const uren = duration / 60;
-  return uren === 1 ? "1 uur" : `${uren} uur`;
+export function markerHaalbaarheid(
+  m: AgendaMarker,
+  vrij: number | null,
+): {
+  state: OptionState;
+  /** Spelers die dit moment openhouden: ja plus misschien. */
+  mee: number;
+  /** Hoeveel spelers er nog bij moeten voor één baan; 0 = gehaald. */
+  tekort: number;
+  /** Banen die bij dit aantal ja-stemmers nodig zijn. */
+  banenNodig: number;
+} {
+  const mee = m.yesVoterIds.length + m.maybeVoterIds.length;
+  return {
+    state: optionState(m.yesVoterIds.length, vrij),
+    mee,
+    tekort: Math.max(0, PLAYERS_PER_COURT - mee),
+    banenNodig: courtsNeeded(m.yesVoterIds.length),
+  };
 }
+
+/** Hoe lang een speeldag duurt (#1112). Woont sinds #1308 bij de
+ *  speeldag-helpers — de wizard toont hem nu ook — en staat hier alleen nog
+ *  als doorgeefluik, zodat de agenda-kant niets hoeft te weten van waar hij
+ *  vandaan komt. */
+export { duurLabel };
 
 /**
  * De toegankelijke naam van een dagknop. Het raster is een raster: elke dag
