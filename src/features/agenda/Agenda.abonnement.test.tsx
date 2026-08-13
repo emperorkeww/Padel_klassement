@@ -119,13 +119,17 @@ describe("<Agenda /> — abonneren bereikbaar houden (#1197)", () => {
     expect(await screen.findByRole("button", ABO_KNOP)).toBeInTheDocument();
   });
 
-  it("opent hetzelfde sheet vanaf de regel onderaan de pagina", async () => {
+  it("heeft nog maar één ingang naar dat sheet (#1270)", async () => {
+    // De teaserregel onderaan opende exact hetzelfde sheet als de knop bij de
+    // weergavekeuze, en stond pal naast de segmentbalk waar hij als een derde
+    // weergave las. Twee wegen naar één instelling die je één keer doet is er
+    // een te veel; de knop staat al boven de vouw en in beide weergaven.
     toon();
-    await userEvent.click(
-      await screen.findByRole("button", {
+    expect(await screen.findByRole("button", ABO_KNOP)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", {
         name: /zet je speeldagen in je eigen agenda/i,
       }),
-    );
-    expect(await screen.findByRole("dialog", ABO_SHEET)).toBeInTheDocument();
+    ).not.toBeInTheDocument();
   });
 });

@@ -1,216 +1,107 @@
 import { Link } from "react-router-dom";
 import { longDay, shortDay } from "@/features/groups/planPollHelpers";
 import type { Profile } from "@/types";
-import {
-  dagItems,
-  metHoofdletter,
-  statusLabel,
-  tijdenLabel,
-  type AgendaMarker,
-  type DagItem,
-  type WedstrijdDag,
-} from "../agendaLogic";
+import { statusLabel, tijdenLabel, type DagItem } from "../agendaLogic";
 import { StatusGlyph } from "@/ui/StatusGlyph";
 import { SpeeldagKaart } from "./SpeeldagKaart";
 import "../Agenda.css";
 
 /* ------------------------------------------------------------------ */
-/* Het dagpaneel onder het raster (#1112).                             */
+/* Het paneel onder het raster (#1112, omgebouwd in #1270).            */
 /*                                                                     */
-/* Hier staat wat in het raster niet meer past: per speeldag een        */
-/* samenvattingskaart (SpeeldagKaart, sinds #1182 gedeeld met de        */
-/* lijstweergave), en onder een lege dag de wegwijzer naar wat er wél   */
-/* aankomt.                                                            */
+/* Dit ging over de dag die je had aangetikt. Op 390×800 begon het bij  */
+/* y=744 terwijl er 730px zichtbaar is, en aantikken scrollde niet: het */
+/* enige zichtbare gevolg van een tik was een gevulde cel. Het antwoord */
+/* op je tik stond dus buiten beeld, en de dubbele betekenis van die    */
+/* tik (eerst kiezen, dan openen) was daardoor niet te ontdekken.       */
+/*                                                                     */
+/* Sinds #1270 opent een tik meteen het dag-sheet — dat ligt per        */
+/* definitie in beeld — en beantwoordt dit paneel de vraag die je       */
+/* zónder tikken hebt: wat staat er vandaag, en wat komt daarna. Het    */
+/* hangt daarmee aan vandaag en niet meer aan het raster: blader je     */
+/* naar december, dan blijft dit je anker op nu.                        */
 /* ------------------------------------------------------------------ */
 
 export function DagPaneel({
-  datum,
   vandaag,
-  markers,
-  wedstrijden = [],
-  wedstrijdenPerPoll = {},
-  groepNamen = {},
+  vandaagItems,
   volgende,
+  wedstrijdenPerPoll = {},
   ledenPerGroep,
   profielen,
-  onOpen,
-  onPlan,
-  onKiesDag,
+  onOpenDag,
 }: {
-  /** De gekozen dag; ISO. */
-  datum: string;
   vandaag: string;
-  markers: AgendaMarker[];
-  /** Los gelogde partijen, per groep (#1182). Sinds #1221 alléén wat bij geen
-   *  enkele speeldag hoort: de rest staat op de speeldagkaart zelf. */
-  wedstrijden?: WedstrijdDag[];
+  /** Speeldagen die vandaag beginnen. */
+  vandaagItems: DagItem[];
+  /** De eerstvolgende speeldagen daarna — de wegwijzer vooruit. */
+  volgende: DagItem[];
   /** Aantal gespeelde wedstrijden per poll (#1221) — de teller op de kaart. */
   wedstrijdenPerPoll?: Record<string, number>;
-  groepNamen?: Record<string, string>;
-  /** De eerstvolgende speeldagen ná deze dag. Alleen zichtbaar zolang de dag
-   *  zelf leeg is — anders staat er van alles onder elkaar dat over
-   *  verschillende dagen gaat. */
-  volgende: DagItem[];
   /** Aantal leden per groep — de noemer van "2 van 4 kunnen". */
   ledenPerGroep: Record<string, number>;
   profielen: Record<string, Profile>;
-  /** Een aangetikte speeldag: het dag-sheet opent. */
-  onOpen: () => void;
-  /** Op deze dag een speeldag starten. Ontbreekt voor een dag die geweest is. */
-  onPlan?: () => void;
-  /** Een rij uit "Hierna": spring naar die dag (en die maand). */
-  onKiesDag: (date: string) => void;
+  /** Een aangetikte speeldag of wegwijzer: het dag-sheet van díe dag opent. */
+  onOpenDag: (date: string) => void;
 }) {
-  const isVandaag = datum === vandaag;
-  // Per speeldag, niet per moment (#1182): een poll met twee kandidaat-tijden op
-  // deze dag is één kaart met beide tijden erop.
-  const items = dagItems(markers);
-  // De telling moet kloppen met wat eronder staat (#1221): een losse partij is
-  // ook een activiteit. Tot nu toe telde alleen de speeldagen, en een dag met
-  // één speeldag en één losse rij meldde doodleuk "1 activiteit".
-  const aantal = items.length + wedstrijden.length;
   return (
-    <section className="dagpaneel" aria-label={`Speeldagen op ${longDay(datum)}`}>
+    <section className="dagpaneel" aria-label="Vandaag en hierna">
       <header className="dagpaneel__kop">
         <h2 className="dagpaneel__datum">
           {/* "Vandaag · vrijdag 7 augustus" — de dag zelf blijft erbij staan,
-              anders moet je terug naar het raster om te zien wélke dag. */}
-          {isVandaag ? (
-            <>
-              <span className="dagpaneel__vandaag">Vandaag ·</span>{" "}
-              {longDay(datum)}
-            </>
-          ) : (
-            metHoofdletter(longDay(datum))
-          )}
+              want dit blok schuift niet mee met de maand die je bekijkt. */}
+          <span className="dagpaneel__vandaag">Vandaag ·</span> {longDay(vandaag)}
         </h2>
         <div className="dagpaneel__kop-rechts">
-          {aantal > 0 && (
-            <p className="dagpaneel__telling">
-              {aantal} {aantal === 1 ? "activiteit" : "activiteiten"}
-            </p>
-          )}
-          {/* "Is er die dag eigenlijk een baan vrij?" was tot #1213 een vraag
-              die je elders opnieuw moest intikken: Banen leest ?datum= al uit
-              de URL, maar niets in de plan-flow wees erheen. Alleen vooruit —
-              vrije banen op een dag die geweest is zeggen niets. Zonder
-              ?club=: dit paneel gaat over meerdere groepen, dus de eigen
-              clubkeuze is hier de juiste. */}
-          {datum >= vandaag && (
-            <Link className="dagpaneel__banen" to={`/banen?datum=${datum}`}>
-              Vrije banen op deze dag →
-            </Link>
-          )}
+          {/* "Is er vandaag eigenlijk een baan vrij?" was tot #1213 een vraag
+              die je elders opnieuw moest intikken. Zonder ?club=: dit paneel
+              gaat over meerdere groepen, dus je eigen clubkeuze is hier de
+              juiste. */}
+          <Link className="dagpaneel__banen" to={`/banen?datum=${vandaag}`}>
+            Vrije banen vandaag →
+          </Link>
         </div>
       </header>
 
-      {/* Wat er los gespeeld is (#1182). Staat boven de lege staat én boven de
-          speeldagkaarten: op een dag die geweest is is dít het nieuws. */}
-      {wedstrijden.length > 0 && (
-        <ul className="dagpaneel__lijst">
-          {wedstrijden.map((w) => (
-            <li key={w.groupId}>
-              <WedstrijdRij dag={w} groepNaam={groepNamen[w.groupId] ?? "Groep"} />
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {markers.length === 0 ? (
-        <>
-          {wedstrijden.length === 0 && (
-            <div className="dagpaneel__leeg">
-              <p className="dagpaneel__leeg-titel">Nog niets gepland</p>
-              <p className="dagpaneel__leeg-tekst">
-                {onPlan
-                  ? "Zet er een speeldag op en laat je groep stemmen."
-                  : "Deze dag is geweest en er stond geen speeldag op."}
-              </p>
-              {onPlan && (
-                <button
-                  type="button"
-                  className="btn btn--primary dagpaneel__plan"
-                  onClick={onPlan}
-                >
-                  Speeldag plannen
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Een lege dag is de plek waar de vraag "en wanneer dán wel?" komt.
-              Hier staat het antwoord, in plaats van dat je maand voor maand
-              moet gaan bladeren. */}
-          {volgende.length > 0 && (
-            <Hierna dagen={volgende} onKiesDag={onKiesDag} />
-          )}
-        </>
+      {vandaagItems.length === 0 ? (
+        <div className="dagpaneel__leeg">
+          <p className="dagpaneel__leeg-titel">Vandaag staat er niets</p>
+          <p className="dagpaneel__leeg-tekst">
+            {volgende.length > 0
+              ? "Hieronder staat wat er wél aankomt."
+              : "Tik een dag in het raster aan om er een speeldag op te zetten."}
+          </p>
+        </div>
       ) : (
         <ul className="dagpaneel__lijst">
-          {items.map((item) => (
+          {vandaagItems.map((item) => (
             <li key={item.eerste.pollId}>
               <SpeeldagKaart
                 item={item}
                 leden={ledenPerGroep[item.eerste.groupId] ?? 0}
                 profielen={profielen}
                 wedstrijden={wedstrijdenPerPoll[item.eerste.pollId] ?? 0}
-                onOpen={onOpen}
+                onOpen={() => onOpenDag(item.eerste.date)}
               />
             </li>
           ))}
         </ul>
       )}
-    </section>
-  );
-}
 
-/**
- * Wat er die dag los gespeeld is (#1182).
- *
- * Eén rij per groep, want dat is de eenheid waarin je erover praat ("drie
- * wedstrijden bij Vamos!"). Bij precies één wedstrijd gaat de link naar die
- * wedstrijd; bij meer naar het matchoverzicht van de groep, want een dagfilter
- * bestaat daar niet.
- *
- * Alleen voor wedstrijden zónder speeldag eromheen (#1221). Wat bij een
- * speeldag hoort staat op die kaart; anders stond dezelfde avond er twee keer.
- *
- * Draagt precies dezelfde schil als een speeldagkaart (#1207). De eigen,
- * vlakkere variant die hier stond las naast die kaarten als iets uit een andere
- * app; het staafje links zegt al dat deze dag geweest is.
- */
-function WedstrijdRij({
-  dag,
-  groepNaam,
-}: {
-  dag: WedstrijdDag;
-  groepNaam: string;
-}) {
-  const n = dag.matches.length;
-  const naar =
-    n === 1 ? `/matches/${dag.matches[0].id}` : `/spelen?groep=${dag.groupId}`;
-  return (
-    <Link className="speeldag" to={naar}>
-      <span className="speeldag__rail speeldag__rail--past" aria-hidden="true" />
-      <span className="speeldag__body">
-        <span className="speeldag__top">
-          <span className="speeldag__tijd">
-            {n} {n === 1 ? "wedstrijd" : "wedstrijden"}
-          </span>
-          <span className="speeldag__chip speeldag__chip--past">Gespeeld</span>
-        </span>
-        <span className="speeldag__titel">{groepNaam}</span>
-      </span>
-    </Link>
+      {/* Het antwoord op "en wanneer dán wel?", in plaats van maand voor maand
+          te moeten bladeren. Stond hier alleen onder een lége dag; nu altijd,
+          want dit paneel gáát over vooruitkijken. */}
+      {volgende.length > 0 && <Hierna dagen={volgende} onOpenDag={onOpenDag} />}
+    </section>
   );
 }
 
 /**
  * "Hierna": de eerstvolgende speeldagen, als rijen om naartoe te springen.
  *
- * Compacter dan een speeldagkaart en met opzet: dit gaat niet over déze dag,
- * het is een wegwijzer. Aantikken kiest die dag — daarna staat de volle kaart
- * er gewoon, met dezelfde weg naar het dag-sheet.
+ * Compacter dan een speeldagkaart en met opzet: dit is een wegwijzer. Aantikken
+ * opent die speeldag meteen (#1270) — het koos vroeger alleen de dag, en wat
+ * dat opleverde stond dan weer buiten beeld.
  *
  * Eén rij per speeldag (#1270). Dit liep op losse momenten, dus een poll die
  * twee tijden op dezelfde zaterdag voorstelde nam twee van de drie rijen —
@@ -218,10 +109,10 @@ function WedstrijdRij({
  */
 function Hierna({
   dagen,
-  onKiesDag,
+  onOpenDag,
 }: {
   dagen: DagItem[];
-  onKiesDag: (date: string) => void;
+  onOpenDag: (date: string) => void;
 }) {
   return (
     <>
@@ -232,9 +123,9 @@ function Hierna({
             <button
               type="button"
               className="hierna__rij"
-              onClick={() => onKiesDag(m.date)}
-              // De rij is een sprong naar een dag, en dat moet je kunnen horen:
-              // de losse stukjes tekst zeggen los van elkaar te weinig.
+              onClick={() => onOpenDag(m.date)}
+              // De rij opent een speeldag, en dat moet je kunnen horen: de
+              // losse stukjes tekst zeggen los van elkaar te weinig.
               aria-label={`${shortDay(m.date)}, ${tijdenLabel(momenten)}, ${m.groupName}, ${statusLabel(m.status, m.past)}`}
             >
               <StatusGlyph status={m.status} past={m.past} />

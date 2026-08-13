@@ -31,6 +31,7 @@ import {
   tijdvak,
   volgendeStap,
   type AgendaMarker,
+  type WedstrijdDag,
 } from "../agendaLogic";
 import { StatusGlyph } from "@/ui/StatusGlyph";
 // De stemrij woont sinds #1196 bij de polls en brengt zijn eigen stijl mee
@@ -55,6 +56,9 @@ const TIK_MS = 60_000;
 export function DagSheet({
   datum,
   markers,
+  wedstrijden = [],
+  wedstrijdenPerPoll = {},
+  groepNamen = {},
   momentenPerPoll,
   ledenPerGroep,
   profielen,
@@ -66,6 +70,20 @@ export function DagSheet({
   /** ISO-datum; null = dicht. */
   datum: string | null;
   markers: AgendaMarker[];
+  /**
+   * Los gelogde partijen van deze dag, per groep (#1270).
+   *
+   * Die stonden tot nu toe alleen in het dagpaneel, dat over de gekozen dag
+   * ging. Nu een tik meteen dít sheet opent, is dat de enige plek waar ze nog
+   * te zien zijn — en een avond met drie gelogde wedstrijden mag hier niet
+   * "Niets gespeeld" heten. Alleen wat bij géén speeldag hoort: de rest is een
+   * teller op de kaart (#1221).
+   */
+  wedstrijden?: WedstrijdDag[];
+  /** Aantal gespeelde wedstrijden per poll (#1221) — de chip op de speeldag. */
+  wedstrijdenPerPoll?: Record<string, number>;
+  /** Groepsnamen voor de losse rijen; die dragen geen marker met een naam. */
+  groepNamen?: Record<string, string>;
   /** Alle momenten van het maandvenster, per poll. Een poll strekt zich over
    *  meerdere dagen uit; wie hier stemt, moet hem in één keer kunnen
    *  beantwoorden (#1104). */
@@ -222,7 +240,24 @@ export function DagSheet({
         <div
           className={`dagsheet${markers.length > 1 ? " dagsheet--meerdere" : ""}`}
         >
+          {/* Wat er los gespeeld is staat bovenaan: op een dag die geweest is
+              is dát het nieuws (#1182). Sinds #1270 hier in plaats van in het
+              dagpaneel — een tik op de dag komt nu meteen hier uit. */}
+          {wedstrijden.length > 0 && (
+            <ul className="dagsheet__wedstrijden">
+              {wedstrijden.map((w) => (
+                <li key={w.groupId}>
+                  <WedstrijdRij
+                    dag={w}
+                    groepNaam={groepNamen[w.groupId] ?? "Groep"}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+
           {markers.length === 0 ? (
+            wedstrijden.length > 0 ? null : (
             // Tot #1270 stond hier alleen het verleden-verhaal, met de aanname
             // dat een lege dag vanaf vandaag het plan-sheet opent. Dat klopt
             // voor een tik in het raster, maar niet voor een link:
@@ -252,6 +287,7 @@ export function DagSheet({
                 Deze dag is geweest en er stond geen speeldag op.
               </EmptyState>
             )
+            )
           ) : (
             markers.map((m) => (
               <Speeldag
@@ -263,6 +299,7 @@ export function DagSheet({
                 stemVan={stemVan}
                 onStem={stem}
                 baanInfo={baanInfo}
+                wedstrijden={wedstrijdenPerPoll[m.pollId] ?? 0}
                 nu={nu}
                 eigenVlak={markers.length > 1}
               />
@@ -300,6 +337,47 @@ function andereMomenten(
   return (momentenPerPoll[marker.pollId] ?? [])
     .filter((m) => m.optionId !== marker.optionId && !momentVoorbij(m, nowMs))
     .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+}
+
+/**
+ * Wat er die dag los gespeeld is (#1182, hierheen verhuisd in #1270).
+ *
+ * Eén rij per groep, want dat is de eenheid waarin je erover praat ("drie
+ * wedstrijden bij Vamos!"). Bij precies één wedstrijd gaat de link naar die
+ * wedstrijd; bij meer naar het matchoverzicht van de groep, want een dagfilter
+ * bestaat daar niet.
+ *
+ * Alleen voor wedstrijden zónder speeldag eromheen (#1221). Wat bij een
+ * speeldag hoort staat als chip op die speeldag; anders stond dezelfde avond er
+ * twee keer.
+ *
+ * Draagt dezelfde schil als een speeldagkaart (#1207); het staafje links zegt
+ * al dat deze dag geweest is.
+ */
+function WedstrijdRij({
+  dag,
+  groepNaam,
+}: {
+  dag: WedstrijdDag;
+  groepNaam: string;
+}) {
+  const n = dag.matches.length;
+  const naar =
+    n === 1 ? `/matches/${dag.matches[0].id}` : `/spelen?groep=${dag.groupId}`;
+  return (
+    <Link className="speeldag" to={naar}>
+      <span className="speeldag__rail speeldag__rail--past" aria-hidden="true" />
+      <span className="speeldag__body">
+        <span className="speeldag__top">
+          <span className="speeldag__tijd">
+            {n} {n === 1 ? "wedstrijd" : "wedstrijden"}
+          </span>
+          <span className="speeldag__chip speeldag__chip--past">Gespeeld</span>
+        </span>
+        <span className="speeldag__titel">{groepNaam}</span>
+      </span>
+    </Link>
+  );
 }
 
 /** Hoeveel namen er staan voordat de rest achter een knop schuift. */
@@ -349,6 +427,7 @@ function Speeldag({
   stemVan,
   onStem,
   baanInfo,
+  wedstrijden,
   nu,
   eigenVlak,
 }: {
@@ -365,6 +444,9 @@ function Speeldag({
     prijs: string | null;
     wacht: boolean;
   };
+  /** Hoeveel er op deze speeldag gespeeld is (#1221) — zelfde teller als op de
+   *  kaart in het paneel. */
+  wedstrijden: number;
   nu: number;
   /** Staat er nog een speeldag naast op deze dag? Dan draagt dit blok zijn eigen
    *  vlak, en op een glazen sheet is dat glas (#1207). Als enige blok blijft het
@@ -395,6 +477,15 @@ function Speeldag({
       <p className="dagsheet__chips">
         <span className="dagsheet__chip dagsheet__chip--groep">{marker.groupName}</span>
         <span className="dagsheet__chip">{marker.clubName}</span>
+        {/* Wat er op deze avond gelogd is (#1221). Stond op de kaart in het
+            paneel; sinds #1270 komt een tik meteen hier uit, dus hoort het hier
+            ook te staan — anders zegt een gespeelde avond niets over wat er
+            gespeeld is. */}
+        {wedstrijden > 0 && (
+          <span className="dagsheet__chip">
+            {wedstrijden} {wedstrijden === 1 ? "wedstrijd" : "wedstrijden"}
+          </span>
+        )}
       </p>
 
       {/* Wat er nog vrij is en wat het kost (#1121): precies de twee dingen

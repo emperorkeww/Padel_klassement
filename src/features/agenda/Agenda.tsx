@@ -249,9 +249,18 @@ export function Agenda() {
     [lijstMarkers, vandaag],
   );
   const inMaand = useMemo(() => telInMaand(markers, maand), [markers, maand]);
+  // Het paneel hangt sinds #1270 aan vandaag en niet aan de dag die je aantikte
+  // (die opent nu meteen een sheet). Beide blokken komen daarom uit hetzelfde
+  // vooruitblik-venster als de lijst: dat verschuift niet als je naar december
+  // bladert, en dan blijft dit blok een anker op nu in plaats van iets te
+  // beweren over een maand die je alleen maar bekijkt.
+  const vandaagItems = useMemo(
+    () => komende.filter((i) => i.eerste.date === vandaag),
+    [komende, vandaag],
+  );
   const volgende = useMemo(
-    () => volgendeSpeeldagen(markers, gekozenDag),
-    [markers, gekozenDag],
+    () => volgendeSpeeldagen(lijstMarkers, vandaag),
+    [lijstMarkers, vandaag],
   );
   // Dezelfde markers, maar per poll: een poll strekt zich over meerdere dagen
   // uit, en in het dag-sheet beantwoord je hem in één keer (#1104).
@@ -276,6 +285,11 @@ export function Agenda() {
     () => Object.fromEntries(lijst.map((g) => [g.id, g.member_ids.length])),
     [lijst],
   );
+
+  // Waar de plan-knop op begint: de dag die je in het raster markeerde als die
+  // nog komt, anders vandaag. Zo plant de knop op wat je aankijkt zonder ooit
+  // een dag voor te stellen die al geweest is.
+  const planStartDag = gekozenDag >= vandaag ? gekozenDag : vandaag;
 
   // De groep waarvoor we plannen: de onthouden keuze, of bij één groep die ene.
   // Een onthouden groep die je intussen verlaten hebt telt niet meer mee.
@@ -348,34 +362,40 @@ export function Agenda() {
   }
 
   /**
-   * Een aangetikte dag kiest die dag: het paneel eronder werkt bij (#1112).
+   * Eén tik, één betekenis (#1270).
    *
-   * Tikken op de dag die al gekozen ís, opent meteen — het detail als er iets
-   * op staat, anders het plan-sheet. Zonder die tweede betekenis zou plannen
-   * van één tik naar twee gaan, en juist dat was de belofte van deze tab.
+   * Dit koste twee tikken: de eerste koos de dag en werkte het paneel eronder
+   * bij, de tweede opende. Op 390×800 begon dat paneel op y=744 met 730px in
+   * beeld, en een tik scrollde niet — het enige zichtbare gevolg van die eerste
+   * tik was dus een gevulde cel, en de tweede betekenis viel niet te ontdekken.
+   * De belofte "plannen kost één tik" was daarmee onvindbaar in plaats van waar.
    *
-   * Een randdag van een buurmaand laat het raster meebladeren; anders kies je
-   * een dag die je meteen daarna niet meer ziet staan.
+   * Nu opent een tik meteen: het dag-sheet als er iets staat, het plan-sheet
+   * bij een lege dag die nog komt. Een sheet ligt per definitie in beeld, dus
+   * het antwoord staat er waar je kijkt.
+   *
+   * Een lege dag die geweest is opent óók het sheet, dat daar "Niets gespeeld"
+   * meldt. Niets doen zou de tik weer stil maken — precies de klacht waar dit
+   * mee begon.
    */
   function kiesDag(date: string) {
-    if (date === gekozenDag) openDag(date);
-    // Dag en maand in één schrijfbeurt: twee losse calls in dezelfde tick
-    // overschrijven elkaar (zie agendaParams.ts).
-    else zet({ dag: date, maand: maandVan(date) });
-  }
-
-  /** Het sheet bij een dag met speeldagen, het plan-sheet bij een lege dag die
-   *  nog komt. Een lege dag die geweest is heeft niets te openen — het paneel
-   *  zegt daar al dat er niet gespeeld is. */
-  function openDag(date: string) {
-    if (dagMarkers(date).length > 0) openSheet(date);
-    else if (date >= vandaag) setPlanDag(date);
+    const leeg =
+      dagMarkers(date).length === 0 && dagWedstrijden(date).length === 0;
+    if (leeg && date >= vandaag) {
+      // Dag en maand in één schrijfbeurt: twee losse calls in dezelfde tick
+      // overschrijven elkaar (zie agendaParams.ts). De dag blijft gemarkeerd in
+      // het raster, zodat je na het sluiten ziet waar je was.
+      zet({ dag: date, maand: maandVan(date) });
+      setPlanDag(date);
+    } else {
+      openSheet(date);
+    }
   }
 
   /** Het dag-sheet openen. Dit is de enige stap die een history-entry duwt: op
    *  Android hoort de terugknop het sheet te sluiten en niet de agenda te
-   *  verlaten. De dag schuift mee, zodat het paneel eronder over dezelfde dag
-   *  gaat als het sheet erboven. */
+   *  verlaten. De dag schuift mee, zodat het raster onthoudt waar je was toen je
+   *  het sheet weer sluit. */
   function openSheet(date: string) {
     geduwd.current = true;
     zet({ dag: date, maand: maandVan(date), open: date }, { push: true });
@@ -400,8 +420,17 @@ export function Agenda() {
     return uitRaster.length > 0 ? uitRaster : (perDagLijst[date] ?? []);
   }
 
-  /** Vanuit de actiestrook: naar de dag toe én hem meteen openen. De strook
-   *  belooft dat je kunt stemmen, dus daar moet je in één tik staan. */
+  /** De los gelogde partijen van een dag — alles wat bij geen enkele speeldag
+   *  hoort (#1221). Sinds #1270 telt dit mee in wat een tik opent: een avond
+   *  met drie gelogde wedstrijden is geen lege dag. */
+  function dagWedstrijden(date: string) {
+    return indeling.losPerDag[date] ?? [];
+  }
+
+  /** Vanuit de actiestrook, "Hierna" of een kaart: naar die dag toe én hem
+   *  meteen openen. Allemaal beloven ze een speeldag, dus daar moet je in één
+   *  tik staan (#1270). Het raster bladert mee, zodat de dag ook zichtbaar is
+   *  als je het sheet weer sluit. */
   function gaNaarDag(date: string) {
     setFocusDag(date);
     geduwd.current = true;
@@ -411,13 +440,6 @@ export function Agenda() {
     );
   }
 
-  /** Naar een dag springen vanuit "Hierna": de maand schuift mee en de tab-stop
-   *  blijft niet achter in de maand die je verlaat. */
-  function springNaar(date: string) {
-    setFocusDag(date);
-    zet({ dag: date, maand: maandVan(date) });
-  }
-
   function naarMaand(delta: number) {
     const nieuw = schuifMaand(maand, delta);
     // De tab-stop mag niet achterblijven in een maand die je niet meer ziet.
@@ -425,12 +447,9 @@ export function Agenda() {
       ? vandaag
       : `${nieuw.jaar}-${String(nieuw.maand).padStart(2, "0")}-01`;
     setFocusDag(doel);
-    // En de gekozen dag schuift mee. Het ontwerp liet die staan bij het
-    // bladeren, maar dat kan hier niet: we halen per maand op, dus zodra de
-    // gekozen dag buiten het nieuwe venster valt kent het paneel zijn
-    // speeldagen niet meer en meldt het "Nog niets gepland" voor een dag die
-    // wél iets draagt. Een paneel dat over een dag praat die je niet ziet
-    // staan is bovendien sowieso raar — het staat er pal onder.
+    // En de gemarkeerde dag schuift mee: een markering in een maand die je niet
+    // meer ziet zegt niets, en bij terugbladeren wil je hem terugvinden waar je
+    // hem liet.
     zet({ maand: nieuw, dag: doel });
   }
 
@@ -564,11 +583,30 @@ export function Agenda() {
                 { id: "lijst" as Weergave, label: "Lijst" },
               ]}
             />
+            {/* De zichtbare plan-actie (#1270). Plannen kon op vier manieren —
+                dubbeltik op een dag, een knop in het paneel onder de vouw, een
+                knop in het dag-sheet, de ingeklapte suggesties — en geen enkele
+                stond in beeld. In de lijstweergave kón het zelfs helemaal niet:
+                de lege staat verwees je terug naar het maandoverzicht. Voor een
+                tab die de Plannen-tab heeft opgeslokt (#1121) was dat de
+                belangrijkste ontbrekende knop. Hier staat hij, in beide
+                weergaven, en hij opent dezelfde keten als een tik op een lege
+                dag: plan-sheet → wizard. */}
+            <button
+              type="button"
+              className="btn btn--sm btn--primary agenda-plan-knop"
+              aria-haspopup="dialog"
+              onClick={() => setPlanDag(planStartDag)}
+            >
+              + Speeldag
+            </button>
             {/* Abonneren stond tot #1197 als laatste blok onderaan de pagina,
                 onder raster, paneel én suggesties. Hier staat het boven de
                 vouw en in beide weergaven — en niet in de maandkop, want die
                 knoppenrij verdwijnt in de lijst en is op telefoonbreedte al
-                vol. */}
+                vol. Sinds #1270 is dit de enige ingang: de teaserregel onderaan
+                opende hetzelfde sheet, en twee wegen naar één instelling die je
+                één keer doet zijn er een te veel. */}
             <button
               type="button"
               className="agenda-abo-knop"
@@ -626,25 +664,18 @@ export function Agenda() {
                 )}
               </ul>
 
-              {/* Wat er in het raster niet meer past (#1112). De instap-kaart die
-                  hier stond legde uit dat je een dag kon aantikken; dit paneel
-                  laat het gewoon zien. */}
+              {/* Wat er in het raster niet meer past (#1112), sinds #1270
+                  verankerd op vandaag in plaats van op de dag die je aantikte —
+                  die opent nu meteen een sheet. */}
               {!laadt && (
                 <DagPaneel
-                  datum={gekozenDag}
                   vandaag={vandaag}
-                  markers={perDag[gekozenDag] ?? []}
-                  wedstrijden={indeling.losPerDag[gekozenDag] ?? []}
-                  wedstrijdenPerPoll={indeling.perPoll}
-                  groepNamen={groepNamen}
+                  vandaagItems={vandaagItems}
                   volgende={volgende}
+                  wedstrijdenPerPoll={indeling.perPoll}
                   ledenPerGroep={ledenPerGroep}
                   profielen={profielen.data ?? {}}
-                  onOpen={() => openSheet(gekozenDag)}
-                  onPlan={
-                    gekozenDag >= vandaag ? () => setPlanDag(gekozenDag) : undefined
-                  }
-                  onKiesDag={springNaar}
+                  onOpenDag={gaNaarDag}
                 />
               )}
             </>
@@ -660,26 +691,15 @@ export function Agenda() {
             onGestart={herlaad}
           />
 
-          {/* Wat hier stond was het hele abonneerblok (#1099): permanent
-              uitgeklapt, met link, drie knoppen en twee alinea's uitleg, voor
-              iets wat je één keer instelt. Nu één regel die hetzelfde sheet
-              opent als de knop bovenaan — wie doorscrolt komt het nog steeds
-              tegen, maar het eet geen half scherm meer (#1197). */}
-          <button
-            type="button"
-            className="agenda-abo-teaser"
-            aria-haspopup="dialog"
-            onClick={() => setAboOpen(true)}
-          >
-            <span>Zet je speeldagen in je eigen agenda</span>
-            <IconChevron kant="rechts" />
-          </button>
         </>
       )}
 
       <DagSheet
         datum={open}
         markers={open ? dagMarkers(open) : []}
+        wedstrijden={open ? dagWedstrijden(open) : []}
+        wedstrijdenPerPoll={indeling.perPoll}
+        groepNamen={groepNamen}
         momentenPerPoll={perPoll}
         ledenPerGroep={ledenPerGroep}
         profielen={profielen.data ?? {}}
