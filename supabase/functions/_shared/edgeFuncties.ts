@@ -163,7 +163,8 @@ export const EDGE_FUNCTIES: readonly EdgeFunctie[] = [
     verifyJwt: true,
     cronGeheim: false,
     vereist: ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"],
-    optioneel: [],
+    // De rem op het porren (#1273); zonder deze staat hij op een uur.
+    optioneel: ["REMIND_COOLDOWN_MIN"],
     rol: "Handmatige por vanuit een groep",
   },
   {

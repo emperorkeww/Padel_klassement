@@ -91,6 +91,15 @@ export async function enablePush(userId: string): Promise<void> {
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(key).buffer as ArrayBuffer,
   });
+  await bewaarAbonnement(userId, subscription);
+}
+
+/** Het abonnement wegschrijven. Apart, omdat de zelfheling hieronder hetzelfde
+ *  doet zonder opnieuw toestemming te vragen. */
+async function bewaarAbonnement(
+  userId: string,
+  subscription: PushSubscription,
+): Promise<void> {
   const json = subscription.toJSON();
   const { error } = await supabase.from("push_subscriptions").upsert(
     {
@@ -98,10 +107,131 @@ export async function enablePush(userId: string): Promise<void> {
       endpoint: subscription.endpoint,
       p256dh: json.keys?.p256dh ?? "",
       auth: json.keys?.auth ?? "",
+      // Voor de apparatenlijst (#1273): een endpoint is een capability-URL van
+      // tweehonderd tekens en zegt een mens niets.
+      user_agent:
+        typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 400) : null,
     },
     { onConflict: "endpoint" },
   );
   if (error) throw error;
+}
+
+/**
+ * Een leesbare naam voor een abonnement (#1273).
+ *
+ * De user-agent is er sinds deze issue; oudere rijen hebben hem niet, en dan
+ * valt hij terug op de push-dienst in het endpoint — grof, maar het scheelt
+ * "welke van deze drie is mijn telefoon?".
+ */
+export function apparaatNaam(ua: string | null, endpoint: string): string {
+  const bron = ua ?? "";
+  const platform = /iPhone|iPad|iOS/i.test(bron)
+    ? "iPhone"
+    : /Android/i.test(bron)
+      ? "Android"
+      : /Macintosh|Mac OS/i.test(bron)
+        ? "Mac"
+        : /Windows/i.test(bron)
+          ? "Windows"
+          : /Linux/i.test(bron)
+            ? "Linux"
+            : "";
+  // Edge en Samsung Internet noemen zichzelf óók Chrome; volgorde is dus niet
+  // willekeurig.
+  const browser = /Edg\//.test(bron)
+    ? "Edge"
+    : /SamsungBrowser/.test(bron)
+      ? "Samsung Internet"
+      : /OPR\//.test(bron)
+        ? "Opera"
+        : /Firefox/.test(bron)
+          ? "Firefox"
+          : /Chrome/.test(bron)
+            ? "Chrome"
+            : /Safari/.test(bron)
+              ? "Safari"
+              : "";
+  if (browser || platform) return [browser, platform].filter(Boolean).join(" op ");
+  // Geen user-agent: dan maar de dienst waar de push langs zou gaan.
+  try {
+    const host = new URL(endpoint).hostname;
+    if (host.includes("fcm.googleapis")) return "Chrome of Android";
+    if (host.includes("push.apple")) return "Apple-toestel";
+    if (host.includes("mozilla")) return "Firefox";
+    if (host.includes("notify.windows")) return "Windows";
+    return host;
+  } catch {
+    return "Onbekend apparaat";
+  }
+}
+
+/** Eén apparaat uit de lijst in de instellingen (#1273). */
+export interface PushApparaat {
+  endpoint: string;
+  user_agent: string | null;
+  created_at: string;
+  /** Is dit de browser waarin je nu kijkt? */
+  ditApparaat: boolean;
+}
+
+/**
+ * De apparaten die op jouw naam staan.
+ *
+ * De kaart heette "Pushmeldingen op dit apparaat" en toonde er precies nul —
+ * terwijl een verlopen of ingetrokken abonnement alleen opgeruimd wordt als een
+ * verzending 404/410 oplevert. Nu is te zien wat er nog leeft, en kun je een
+ * oud toestel er zelf afhalen (RLS: push_select_own / push_delete_own).
+ */
+export async function getMijnApparaten(userId: string): Promise<PushApparaat[]> {
+  const huidig = await getPushSubscription();
+  const { data, error } = await supabase
+    .from("push_subscriptions")
+    .select("endpoint, user_agent, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((rij) => ({
+    endpoint: rij.endpoint,
+    user_agent: rij.user_agent,
+    created_at: rij.created_at,
+    ditApparaat: rij.endpoint === huidig?.endpoint,
+  }));
+}
+
+/** Een apparaat intrekken. Het endpoint is de sleutel; de rij is toch al van
+ *  jou (RLS). */
+export async function vergeetApparaat(endpoint: string): Promise<void> {
+  const { error } = await supabase
+    .from("push_subscriptions")
+    .delete()
+    .eq("endpoint", endpoint);
+  if (error) throw error;
+}
+
+/**
+ * Zelfheling (#1273).
+ *
+ * De browser roteert het push-endpoint periodiek. De schakelaar in de
+ * instellingen leest de brówser, dus die staat daarna nog steeds "aan" terwijl
+ * er in de databank geen bruikbaar endpoint meer staat: meldingen aan, en er
+ * komt niets. De service worker abonneert zich bij zo'n rotatie opnieuw; hier
+ * schrijven we het resultaat weg zodra de app weer open is.
+ *
+ * Geen permissieprompt: die is al gegeven, we lezen alleen het bestaande
+ * abonnement. Geeft terug of er iets hersteld is.
+ */
+export async function herstelAbonnement(userId: string): Promise<boolean> {
+  const subscription = await getPushSubscription();
+  if (!subscription) return false;
+  const { data, error } = await supabase
+    .from("push_subscriptions")
+    .select("endpoint")
+    .eq("endpoint", subscription.endpoint)
+    .maybeSingle();
+  if (error || data) return false;
+  await bewaarAbonnement(userId, subscription);
+  return true;
 }
 
 /** Meldt dit apparaat af en verwijdert het endpoint uit de databank. */

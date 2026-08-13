@@ -137,16 +137,71 @@ self.addEventListener("notificationclick", (event) => {
         type: "window",
         includeUncontrolled: true,
       });
-      // Bestaand venster hergebruiken; anders een nieuw openen.
-      for (const client of windows) {
-        if ("focus" in client) {
-          await client.focus();
-          if ("navigate" in client) await client.navigate(url);
-          return;
+      // Kijk naar wélk venster het is (#1273). Tot dan pakte deze lus het
+      // eerste het beste en navigeerde dat weg: stond je in een ander tabblad
+      // een score in te vullen of een poll te bewerken, dan was die invoer weg.
+      // En een venster dat al op de doel-URL stond werd niet herkend.
+      const doel = new URL(url, self.location.origin);
+      const zelfdePad = windows.find((c) => {
+        try {
+          return new URL(c.url).pathname === doel.pathname;
+        } catch {
+          return false;
         }
+      });
+      // 1. Staat het al op de goede plek? Alleen naar voren halen. De
+      //    querystring negeren we bewust: dezelfde pagina met een ander filter
+      //    is nog steeds de pagina waar je heen wilde.
+      if (zelfdePad && "focus" in zelfdePad) {
+        await zelfdePad.focus();
+        return;
       }
+      // 2. Anders een venster van deze app, en dáár naartoe navigeren.
+      const eigen = windows.find((c) => {
+        try {
+          return new URL(c.url).origin === doel.origin && "focus" in c;
+        } catch {
+          return false;
+        }
+      });
+      if (eigen) {
+        await eigen.focus();
+        if ("navigate" in eigen) await eigen.navigate(url);
+        return;
+      }
+      // 3. Niets open: nieuw venster.
       await self.clients.openWindow(url);
     })(),
+  );
+});
+
+/* Een verlopen abonnement ging stil dood (#1273).
+
+   Chrome en Firefox roteren het endpoint periodiek. Zonder handler verliest de
+   browser zijn abonnement, blijft de oude rij in push_subscriptions staan tot
+   een verzending 404/410 oplevert — de enige opruiming die er is — en leest de
+   schakelaar in de instellingen ondertussen de brówser en niet de databank. Die
+   staat dus "aan" terwijl er niets meer aankomt.
+
+   Deze handler doet het halve werk: meteen opnieuw abonneren met de sleutel van
+   het oude abonnement, zodat het toestel bereikbaar blijft. Het wegschrijven
+   doet de app bij de eerstvolgende opening (zelfheling in de meldingenkaart):
+   een service worker heeft geen sessie, dus hij zou een edge function zónder
+   JWT nodig hebben die op het oude endpoint een rij omwisselt — extra
+   aanvalsoppervlak voor een gat dat binnen één app-opening toch dicht gaat.
+   Deze gebeurtenis vuurt in de praktijk bovendien zelden. */
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil(
+    (async () => {
+      const sleutel = event.oldSubscription?.options?.applicationServerKey;
+      if (!sleutel || event.newSubscription) return;
+      await self.registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: sleutel,
+      });
+    })().catch(() => {
+      /* Stil: dit draait zonder gebruiker in beeld. */
+    }),
   );
 });
 

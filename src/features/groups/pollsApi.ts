@@ -590,9 +590,26 @@ export async function cancelPoll(pollId: string): Promise<void> {
   invalidate("play-poll");
 }
 
+/** De groep is net al gepord (#1273). Eigen fouttype, want dit is geen
+ *  storing: de knop moet er alleen even af. */
+export class PorTeSnelError extends Error {
+  constructor(readonly minutenResterend: number) {
+    super(
+      minutenResterend > 0
+        ? `Net al herinnerd — over ${minutenResterend} ${minutenResterend === 1 ? "minuut" : "minuten"} kan het weer.`
+        : "Net al herinnerd.",
+    );
+    this.name = "PorTeSnelError";
+  }
+}
+
 /**
  * Stuurt via de edge function "remind-group" een push naar groepsleden die
  * nog op geen enkele optie van deze poll stemden.
+ *
+ * De functie remt zichzelf af (#1273): binnen de cooldown komt er een 429 met
+ * hoeveel minuten er nog te gaan zijn. functions.invoke geeft die body niet
+ * mee, alleen de rauwe Response in `context` — daar halen we hem uit.
  */
 export async function remindPoll(
   groupId: string,
@@ -602,6 +619,15 @@ export async function remindPoll(
     "remind-group",
     { body: { group_id: groupId, poll_id: pollId } },
   );
-  if (error) throw error;
+  if (error) {
+    const respons = (error as { context?: Response }).context;
+    if (respons?.status === 429) {
+      const body = await respons
+        .json()
+        .catch(() => ({}) as { minuten_resterend?: number });
+      throw new PorTeSnelError(Number(body.minuten_resterend ?? 0));
+    }
+    throw error;
+  }
   return data?.reminded ?? 0;
 }

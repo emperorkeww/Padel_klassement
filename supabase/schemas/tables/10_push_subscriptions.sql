@@ -5,6 +5,10 @@ create table public.push_subscriptions (
   endpoint text not null unique,
   p256dh text not null,
   auth text not null,
+  -- Waarmee dit abonnement gemaakt is (#1273): de apparatenlijst in de
+  -- instellingen heeft iets nodig om een naam mee te tonen — een endpoint is
+  -- een capability-URL van tweehonderd tekens.
+  user_agent text,
   created_at timestamptz not null default now()
 );
 

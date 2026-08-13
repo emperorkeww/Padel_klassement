@@ -21,6 +21,7 @@ import {
   setPollClub,
   reopenPoll,
   cancelPoll,
+  PorTeSnelError,
   remindPoll,
   pollClub,
   pollShareUrl,
@@ -205,7 +206,14 @@ export function PollCard({
         n === 0 ? "Iedereen heeft al gestemd." : `${n} ${n === 1 ? "lid" : "leden"} herinnerd.`,
       );
     } catch (err) {
-      toast.error(errorMessage(err));
+      // Binnen de cooldown (#1273) is dit geen storing maar een antwoord: de
+      // groep is net al gepord. De knop gaat weg, zoals na een geslaagde por.
+      if (err instanceof PorTeSnelError) {
+        setRemindedDone(true);
+        toast.info(err.message);
+      } else {
+        toast.error(errorMessage(err));
+      }
     } finally {
       setBusy(false);
     }

@@ -88,7 +88,9 @@ const MANIFEST = {
 
 /** Draait public/sw.js in een nep-scope en geeft de haakjes terug om de
  *  install/activate/fetch-listeners aan te sturen. */
-function laadSw(opties: { fetcher?: Fetcher } = {}) {
+function laadSw(
+  opties: { fetcher?: Fetcher; vensters?: FakeClient[] } = {},
+) {
   const caches = new Map<string, FakeCache>();
   const cacheApi = {
     async open(naam: string) {
@@ -117,14 +119,29 @@ function laadSw(opties: { fetcher?: Fetcher } = {}) {
 
   const listeners = new Map<string, (event: unknown) => void>();
   const meldingen: { titel: string; opties: Record<string, unknown> }[] = [];
+  const vensters = opties.vensters ?? [];
+  const geopend: string[] = [];
+  const abonnementen: Record<string, unknown>[] = [];
   const scope = {
     addEventListener: (type: string, h: (event: unknown) => void) =>
       listeners.set(type, h),
     location: { origin: ORIGIN },
-    clients: { claim: async () => {}, matchAll: async () => [] },
+    clients: {
+      claim: async () => {},
+      matchAll: async () => vensters,
+      openWindow: async (url: string) => {
+        geopend.push(url);
+      },
+    },
     registration: {
       showNotification: async (titel: string, opties: Record<string, unknown>) => {
         meldingen.push({ titel, opties });
+      },
+      pushManager: {
+        subscribe: async (opts: Record<string, unknown>) => {
+          abonnementen.push(opts);
+          return { endpoint: `${ORIGIN}/push/nieuw` };
+        },
       },
     },
     skipWaiting: () => {},
@@ -163,7 +180,34 @@ function laadSw(opties: { fetcher?: Fetcher } = {}) {
     ...(caches.get(cacheNaam(voorvoegsel))?.entries.keys() ?? []),
   ];
 
-  return { caches, cacheApi, fetcher, vuur, cacheNaam, inhoud, meldingen };
+  return {
+    caches,
+    cacheApi,
+    fetcher,
+    vuur,
+    cacheNaam,
+    inhoud,
+    meldingen,
+    vensters,
+    geopend,
+    abonnementen,
+  };
+}
+
+/** Een open tabblad, met de haakjes die notificationclick gebruikt. */
+class FakeClient {
+  focussen = 0;
+  genavigeerd: string[] = [];
+  constructor(public url: string) {}
+  async focus() {
+    this.focussen += 1;
+    return this;
+  }
+  async navigate(url: string) {
+    this.genavigeerd.push(url);
+    this.url = url;
+    return this;
+  }
 }
 
 const haal = (sw: ReturnType<typeof laadSw>, url: string, init = {}) =>
@@ -373,5 +417,95 @@ describe("service worker: push-meldingen", () => {
     expect(sw.meldingen[0].titel).toBe("Vamos!");
     expect(sw.meldingen[0].opties.body).toBe("");
     expect(sw.meldingen[0].opties.data).toEqual({ url: "/" });
+  });
+});
+
+/* Een klik op de push kaapte een willekeurig venster (#1273): de lus pakte het
+   eerste uit matchAll() en navigeerde dat, zonder ooit naar client.url te
+   kijken. */
+describe("service worker: klik op een melding (#1273)", () => {
+  const klik = (sw: ReturnType<typeof laadSw>, url: string) =>
+    sw.vuur("notificationclick", {
+      notification: { close: () => {}, data: { url } },
+    });
+
+  it("focust een venster dat al op de doelpagina staat, zonder te navigeren", async () => {
+    const doel = new FakeClient(`${ORIGIN}/speeldag/p1`);
+    const ander = new FakeClient(`${ORIGIN}/matches/m1`);
+    // Het "verkeerde" venster staat vooraan: precies de volgorde waarin het
+    // eerder misging.
+    const sw = laadSw({ vensters: [ander, doel] });
+    await klik(sw, "/speeldag/p1");
+    expect(doel.focussen).toBe(1);
+    expect(doel.genavigeerd).toEqual([]);
+    expect(ander.focussen).toBe(0);
+    expect(ander.genavigeerd).toEqual([]);
+  });
+
+  it("herkent de doelpagina ook met een andere querystring", async () => {
+    const doel = new FakeClient(`${ORIGIN}/meldingen?filter=poll`);
+    const sw = laadSw({ vensters: [doel] });
+    await klik(sw, "/meldingen");
+    expect(doel.focussen).toBe(1);
+    expect(doel.genavigeerd).toEqual([]);
+  });
+
+  it("navigeert een venster van de app als er geen op de doelpagina staat", async () => {
+    const venster = new FakeClient(`${ORIGIN}/klassement`);
+    const sw = laadSw({ vensters: [venster] });
+    await klik(sw, "/speeldag/p1");
+    expect(venster.focussen).toBe(1);
+    expect(venster.genavigeerd).toEqual(["/speeldag/p1"]);
+  });
+
+  it("laat een venster van een andere site met rust", async () => {
+    const vreemd = new FakeClient("https://ergens.anders/pagina");
+    const sw = laadSw({ vensters: [vreemd] });
+    await klik(sw, "/speeldag/p1");
+    expect(vreemd.focussen).toBe(0);
+    expect(vreemd.genavigeerd).toEqual([]);
+    expect(sw.geopend).toEqual(["/speeldag/p1"]);
+  });
+
+  it("opent een nieuw venster als er niets openstaat", async () => {
+    const sw = laadSw();
+    await klik(sw, "/meldingen");
+    expect(sw.geopend).toEqual(["/meldingen"]);
+  });
+});
+
+/* Een verlopen abonnement ging stil dood (#1273). */
+describe("service worker: verlopen abonnement (#1273)", () => {
+  it("abonneert opnieuw met de sleutel van het oude abonnement", async () => {
+    const sw = laadSw();
+    await sw.vuur("pushsubscriptionchange", {
+      oldSubscription: {
+        endpoint: `${ORIGIN}/push/oud`,
+        options: { applicationServerKey: "sleutel" },
+      },
+    });
+    expect(sw.abonnementen).toEqual([
+      { userVisibleOnly: true, applicationServerKey: "sleutel" },
+    ]);
+  });
+
+  it("doet niets als de browser zelf al een nieuw abonnement meegaf", async () => {
+    const sw = laadSw();
+    await sw.vuur("pushsubscriptionchange", {
+      oldSubscription: {
+        endpoint: `${ORIGIN}/push/oud`,
+        options: { applicationServerKey: "sleutel" },
+      },
+      newSubscription: { endpoint: `${ORIGIN}/push/nieuw` },
+    });
+    expect(sw.abonnementen).toEqual([]);
+  });
+
+  it("valt niet om als er geen sleutel te vinden is", async () => {
+    const sw = laadSw();
+    await expect(
+      sw.vuur("pushsubscriptionchange", { oldSubscription: null }),
+    ).resolves.toBeUndefined();
+    expect(sw.abonnementen).toEqual([]);
   });
 });
