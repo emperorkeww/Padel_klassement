@@ -155,6 +155,15 @@
   color: var(--ink-soft);
 }
 
+/* Waar de lijst ophoudt, en waarom (#1270). Gedempt en gecentreerd: het is een
+   voetnoot onder de lijst, geen rij om aan te tikken. */
+.agenda-lijst__grens {
+  margin: var(--sp-3) 0 0;
+  text-align: center;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
 /* ---- Groepsfilter (#1121) ---- */
 
 /* Eén rij chips die horizontaal mag schuiven in plaats van te wrappen: het
@@ -442,17 +451,9 @@
   color: var(--accent);
 }
 
-.dagpaneel__telling {
-  margin: 0;
-  flex: none;
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--ink-soft);
-}
-
-/* Telling en de banen-link staan onder elkaar rechts in de kop (#1213): naast
-   elkaar duwen ze op telefoonbreedte de datum weg, en dat is de kop van dit
-   paneel. */
+/* De banen-link staat rechts in de kop. Hier stond ook een activiteitentelling
+   (#1213); die verdween met #1270, toen dit paneel op vandaag verankerd werd en
+   niet langer een aangetikte dag samenvatte. */
 .dagpaneel__kop-rechts {
   display: grid;
   justify-items: end;
@@ -507,12 +508,6 @@
   margin: 0;
   font-size: var(--fs-sm);
   color: var(--ink-soft);
-}
-
-.dagpaneel__plan {
-  margin-top: var(--sp-2);
-  /* Raakdoel (#374). */
-  min-height: 44px;
 }
 
 /* ---- "Hierna": de eerstvolgende speeldagen (#1112) ---- */

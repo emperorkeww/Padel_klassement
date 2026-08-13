@@ -565,16 +565,18 @@ export function verdeelWedstrijden(
  * twee kaarten en telde voor twee in de kop — terwijl de maandkop diezelfde
  * poll als één activiteit telde. Nu delen ze de noemer van `speeldagItems`, en
  * kloppen kop en lijst met elkaar én met de strook erboven.
+ *
+ * `meer` zegt hoeveel er niet meer paste (#1270). De lijst kapte stil af op
+ * `max`, en een lijst die ophoudt ziet er precies zo uit als een agenda die
+ * leeg raakt — terwijl "Wat komt eraan" alles belooft. Wie afkapt, zegt het.
  */
 export function komendeItems(
   markers: AgendaMarker[],
   vanaf: string,
   max = 40,
-): DagItem[] {
-  return speeldagItems(markers.filter((m) => m.date >= vanaf && !m.past)).slice(
-    0,
-    max,
-  );
+): { items: DagItem[]; meer: number } {
+  const alles = speeldagItems(markers.filter((m) => m.date >= vanaf && !m.past));
+  return { items: alles.slice(0, max), meer: Math.max(0, alles.length - max) };
 }
 
 /** Speeldagen gegroepeerd per maand, in dezelfde volgorde als ze binnenkwamen —
@@ -689,27 +691,11 @@ export function windowFor(m: Maand): { from: string; to: string } {
   return { from: weeks[0][0].date, to: weeks[weeks.length - 1][6].date };
 }
 
-/** Hoeveel dagen we voorbij het raster ophalen. Zes weken: genoeg om in een
- *  lege maand nog drie speeldagen te vinden, en klein genoeg om één query te
- *  blijven. */
-const STAART_DAGEN = 42;
-
-/**
- * Het datumvenster dat `getPollWindow` opvraagt (#1112).
- *
- * Ruimer dan het raster, want "Hierna" kijkt vooruit voorbij de laatste rij —
- * in een lege maand staat de eerstvolgende speeldag per definitie buiten beeld.
- * Wat in die staart valt komt nooit in een cel terecht (het raster tekent
- * alleen zijn eigen weken) en telt ook niet mee in "speeldagen deze maand".
- *
- * Bewust een ánder venster dan `windowFor`: de toetsenbordnavigatie gebruikt de
- * rastergrenzen om te weten wanneer ze een maand moet doorbladeren, en die vraag
- * heeft niets te maken met hoeveel we ophalen.
- */
-export function ophaalVenster(m: Maand): { from: string; to: string } {
-  const raster = windowFor(m);
-  return { from: raster.from, to: addDays(raster.to, STAART_DAGEN) };
-}
+/* `ophaalVenster` stond hier (#1112): het raster plus zes weken staart, zodat
+   "Hierna" ook in een lege maand iets te wijzen had. Sinds #1270 komen "Hierna"
+   en het vandaag-paneel uit het vooruitblik-venster, dus die staart haalde per
+   maandwissel zes weken op die nooit in een cel terechtkwamen en nergens in
+   meetelden. `windowFor` is weer wat we ophalen én wat het raster tekent. */
 
 /** De maand waarin een datum valt. */
 export function maandVan(date: string): Maand {

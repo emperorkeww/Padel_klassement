@@ -15,7 +15,6 @@ import {
   markersByDay,
   metHoofdletter,
   monthGrid,
-  ophaalVenster,
   schuifMaand,
   splitMarkers,
   statusChip,
@@ -203,24 +202,6 @@ describe("maandvenster", () => {
     expect(maandVan("2026-08-13")).toEqual({ jaar: 2026, maand: 8 });
   });
 
-});
-
-describe("ophaalVenster (#1112)", () => {
-  it("loopt zes weken voorbij het raster", () => {
-    // Het raster van augustus 2026 eindigt op 6 september; "Hierna" moet ook in
-    // een lege maand nog iets kunnen wijzen, dus we halen verder op.
-    expect(ophaalVenster({ jaar: 2026, maand: 8 })).toEqual({
-      from: "2026-07-27",
-      to: "2026-10-18",
-    });
-  });
-
-  it("begint waar het raster begint", () => {
-    // Achteruit is er geen staart: wat geweest is hoort niet in "Hierna", en
-    // een dag vóór het raster is er nooit een om naartoe te springen.
-    const m = { jaar: 2026, maand: 8 };
-    expect(ophaalVenster(m).from).toBe(windowFor(m).from);
-  });
 });
 
 describe("volgendeSpeeldagen (#1112)", () => {
@@ -441,7 +422,7 @@ describe("komendeItems en wachtOpJou", () => {
     }) as AgendaMarker;
 
   it("zet de komende speeldagen op volgorde en houdt vandaag erbij", () => {
-    const items = komendeItems(
+    const { items } = komendeItems(
       [
         komend({ date: "2026-09-01", pollId: "p3" }),
         komend({ date: "2026-08-07", pollId: "p1" }),
@@ -462,7 +443,7 @@ describe("komendeItems en wachtOpJou", () => {
     // De lijstkop telt deze items ("N speeldagen gepland") en de maandkop telt
     // polls. Bundelde de lijst per dag, dan zei dezelfde poll hier "2" en daar
     // "1" — met precies dezelfde data op het scherm.
-    const items = komendeItems(
+    const { items } = komendeItems(
       [
         komend({ pollId: "p1", date: "2026-08-13", startTime: "20:00" }),
         komend({ pollId: "p1", date: "2026-08-15", startTime: "11:00" }),
@@ -475,6 +456,19 @@ describe("komendeItems en wachtOpJou", () => {
     expect(items[1].eerste.date).toBe("2026-08-20");
   });
 
+  it("zegt hoeveel er buiten de lijst viel (#1270)", () => {
+    // De lijst kapte stil af, en dat ziet er precies zo uit als een agenda die
+    // leeg raakt — terwijl "Wat komt eraan" alles belooft.
+    const markers = ["p1", "p2", "p3", "p4"].map((pollId, i) =>
+      komend({ pollId, date: `2026-08-1${i}` }),
+    );
+    const { items, meer } = komendeItems(markers, "2026-08-07", 2);
+    expect(items).toHaveLength(2);
+    expect(meer).toBe(2);
+    // Past alles, dan valt er niets te melden.
+    expect(komendeItems(markers, "2026-08-07").meer).toBe(0);
+  });
+
   it("groepeert per maand in de volgorde van de lijst", () => {
     const groepen = perMaand(
       komendeItems(
@@ -484,7 +478,7 @@ describe("komendeItems en wachtOpJou", () => {
           komend({ date: "2026-09-01", pollId: "p3" }),
         ],
         "2026-08-01",
-      ),
+      ).items,
     );
     expect(groepen).toHaveLength(2);
     expect(groepen[0].maand).toEqual({ jaar: 2026, maand: 8 });
