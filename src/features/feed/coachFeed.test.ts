@@ -133,6 +133,8 @@ describe("coachOpmerking", () => {
     const e: FeedEvent = {
       kind: "pias-week",
       at: "2026-07-01T12:00:00Z",
+      tijdEcht: true,
+      matchId: "m1",
       groupId: "g1",
       groupName: "Vrijdag",
       playerId: "p1",
@@ -353,6 +355,8 @@ describe("coachOpmerking — stats-bewust (#200)", () => {
     const e: FeedEvent = {
       kind: "pias-week",
       at: "2026-07-13T12:00:00Z",
+      tijdEcht: true,
+      matchId: "m1",
       groupId: "g1",
       groupName: "Vrijdag",
       playerId: "p1",
@@ -451,6 +455,8 @@ describe("coachStemming", () => {
     const e: FeedEvent = {
       kind: "pias-week",
       at: "2026-07-01T12:00:00Z",
+      tijdEcht: true,
+      matchId: "m1",
       groupId: "g1",
       groupName: "Vrijdag",
       playerId: "p1",
