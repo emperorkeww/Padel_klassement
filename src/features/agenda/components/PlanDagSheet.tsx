@@ -1,13 +1,17 @@
 import { Sheet } from "@/ui/Sheet";
-import { ClubPicker } from "@/features/availability/components/ClubPicker";
-import type { Club } from "@/features/availability/club";
 import { longDay } from "@/features/groups/planPollHelpers";
 import { ledenLabel } from "@/features/groups/groepHelpers";
 import type { GroupSummary } from "@/features/groups/api";
 
 /**
- * Een lege dag aantikken (#1091): de twee dingen die `createPoll` moet weten
- * voordat de bestaande wizard het overneemt — welke groep, en welke club.
+ * Een lege dag aantikken (#1091): het ene ding dat `createPoll` moet weten
+ * voordat de bestaande wizard het overneemt — welke groep.
+ *
+ * De club werd hier ook gevraagd, en één scherm later nog eens in de kop van de
+ * wizard, op dezelfde state. #1270 haalde de dubbele clubnaam bínnen dit sheet
+ * weg; #1271 haalt de vraag zelf weg. Eén van de twee schermen moest hem
+ * kwijt, en dit is de verkeerde plek: hier zegt de keuze je niets, in de wizard
+ * zie je meteen wat ze oplevert — de vrije banen per slot.
  *
  * Bewust géén eigen "één-dag-poll"-flow: een poll is meerdere momenten (max 5)
  * en de wizard doet dat al. Dit sheet levert alleen de context aan.
@@ -17,8 +21,6 @@ export function PlanDagSheet({
   groepen,
   gekozenGroep,
   onGroep,
-  club,
-  onClub,
   /** Laatste dag waarvoor er vrije-banen-gegevens zijn (vandaag + 6). */
   vensterEinde,
   onClose,
@@ -28,8 +30,6 @@ export function PlanDagSheet({
   groepen: GroupSummary[];
   gekozenGroep: string | null;
   onGroep: (groupId: string) => void;
-  club: Club;
-  onClub: (club: Club) => void;
   vensterEinde: string;
   onClose: () => void;
   onDoor: () => void;
@@ -94,17 +94,6 @@ export function PlanDagSheet({
               </div>
             </fieldset>
           )}
-
-          {/* De clubnaam stond hier twee keer: links als tekst, en rechts in de
-              knop waarmee je hem verandert. Op 390px hield die linkerkant
-              "LAG…" over naast een knop die dezelfde naam er voluit naast zette
-              (#1270). De knop wint — dat is de plek waar je hem ook aanpast. */}
-          <div className="plandag__veld">
-            <span className="dagsheet__tegel-label">Club</span>
-            <div className="plandag__club">
-              <ClubPicker value={club} onPick={onClub} allowManual />
-            </div>
-          </div>
 
           {buitenVenster && (
             <p className="plandag__waarschuwing">

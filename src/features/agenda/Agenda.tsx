@@ -15,6 +15,10 @@ import { getProfilesMap } from "@/features/profiles/api";
 import { getMatchDaysInWindow } from "@/features/matches/api";
 import { getPollWindow, type PollWindow } from "@/features/groups/pollsApi";
 import {
+  conceptSleutel,
+  openstaandConcept,
+} from "@/features/groups/pollConcept";
+import {
   buildMarkers,
   filterOpGroepen,
   komendeItems,
@@ -99,9 +103,16 @@ export function Agenda() {
   // De aangetikte lege dag; los van `open`, want het plan-sheet geeft het stokje
   // door aan de wizard en moet die dag ondertussen vasthouden.
   const [planDag, setPlanDag] = useState<string | null>(null);
-  const [wizardDag, setWizardDag] = useState<string | null>(null);
-  const [planGroep, setPlanGroep] = useState<string | null>(() =>
-    readFlag(LAATSTE_GROEP),
+  // Stond er nog een wizard open toen je de agenda verliet — de knop "Verken
+  // alle vrije banen →" navigeert de app uit — dan hoort die weer open te gaan
+  // mét je selectie (#1271). Het concept draagt de groep en de dag in zijn
+  // sleutelnaam, dus dit is één lees-actie zonder tweede schrijver.
+  const hervat = useState(() => openstaandConcept())[0];
+  const [wizardDag, setWizardDag] = useState<string | null>(
+    hervat?.initialDay ?? null,
+  );
+  const [planGroep, setPlanGroep] = useState<string | null>(
+    () => hervat?.groupId ?? readFlag(LAATSTE_GROEP),
   );
   const [bewaardFilter, setBewaardFilter] = useState<string | null>(() =>
     readFlag(GROEP_FILTER),
@@ -704,8 +715,6 @@ export function Agenda() {
         groepen={lijst}
         gekozenGroep={planGroep}
         onGroep={kiesPlanGroep}
-        club={nieuwClub}
-        onClub={setNieuwClub}
         vensterEinde={addDays(vandaag, 6)}
         onClose={() => setPlanDag(null)}
         onDoor={() => {
@@ -733,6 +742,10 @@ export function Agenda() {
           club={nieuwClub}
           onClub={setNieuwClub}
           initialDay={wizardDag}
+          // Zodat de omweg naar /banen je selectie niet opeet (#1271). De
+          // sleutel draagt groep en dag, want daarmee weet de agenda bij
+          // terugkomst welke wizard hij moet heropenen.
+          storageKey={conceptSleutel(planGroepId, wizardDag)}
           onClose={() => setWizardDag(null)}
           onCreated={() => {
             setWizardDag(null);

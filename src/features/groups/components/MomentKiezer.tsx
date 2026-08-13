@@ -50,6 +50,64 @@ export function MomentKiezer({
   huidigId: string | null;
   onKies: (option: PollOption) => void;
 }) {
+  // Voorbije momenten stonden gewoon tussen de rest, disabled met de badge
+  // "voorbij" — ruis in een lijst waar je iets moet kiezen (#1271). Ze blijven
+  // opvraagbaar: soms wil je zien wat er ooit voorgesteld was.
+  const kiesbaar = options.filter((o) => vastlegbaar(o, today));
+  const voorbij = options.filter((o) => !vastlegbaar(o, today));
+
+  function rij(o: PollOption) {
+    const t = tallyOption(o, votes);
+    const vrij = vrijOp(o);
+    const state = optionState(t.yes.length, vrij);
+    const prijs = prijsOp(o);
+    const kan = vastlegbaar(o, today);
+    const banen =
+      vrij == null
+        ? "beschikbaarheid onbekend"
+        : `${vrij} ${vrij === 1 ? "baan" : "banen"} vrij, ${t.needed} nodig`;
+    return (
+      <li key={o.id}>
+        <button
+          type="button"
+          className={`moment-kiezer__optie poll-option--${state}`}
+          disabled={!kan || o.id === huidigId}
+          onClick={() => onKies(o)}
+        >
+          <span className="moment-kiezer__kop">
+            <span className="moment-kiezer__when">
+              {shortDay(o.date)} · {o.start_time}
+            </span>
+            <span
+              className={`moment-kiezer__meter poll-state--${state}`}
+              aria-hidden="true"
+            >
+              <PollStateIcon state={state} />
+            </span>
+          </span>
+          <span className="moment-kiezer__meta">
+            {t.yes.length} mee
+            {t.maybe.length > 0 && ` · ${t.maybe.length}?`} · {banen}
+            {prijs && ` · ± ${prijs} p.p.`}
+          </span>
+          {(o.id === huidigId || o.id === aanbevolenId || !kan) && (
+            <span className="moment-kiezer__badges">
+              {o.id === huidigId && (
+                <span className="moment-kiezer__badge">nu gekozen</span>
+              )}
+              {o.id === aanbevolenId && o.id !== huidigId && (
+                <span className="moment-kiezer__badge is-aanbevolen">
+                  aanbevolen
+                </span>
+              )}
+              {!kan && <span className="moment-kiezer__badge">voorbij</span>}
+            </span>
+          )}
+        </button>
+      </li>
+    );
+  }
+
   return (
     <Sheet
       open={open}
@@ -61,59 +119,25 @@ export function MomentKiezer({
         De stemmen zijn een advies — jij beslist. Ook een moment met minder
         ja&apos;s of te weinig vrije banen mag je vastleggen.
       </p>
-      <ul className="moment-kiezer">
-        {options.map((o) => {
-          const t = tallyOption(o, votes);
-          const vrij = vrijOp(o);
-          const state = optionState(t.yes.length, vrij);
-          const prijs = prijsOp(o);
-          const kan = vastlegbaar(o, today);
-          const banen =
-            vrij == null
-              ? "beschikbaarheid onbekend"
-              : `${vrij} ${vrij === 1 ? "baan" : "banen"} vrij, ${t.needed} nodig`;
-          return (
-            <li key={o.id}>
-              <button
-                type="button"
-                className={`moment-kiezer__optie poll-option--${state}`}
-                disabled={!kan || o.id === huidigId}
-                onClick={() => onKies(o)}
-              >
-                <span className="moment-kiezer__kop">
-                  <span className="moment-kiezer__when">
-                    {shortDay(o.date)} · {o.start_time}
-                  </span>
-                  <span
-                    className={`moment-kiezer__meter poll-state--${state}`}
-                    aria-hidden="true"
-                  >
-                    <PollStateIcon state={state} />
-                  </span>
-                </span>
-                <span className="moment-kiezer__meta">
-                  {t.yes.length} mee
-                  {t.maybe.length > 0 && ` · ${t.maybe.length}?`} · {banen}
-                  {prijs && ` · ± ${prijs} p.p.`}
-                </span>
-                {(o.id === huidigId || o.id === aanbevolenId || !kan) && (
-                  <span className="moment-kiezer__badges">
-                    {o.id === huidigId && (
-                      <span className="moment-kiezer__badge">nu gekozen</span>
-                    )}
-                    {o.id === aanbevolenId && o.id !== huidigId && (
-                      <span className="moment-kiezer__badge is-aanbevolen">
-                        aanbevolen
-                      </span>
-                    )}
-                    {!kan && <span className="moment-kiezer__badge">voorbij</span>}
-                  </span>
-                )}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      {kiesbaar.length === 0 ? (
+        <p className="empty">
+          {voorbij.length > 0
+            ? "Alle voorgestelde momenten zijn voorbij. Pas de dagen aan om er een toe te voegen."
+            : "Deze poll heeft geen momenten om uit te kiezen."}
+        </p>
+      ) : (
+        <ul className="moment-kiezer">{kiesbaar.map(rij)}</ul>
+      )}
+      {voorbij.length > 0 && (
+        <details className="moment-kiezer__voorbij">
+          <summary>
+            {voorbij.length === 1
+              ? "1 voorbij moment"
+              : `${voorbij.length} voorbije momenten`}
+          </summary>
+          <ul className="moment-kiezer">{voorbij.map(rij)}</ul>
+        </details>
+      )}
     </Sheet>
   );
 }

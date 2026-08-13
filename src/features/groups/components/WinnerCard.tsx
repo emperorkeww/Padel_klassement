@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useToast } from "@/ui/ToastProvider";
 import { Avatar } from "@/ui/Avatar";
 import { errorMessage } from "@/lib/utils/errors";
-import { downloadSpeeldagIcs } from "@/features/groups/speeldagIcs";
+import {
+  downloadSpeeldagIcs,
+  laatsteWijziging,
+} from "@/features/groups/speeldagIcs";
 import { bookingUrl } from "@/features/availability/api";
 import { useBookingUrl } from "@/features/availability/useBookingUrl";
 import { shareOrCopyText } from "@/lib/utils/shareText";
@@ -121,7 +124,7 @@ export function WinnerCard({
       courts: banenGeboekt,
       accessCode: code,
       deelnemers: t.yes.map(name),
-      changedAt: poll.booked_at ?? poll.locked_at ?? poll.created_at,
+      changedAt: laatsteWijziging(poll),
     });
   }
 
