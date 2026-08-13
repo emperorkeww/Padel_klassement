@@ -112,7 +112,13 @@ export function FairTeamsCard({
           ? "Match ingepland — vul straks de uitslag in."
           : `${total} matches ingepland — vul straks de uitslagen in.`,
       );
-      setVariant(null);
+      // Niet in ingebedde modus (#1271): daar is de knop die het voorstel
+      // terughaalt verborgen, dus `null` laat een lege <section class="card">
+      // achter en maakt de CTA in het speelformaat-paneel een no-op —
+      // `eerlijkGevraagd` staat dan al op true. Op de pagina bleef dat
+      // gemaskeerd doordat MakeTeams unmount, in de "+ Volgende ronde"-sheet
+      // niet: die blijft bewust open.
+      if (!ingebed) setVariant(null);
       onGenerated?.();
     } catch (err) {
       toast.error(errorMessage(err));
@@ -172,9 +178,13 @@ export function FairTeamsCard({
           gewone regel onder, waar iedereen ze ziet. */}
       {proposal && proposal.courts.length > 0 && (
         <p className="fair-teams__uitleg">
+          {/* De belofte klopte maar half (#1271): met een aantal spelers dat
+              deelbaar is door vier zijn er geen reserves, en dan wisselde er
+              helemaal niets — je speelde vijf rondes tegen dezelfde drie
+              mensen. Nu wisselt ook wie er samen op een baan staat. */}
           {aantal > 1
-            ? `“Andere verdeling” laat de reserve rouleren; “Speel deze ${aantal} rondes” zet ze klaar als geplande matches — elke ronde met een eigen verdeling.`
-            : "“Andere verdeling” laat de reserve rouleren; “Speel deze teams” zet ze klaar als geplande matches."}
+            ? `“Andere verdeling” wisselt de teams én de banen om; “Speel deze ${aantal} rondes” zet ze klaar als geplande matches — elke ronde met een eigen verdeling.`
+            : "“Andere verdeling” wisselt de teams én de banen om; “Speel deze teams” zet ze klaar als geplande matches."}
         </p>
       )}
 

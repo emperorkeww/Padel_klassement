@@ -253,6 +253,32 @@ export async function removeGroupMember(
 }
 
 /**
+ * Wist een hele geplande ronde van één speeldag (#1271).
+ *
+ * Er was geen weg terug: een verkeerd gegenereerde ronde moest match voor match
+ * weg via ⋯ → "Verwijderen", met zes seconden undo, keer drie banen. De RPC
+ * weigert een ronde met uitslagen — die raakt de stand en de Elo-keten, en
+ * daarvoor is de losse `delete_match`.
+ *
+ * `dag` is de kalenderdag in clubtijd; sinds rondes binnen hun speeldag tellen
+ * dragen twee avonden allebei een "ronde 1".
+ */
+export async function verwijderRonde(
+  groupId: string,
+  round: number,
+  dag: string,
+): Promise<number> {
+  const { data, error } = await supabase.rpc("delete_round", {
+    p_group_id: groupId,
+    p_round_number: round,
+    p_dag: dag,
+  });
+  if (error) throw error;
+  invalidate("matches", "teams");
+  return (data as number) ?? 0;
+}
+
+/**
  * Genereert een Mexicano-ronde: paart op de huidige stand (sterk met zwak).
  * De RPC blokkeert als de vorige ronde nog niet volledig is ingevuld.
  *

@@ -45,9 +45,20 @@ begin
     raise exception 'Alle spelers moeten lid zijn van deze groep';
   end if;
 
+  -- Ronde-nummer binnen déze speeldag (#1271). Het was max+1 over de hele
+  -- groep, dus de tiende speeldag begon bij "Ronde 37" — en de app moest met
+  -- guards voorkomen dat er "ronde 4 van 3" kwam te staan. De dag komt uit het
+  -- starttijdstip van de ronde zelf, in clubtijd; zonder tijdstip uit nu.
+  --
+  -- Dit is een benadering van de regel die de app hanteert (#1221: de match
+  -- hoort bij het dichtstbijzijnde moment, met een uur voorsprong). Voor een
+  -- sessie die over middernacht heen loopt kan de nummering dus opnieuw
+  -- beginnen. Dat is zichtbaar en onschuldig; een poll_id op matches is er niet.
   select coalesce(max(round_number), 0) + 1 into v_round
   from public.matches
-  where group_id = p_group_id;
+  where group_id = p_group_id
+    and (coalesce(played_at, created_at) at time zone 'Europe/Brussels')::date
+        = (coalesce(p_played_at, now()) at time zone 'Europe/Brussels')::date;
 
   v_i := 1;
   while v_i + 3 <= v_n loop
