@@ -217,6 +217,23 @@
   bottom: 25%;
   border-left: 1px solid var(--line);
 }
+/* Laadvorm van de dagstrip en het slotraster (#1308): dezelfde maat als het
+   echte ding, zodat de sheet niet omhoog springt zodra de banen binnenkomen.
+   Zelfde materiaal als de skeletcellen van het maandraster. */
+.day-chip--skelet,
+.slot-chip--skelet {
+  border-color: transparent;
+  background: var(--skeleton-hi);
+  pointer-events: none;
+}
+.day-chip--skelet {
+  min-height: 65px;
+}
+.slot-chip--skelet {
+  width: 92px;
+  height: 44px;
+}
+
 .poll-wizard__slots {
   display: flex;
   flex-wrap: wrap;

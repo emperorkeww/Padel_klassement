@@ -354,6 +354,16 @@ export function PollWizard({
             </button>
           );
         })}
+        {/* Laadvorm (#1308): zolang het banenvenster onderweg is stond hier
+            hooguit één chip, en zodra het antwoord kwam sprongen er zeven dagen
+            bij. Een bottom sheet groeit naar bóven, dus dat is precies de
+            stuiter die je onder je duim voelt. Deze chips houden hun plek vrij
+            — zelfde maat, zelfde aantal — zoals RasterSkeleton dat voor het
+            maandraster doet. */}
+        {weekLoading &&
+          Array.from({ length: Math.max(0, 7 - dagen.length) }).map((_, i) => (
+            <span className="day-chip day-chip--skelet" key={`skelet-${i}`} aria-hidden="true" />
+          ))}
       </div>
 
       {/* Standaard avond-focus; deze knop klapt de vroegere uren uit/in. Boven
@@ -375,7 +385,18 @@ export function PollWizard({
 
       {/* Uren van de gekozen dag. */}
       <div className="poll-wizard__slots">
-        {weekLoading && <p className="empty">Vrije banen laden…</p>}
+        {weekLoading && (
+          <>
+            {/* Dezelfde reservering als in de dagstrip hierboven: het raster
+                komt zo, en de sheet hoort er niet voor te verspringen. */}
+            <span className="sr-only">Vrije banen laden…</span>
+            {/* Tien: een gewone avond levert er acht tot elf tussen 17:00 en
+                22:00, dus dit zit het dichtst bij wat er straks staat. */}
+            {Array.from({ length: 10 }).map((_, i) => (
+              <span className="slot-chip slot-chip--skelet" key={`skelet-${i}`} aria-hidden="true" />
+            ))}
+          </>
+        )}
         {!weekLoading && dayStartsVisible == null && (
           <p className="empty">
             {selectedDay === initialDay && buitenVenster
@@ -426,10 +447,12 @@ export function PollWizard({
 
       {/* Wat het cijfer op een slot betekent (#1308). "21:30 ①" was zonder
           uitleg een raadsel: één wat — banen, plekken, euro's? Eén regel, en
-          alleen waar de cijfers ook echt staan. */}
-      {!manual && dayStartsVisible != null && dayStartsVisible.length > 0 && (
+          alleen waar de cijfers ook echt staan. Tijdens het laden staat hij er
+          leeg: anders komt er ná het antwoord een regel bij en schuift het
+          sheet alsnog omhoog. */}
+      {!manual && (weekLoading || (dayStartsVisible?.length ?? 0) > 0) && (
         <p className="poll-wizard__legenda">
-          Het cijfer is het aantal vrije banen op dat uur.
+          {weekLoading ? "\u00a0" : "Het cijfer is het aantal vrije banen op dat uur."}
         </p>
       )}
 

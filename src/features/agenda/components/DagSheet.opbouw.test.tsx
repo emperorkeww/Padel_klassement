@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { ToastProvider } from "@/ui/ToastProvider";
 import type { AgendaMarker } from "../agendaLogic";
+import type { Profile } from "@/types";
 
 /* #1308 — de beslissing bovenaan, de acties in één balk.
  *
@@ -132,6 +133,49 @@ describe("<DagSheet /> — opbouw (#1308)", () => {
     ).toContain("Nog niets gezegd");
   });
 
+  it("noemt de deelnemers bij naam, niet alleen als gezicht", () => {
+    // Zes initialen naast elkaar zijn op een telefoon niet uit elkaar te
+    // houden, en bij twee mensen met dezelfde voorletter helpt een foto ook
+    // niet. Wie meedoet staat dus ook uitgeschreven.
+    const namen = {
+      p2: { id: "p2", username: "bob", full_name: "Bob Boers", avatar_url: null, created_at: "2026-01-01T00:00:00Z" },
+      p3: { id: "p3", username: "carol", full_name: "Carol Claes", avatar_url: null, created_at: "2026-01-01T00:00:00Z" },
+    } as unknown as Record<string, Profile>;
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <DagSheet
+            datum="2026-08-13"
+            markers={[marker({ status: "booked", yesVoterIds: ["p2", "p3"] })]}
+            momentenPerPoll={{}}
+            ledenPerGroep={{ g1: 8 }}
+            profielen={namen}
+            myId="me"
+            onGestemd={vi.fn()}
+            onClose={vi.fn()}
+          />
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+    expect(
+      document.querySelector(".dagsheet__namen")?.textContent,
+    ).toContain("Bob Boers, Carol Claes");
+  });
+
+  it("zet de namen meteen open zodra de speeldag vastligt", () => {
+    // Dan is "wie komt er" de hoofdvraag van dit sheet. Bij een open stemming
+    // gaat het eerst om jouw eigen antwoord en blijven ze achter de rij.
+    toon([marker({ status: "booked", yesVoterIds: ["p2"] })]);
+    expect(document.querySelector(".dagsheet__deelname")).toHaveAttribute("open");
+  });
+
+  it("houdt de namen ingeklapt zolang er gestemd wordt", () => {
+    toon([marker({ yesVoterIds: ["p2"] })]);
+    expect(
+      document.querySelector(".dagsheet__deelname"),
+    ).not.toHaveAttribute("open");
+  });
+
   it("zet de acties in een plakkende voetbalk, primair rechts", () => {
     toon([marker({ status: "booked", courts: "3 & 4" })]);
     const voet = document.querySelector(".dagsheet__voet");
@@ -154,13 +198,15 @@ describe("<DagSheet /> — opbouw (#1308)", () => {
     expect(document.querySelectorAll(".dagsheet__acties")).toHaveLength(2);
   });
 
-  it("maakt van 'plan hier ook' een stille tekstknop", () => {
+  it("houdt 'plan hier ook' lichter dan de hoofdactie", () => {
     toon([marker()], vi.fn());
     const knop = screen.getByRole("button", {
       name: "Plan hier ook een speeldag",
     });
-    // Geen tweede knop met hetzelfde gewicht als de hoofdactie.
-    expect(knop).not.toHaveClass("btn");
+    // Dezelfde pilvorm als elke andere secundaire actie in de app (#1308),
+    // maar zonder het accent van "Open speeldag" in de voetbalk.
+    expect(knop).toHaveClass("btn", "btn--sm");
+    expect(knop).not.toHaveClass("btn--primary");
     expect(positie(".dagsheet__ookplannen")).toBeLessThan(
       positie(".dagsheet__voet"),
     );
