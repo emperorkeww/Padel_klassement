@@ -92,34 +92,16 @@ describe("<GroupDetail /> landingstab (#674)", () => {
     ).toHaveAttribute("aria-selected", "false");
   });
 
-  // #761 hield deze knop altijd zichtbaar omdat hij de enige ingang naar de hub
-  // was; sinds #916 stuurt /spelen niemand meer door, dus het is gewoon de weg
-  // omhoog — en die hoort er bij één groep net zo goed te staan.
-  it("toont de terugknop naar het overzicht ook met één groep", async () => {
+  // De weg omhoog stond hier als eigen link (#761, #946: pijl decoratief boven
+  // de groepskop). Sinds #1299 draagt de shell hem — topbalk op mobiel, boven
+  // de inhoud op desktop, dezelfde vorm als op elke andere diepe pagina — en
+  // zet deze pagina er dus geen eigen naast.
+  it("zet geen eigen terugweg meer boven de kop (#1299)", async () => {
     renderPage();
     // Vandaag heeft zelf ook een tabbalk, dus gericht op die van de groep.
     await screen.findByRole("tablist", { name: "Groepsonderdelen" });
-    // De pijl is sinds #946 decoratie (aria-hidden), dus hij zit niet meer in
-    // de toegankelijke naam — een schermlezer las "← alle groepen" voor.
-    const terug = await screen.findByRole("link", { name: /^alle groepen$/i });
-    expect(terug).toHaveAttribute("href", "/spelen");
-    // En hij staat bóven de groepskop in plaats van tussen de acties eronder.
-    expect(terug).toHaveClass("terug-link");
-    const kop = document.querySelector(".group-head")!;
-    expect(
-      terug.compareDocumentPosition(kop) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-  });
-
-  it("toont de terugknop ook bij meerdere groepen", async () => {
-    tables.groups = [
-      ...(TABLES.groups as unknown[]),
-      { ...(TABLES.groups as { id: string }[])[0], id: "g2", name: "Zondag" },
-    ];
-    renderPage();
-    expect(
-      await screen.findByRole("link", { name: /^alle groepen$/i }),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^alle groepen$/i })).toBeNull();
+    expect(document.querySelector(".terug-link")).toBeNull();
   });
 
   // #674 C2: de pagina deed dertien queries bij mount, ook als je alleen een
@@ -154,6 +136,25 @@ describe("<GroupDetail /> landingstab (#674)", () => {
     await screen.findByRole("heading", { name: /groepsklassement/i });
     expect(tabellen()).toContain("group_player_standings");
     expect(tabellen()).toContain("player_ratings");
+  });
+
+  // #1298: de Historie-tab monteerde een sectie die zijn eigen, globale
+  // matchlijst ophaalde (getRecentMatches, afgekapt op 100) en die client-side
+  // terugfilterde naar deze groep — bovenop de complete lijst die deze pagina
+  // al in handen had. Nu voedt de pagina de sectie.
+  it("haalt de matches niet nog eens op als je de Historie opent", async () => {
+    renderPage();
+    await screen.findByRole("tablist", { name: "Groepsonderdelen" });
+    const matchQueries = () =>
+      (
+        supabase.from as unknown as { mock: { calls: unknown[][] } }
+      ).mock.calls.filter((c) => c[0] === "matches").length;
+    await waitFor(() => expect(matchQueries()).toBeGreaterThan(0));
+    const voor = matchQueries();
+
+    await userEvent.click(screen.getByRole("tab", { name: /^historie/i }));
+    await screen.findByRole("heading", { name: /gespeelde matches/i });
+    expect(matchQueries()).toBe(voor);
   });
 
   it("landt op Vandaag zodra er vandaag wedstrijden staan", async () => {

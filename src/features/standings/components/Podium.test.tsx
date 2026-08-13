@@ -155,3 +155,25 @@ describe("<Podium /> — compact op telefoonformaat (#943)", () => {
     expect(badge).toHaveTextContent(/Wannabe (I|II|III)/);
   });
 });
+
+// #1298: naam en tekentjes stonden in dezelfde afkappende span, dus de ellips
+// van "Alice Anders…" at het 💰-teken half op (scrollWidth 115 vs clientWidth
+// 94 op 390px). Nu zijn het twee elementen: de naam krimpt, de markers niet.
+describe("<Podium /> — naam naast de tekentjes (#1298)", () => {
+  it("houdt de markers buiten de afkappende naam", () => {
+    const { container } = renderPodium([
+      {
+        ...entry("p1", "Alice Anders", 1200),
+        tier: true,
+        markers: <span className="stand-mark">💰8</span>,
+      },
+    ]);
+    const naam = container.querySelector(".podium__name")!;
+    expect(naam).toHaveTextContent("Alice Anders");
+    expect(naam.querySelector(".stand-mark")).toBeNull();
+    // Ze staan wél naast elkaar op dezelfde regel.
+    const rij = container.querySelector(".podium__naamrij")!;
+    expect(rij.querySelector(".podium__name")).not.toBeNull();
+    expect(rij.querySelector(".stand-mark")).not.toBeNull();
+  });
+});

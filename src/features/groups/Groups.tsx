@@ -24,6 +24,52 @@ import "./Groups.css";
 // filterrij die desgewenst op één groep inzoomt. Dat is een andere handeling en
 // dus een andere bediening.
 
+/** Hoeveel matches de hub eerst toont. De hub is een overzicht over álle
+ *  groepen: alles in één keer renderen maakte de pagina 10.037px lang, met 62
+ *  kaarten en 56 dagkoppen, en zette de verwijzing naar de banen op 9.814px —
+ *  in de praktijk onvindbaar (#1298). De rest staat achter één knop; de
+ *  groepspagina toont zijn historie onverkort. */
+const HUB_HISTORIE = 15;
+
+/** Het naamveld plus zijn knop. Stond letterlijk twee keer in dit bestand — in
+ *  de lege staat en in het uitklappaneel — met alleen een ander knoplabel
+ *  (#1298). */
+function GroepsnaamForm({
+  nameRef,
+  name,
+  onName,
+  busy,
+  onSubmit,
+  knopLabel,
+}: {
+  nameRef: React.RefObject<HTMLInputElement | null>;
+  name: string;
+  onName: (v: string) => void;
+  busy: boolean;
+  onSubmit: (e: React.FormEvent) => void;
+  knopLabel: string;
+}) {
+  return (
+    <form className="row-between account-form groepsnaam-form" onSubmit={onSubmit}>
+      {/* Een placeholder is geen label: hij verdwijnt zodra je typt (#924). */}
+      <label className="label groepsnaam-form__veld">
+        Groepsnaam
+        <input
+          ref={nameRef}
+          className="input"
+          placeholder="bijv. Vrijdagavond"
+          maxLength={60}
+          value={name}
+          onChange={(e) => onName(e.target.value)}
+        />
+      </label>
+      <button className="btn btn--primary" disabled={busy || !name.trim()}>
+        {busy ? "Aanmaken…" : knopLabel}
+      </button>
+    </form>
+  );
+}
+
 // De reisstatus van álle groepen tegelijk. Twee queries in totaal in plaats van
 // twee per groep (#674 C1 liet dat TODO staan; #1123 loste het op). De votes
 // blijven ongehaald — journeyFor leest ze niet.
@@ -120,80 +166,34 @@ export function Groups() {
       <header className="page-head page-head--met-actie">
         <div className="page-head__tekst">
           <h1 className="page-title">Spelen</h1>
+          {/* De polls verhuisden met #1121 naar de agenda; de subtitel beloofde
+              ze hier nog steeds (#1298). */}
           <p className="page-subtitle">
-            Je vaste padel-kringen, planningspolls en divisionaire heerschappij.
+            Je vaste padel-kringen, jullie wedstrijden en divisionaire
+            heerschappij.
           </p>
         </div>
         {/* Een groep maken is de hoofdactie van deze pagina en hoort dus in de
             kop, niet als naamloze "+" achteraan een rij chips (#1134). Met nul
             groepen staat het formulier al open in de lege staat; de knop zet dan
-            alleen de cursor in het naamveld. */}
+            alleen de cursor in het naamveld.
+
+            Wél secundair (#1298): op telefoonbreedte was dit de nadrukkelijkste
+            knop van de pagina — volle breedte, primair groen — terwijl een groep
+            maken zeldzaam is en de zwevende "+ Match" in dezelfde kleur eronder
+            ligt. Eén primaire actie per scherm. */}
         <button
           type="button"
           ref={nieuwKnopRef}
-          className="btn btn--primary page-head__actie"
+          className="btn page-head__actie"
           onClick={() => setNewOpen(true)}
         >
           <span aria-hidden="true">+</span> Groep maken
         </button>
       </header>
 
-      {groups.error && (
-        <ErrorRetry
-          melding={`Je groepen laden mislukte: ${groups.error}`}
-          onRetry={groups.reload}
-        />
-      )}
-
-      {noGroups && (
-        // Eén kaart met één actie (#916). Zonder groep valt er niets te tonen,
-        // dus staat hier het formulier in plaats van de groepensectie.
-        <div className="card">
-          <EmptyState icon="👥" title="Geen groep, geen glorie.">
-            Start je eigen padelgroep, nodig je vrienden uit en hou jullie
-            onderlinge klassementen en wedstrijden live bij!
-          </EmptyState>
-          <form
-            className="row-between account-form groepsnaam-form"
-            onSubmit={create}
-          >
-            {/* Een placeholder is geen label: hij verdwijnt zodra je typt
-                (#924). */}
-            <label className="label groepsnaam-form__veld">
-              Groepsnaam
-              <input
-                ref={nameRef}
-                className="input"
-                placeholder="bijv. Vrijdagavond"
-                maxLength={60}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </label>
-            <button className="btn btn--primary" disabled={busy || !name.trim()}>
-              {busy ? "Aanmaken…" : "Maak deze groep"}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* De groepen zelf (#1134). Tijdens het laden staat de sectie er al met
-          skeletons: hem pas tonen zodra de data er is, laat de kop en de
-          filterrij eronder verspringen. Alleen bij nul groepen valt hij weg —
-          dan staat de lege staat hierboven. */}
-      {!groups.error && !noGroups && (
-        <MijnGroepen
-          groepen={list}
-          myId={myId}
-          profiles={profiles.data ?? {}}
-          journeys={journeys.data ?? undefined}
-          laadt={groups.loading}
-        />
-      )}
-
-      {/* Een groep erbij is zeldzaam; het formulier stond altijd open en woog
-          even zwaar als de groepen zelf (#674 A5). Achter de knop in de kop
-          dus. Met nul groepen zit het formulier ín de lege staat hierboven. */}
+      {/* Het paneel hoort bij de knop erboven: het stond ná de groepenrij, 269px
+          lager, met een hele sectie ertussen (#1298). */}
       {!noGroups && newOpen && (
         <section className="card">
           <div className="row-between">
@@ -212,26 +212,55 @@ export function Groups() {
               ✕
             </button>
           </div>
-          <form
-            className="row-between account-form groepsnaam-form"
+          <GroepsnaamForm
+            nameRef={nameRef}
+            name={name}
+            onName={setName}
+            busy={busy}
             onSubmit={create}
-          >
-            <label className="label groepsnaam-form__veld">
-              Groepsnaam
-              <input
-                ref={nameRef}
-                className="input"
-                placeholder="bijv. Vrijdagavond"
-                maxLength={60}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </label>
-            <button className="btn btn--primary" disabled={busy || !name.trim()}>
-              {busy ? "Aanmaken…" : "Aanmaken"}
-            </button>
-          </form>
+            knopLabel="Aanmaken"
+          />
         </section>
+      )}
+
+      {groups.error && (
+        <ErrorRetry
+          melding={`Je groepen laden mislukte: ${groups.error}`}
+          onRetry={groups.reload}
+        />
+      )}
+
+      {noGroups && (
+        // Eén kaart met één actie (#916). Zonder groep valt er niets te tonen,
+        // dus staat hier het formulier in plaats van de groepensectie.
+        <div className="card">
+          <EmptyState icon="👥" title="Geen groep, geen glorie.">
+            Start je eigen padelgroep, nodig je vrienden uit en hou jullie
+            onderlinge klassementen en wedstrijden live bij!
+          </EmptyState>
+          <GroepsnaamForm
+            nameRef={nameRef}
+            name={name}
+            onName={setName}
+            busy={busy}
+            onSubmit={create}
+            knopLabel="Maak deze groep"
+          />
+        </div>
+      )}
+
+      {/* De groepen zelf (#1134). Tijdens het laden staat de sectie er al met
+          skeletons: hem pas tonen zodra de data er is, laat de kop en de
+          filterrij eronder verspringen. Alleen bij nul groepen valt hij weg —
+          dan staat de lege staat hierboven. */}
+      {!groups.error && !noGroups && (
+        <MijnGroepen
+          groepen={list}
+          myId={myId}
+          profiles={profiles.data ?? {}}
+          journeys={journeys.data ?? undefined}
+          laadt={groups.loading}
+        />
       )}
 
       {/* De matches zelf (#1123). Bewust onvoorwaardelijk gemonteerd, ook
@@ -248,6 +277,7 @@ export function Groups() {
         logDirect={speel.logDirect}
         onLogVerbruikt={speel.verbruikLog}
         verbergActie={newOpen}
+        initieelZichtbaar={HUB_HISTORIE}
       />
 
       {/* Vrije banen blijft een rustige verwijzing: je komt hier niet om een

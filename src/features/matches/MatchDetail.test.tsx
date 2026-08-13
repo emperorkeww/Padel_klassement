@@ -277,25 +277,15 @@ describe("<MatchDetail />", () => {
     }
   });
 
-  it("gaat bij een deeplink terug naar de groep van de match", async () => {
-    // MemoryRouter heeft geen browserhistorie, dus useBackTo pakt het vangnet —
-    // precies het pad dat een deeplink uit een pushbericht volgt.
+  // De terugweg zit sinds #1299 in de shell, niet meer op deze pagina: één
+  // patroon voor de hele app in plaats van vier eigen vormen. Wáár hij bij een
+  // deeplink heen gaat staat nu in de routetabel van DashboardLayout
+  // (`terugFallback`, daar getoetst). Hier blijft over dat dit scherm er zelf
+  // geen tweede naast zet.
+  it("zet geen eigen terugknop meer naast de kopacties (#1299)", async () => {
     renderPage();
     await screen.findByText(/eindstand/i);
-    await userEvent.click(screen.getByRole("button", { name: /terug/i }));
-    expect(await screen.findByText("groepspagina")).toBeInTheDocument();
-  });
-
-  it("valt zonder groep terug op het matchoverzicht", async () => {
-    const herstel = metMatch({ ...MATCH_DONE, group_id: null });
-    try {
-      renderPage();
-      await screen.findByText(/eindstand/i);
-      await userEvent.click(screen.getByRole("button", { name: /terug/i }));
-      expect(await screen.findByText("matchoverzicht")).toBeInTheDocument();
-    } finally {
-      herstel();
-    }
+    expect(screen.queryByRole("button", { name: /^terug$/i })).toBeNull();
   });
 });
 

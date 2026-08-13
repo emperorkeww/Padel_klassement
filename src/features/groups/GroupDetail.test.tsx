@@ -60,6 +60,39 @@ import GroupDetail from "./GroupDetail";
 import { supabase } from "@/lib/supabase/client";
 import { makeQuery } from "@/test/supabaseMock";
 import { invalidateAll } from "@/lib/supabase/queryCache";
+import { MATCH_DONE, MATCH_PLANNED } from "@/test/fixtures";
+import { dateInZone } from "@/lib/utils/time";
+
+/** Dezelfde matchrijen als de mock hierboven: de fixture-matches op de clubdag
+ *  van vandaag, zodat de Vandaag-tab ze toont. */
+function matchRijen() {
+  const today = dateInZone("Europe/Brussels");
+  return [
+    {
+      ...MATCH_DONE,
+      played_at: `${today}T18:00:00.000Z`,
+      created_at: `${today}T18:00:00.000Z`,
+    },
+    { ...MATCH_PLANNED, created_at: `${today}T18:00:00.000Z` },
+  ];
+}
+
+/** Vervangt tijdelijk wat de matches-tabel teruggeeft; geeft een herstelfunctie. */
+function metMatches(rijen: unknown[]) {
+  invalidateAll();
+  const fromMock = supabase.from as unknown as {
+    getMockImplementation: () => (table: string) => unknown;
+    mockImplementation: (impl: (table: string) => unknown) => void;
+  };
+  const orig = fromMock.getMockImplementation();
+  fromMock.mockImplementation((t) =>
+    t === "matches" ? makeQuery({ data: rijen, error: null }) : orig(t),
+  );
+  return () => {
+    fromMock.mockImplementation(orig);
+    invalidateAll();
+  };
+}
 
 /** Vervangt tijdelijk de ledenlijst van de groep; geeft een herstelfunctie. */
 function metLeden(ids: string[]) {
@@ -129,7 +162,7 @@ describe("<GroupDetail />", () => {
     // kop houdt de eigenaar-badge.
     expect(await screen.findByText(/^eigenaar$/i)).toBeInTheDocument();
     expect(
-      await screen.findByRole("tab", { name: "Leden, 4" }),
+      await screen.findByRole("tab", { name: "Groep, 4" }),
     ).toBeInTheDocument();
     expect(
       await screen.findByRole("heading", { name: /^ronde 2$/i }),
@@ -270,7 +303,7 @@ describe("<GroupDetail />", () => {
     );
 
     // Toggle naar punten: de vertrouwde puntentabel met Ptn-kolom.
-    await userEvent.click(screen.getByRole("button", { name: /^punten$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^punten$/i }));
     expect(await screen.findByText("Ptn")).toBeInTheDocument();
     expect(screen.queryByText(/gesorteerd op rating/i)).not.toBeInTheDocument();
   });
@@ -279,7 +312,7 @@ describe("<GroupDetail />", () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
     await userEvent.click(screen.getByRole("tab", { name: /^stand$/i }));
-    await userEvent.click(screen.getByRole("button", { name: /^toto$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^toto$/i }));
 
     expect(
       await screen.findByText(/wie tipt de meeste winnaars/i),
@@ -297,7 +330,7 @@ describe("<GroupDetail />", () => {
     await userEvent.click(screen.getByRole("tab", { name: /^stand$/i }));
     expect(await screen.findByText(/groepsklassement/i)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("tab", { name: /^leden/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^groep/i }));
     expect(await screen.findByText(/vrienden toevoegen/i)).toBeInTheDocument();
     expect(
       screen.getAllByRole("button", { name: /verwijderen/i }).length,
@@ -340,7 +373,7 @@ describe("<GroupDetail />", () => {
 
     // End springt naar de laatste tab; de teller zit in de naam.
     await userEvent.keyboard("{End}");
-    expect(screen.getByRole("tab", { name: "Leden, 4" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Groep, 4" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -356,7 +389,7 @@ describe("<GroupDetail />", () => {
     ).not.toBeInTheDocument();
     // Vier tabs over: Vandaag · Historie · Stand · Leden.
     expect(
-      screen.getAllByRole("tab", { name: /vandaag|historie|stand|leden/i }),
+      screen.getAllByRole("tab", { name: /vandaag|historie|stand|groep/i }),
     ).toHaveLength(4);
   });
 
@@ -477,6 +510,31 @@ describe("<GroupDetail />", () => {
     ).toBeInTheDocument();
   });
 
+  // #1298: die sectie leidde "Te spelen" af uit de volledige lijst, zonder het
+  // groepsfilter dat de historie eronder wél kreeg. Op de Historie-tab van deze
+  // groep stonden dus ook de geplande matches van andere groepen, mét de knop
+  // "Uitslag invullen" — je vulde vanuit groep A de uitslag van groep B in.
+  it("houdt Te spelen bij de matches van déze groep", async () => {
+    const herstel = metMatches([
+      ...matchRijen(),
+      { ...MATCH_PLANNED, id: "plan-elders", group_id: "g2" },
+    ]);
+    try {
+      renderPage("/groepen/g1?tab=matches");
+      await screen.findByRole("heading", { name: /gespeelde matches/i });
+      await screen.findByRole("heading", { name: /^te spelen$/i });
+
+      // Eén openstaande match van deze groep, dus één invul-knop.
+      await waitFor(() =>
+        expect(
+          screen.getAllByRole("button", { name: /^uitslag invullen$/i }),
+        ).toHaveLength(1),
+      );
+    } finally {
+      herstel();
+    }
+  });
+
   it("houdt de zwevende +Match-knop van die sectie buiten de groepspagina", async () => {
     renderPage("/groepen/g1?tab=matches");
     await screen.findByRole("heading", { name: /gespeelde matches/i });
@@ -484,6 +542,29 @@ describe("<GroupDetail />", () => {
     // ingangen naast elkaar zouden concurreren.
     expect(
       screen.queryByRole("button", { name: /^\+ ?match$/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  // #1298: `actief` keek naar de gekozen groep, en op deze pagina is dat het
+  // route-id — altijd gevuld. De knop stond er dus permanent en wiste niets:
+  // de groep zit in het pad, niet in de querystring.
+  it("toont Wis filters pas als er iets te wissen valt", async () => {
+    renderPage("/groepen/g1?tab=matches");
+    await screen.findByRole("heading", { name: /gespeelde matches/i });
+    expect(
+      screen.queryByRole("button", { name: /wis filters/i }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: /periode/i }),
+      "30d",
+    );
+    const wis = screen.getByRole("button", { name: /wis filters/i });
+    await userEvent.click(wis);
+
+    expect(screen.getByRole("combobox", { name: /periode/i })).toHaveValue("");
+    expect(
+      screen.queryByRole("button", { name: /wis filters/i }),
     ).not.toBeInTheDocument();
   });
 
@@ -520,6 +601,21 @@ describe("<GroupDetail />", () => {
     await waitFor(() =>
       expect(kop.querySelector(".group-head__journey")).not.toBeNull(),
     );
+  });
+
+  // #1298: de pil beloofde met "Plan een speeldag →" een bestemming en was een
+  // gewone <span> — terwijl de groepspagina sinds #1121 geen enkele route naar
+  // plannen meer had. `journey.tab` zei al waar hij heen moest; niemand las het.
+  it("laat de reis-pil naar de agenda wijzen", async () => {
+    const { container } = renderPage();
+    await screen.findByRole("heading", { name: /vrijdagavond padel/i });
+
+    await waitFor(() =>
+      expect(container.querySelector(".group-head__journey")).not.toBeNull(),
+    );
+    const pil = container.querySelector(".group-head__journey")!;
+    expect(pil.tagName).toBe("A");
+    expect(pil).toHaveAttribute("href", "/agenda");
   });
 
   it("houdt de speeldag zichtbaar op elke tab van de groep", async () => {
@@ -575,7 +671,7 @@ describe("<GroupDetail />", () => {
 
       await userEvent.click(knop);
       expect(
-        screen.getByRole("tab", { name: /^leden/i }),
+        screen.getByRole("tab", { name: /^groep/i }),
       ).toHaveAttribute("aria-selected", "true");
     } finally {
       herstel();

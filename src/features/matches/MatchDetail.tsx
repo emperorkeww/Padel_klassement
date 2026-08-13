@@ -36,7 +36,6 @@ import { formatDate } from "@/lib/utils/format";
 import { Skeleton } from "@/ui/Skeleton";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
-import { useBackTo } from "@/lib/hooks/useBackTo";
 import { ShareMatch } from "@/features/matches/components/ShareMatch";
 import { SmoesjesMachine } from "@/features/matches/components/SmoesjesMachine";
 import { Lineup } from "@/features/matches/components/Lineup";
@@ -72,13 +71,6 @@ export function MatchDetail() {
   const [beheerOpen, setBeheerOpen] = useState(false);
   const [corrigeren, setCorrigeren] = useState(false);
   const match = useAsync(() => getMatch(id), [id]);
-  // Bij een deeplink uit een pushbericht of gedeelde link is er geen vorige
-  // pagina om naar terug te gaan (#910). Het vangnet is de groep waar deze
-  // match bij hoort — dat is de context waar zo'n link vandaan komt (#915);
-  // zonder groep valt hij terug op het matchoverzicht.
-  const terug = useBackTo(
-    match.data?.group_id ? `/groepen/${match.data.group_id}` : "/spelen",
-  );
   // Tabtitel op de matchdatum (#910); blijft staan zolang de match laadt.
   usePageTitle(
     match.data
@@ -330,24 +322,21 @@ export function MatchDetail() {
       <header className="page-head">
         {/* Het scorebord ís de kop; voor screenreaders en de outline toch een h1. */}
         <h1 className="sr-only">Matchdetail</h1>
-        <div className="row-between">
-          <button className="btn btn--sm" onClick={terug}>
-            ← Terug
-          </button>
-          <div className="md-kopacties">
-            {done && <ShareMatch match={m} teams={tmap} profiles={pmap} />}
-            {beheerActies.length > 0 && (
-              <button
-                type="button"
-                className="iconbtn"
-                aria-label="Meer acties"
-                aria-haspopup="dialog"
-                onClick={() => setBeheerOpen(true)}
-              >
-                ⋯
-              </button>
-            )}
-          </div>
+        {/* De terugweg zit sinds #1299 in de shell (topbalk op mobiel, boven de
+            inhoud op desktop); hier bleven de acties van deze match over. */}
+        <div className="md-kopacties">
+          {done && <ShareMatch match={m} teams={tmap} profiles={pmap} />}
+          {beheerActies.length > 0 && (
+            <button
+              type="button"
+              className="iconbtn"
+              aria-label="Meer acties"
+              aria-haspopup="dialog"
+              onClick={() => setBeheerOpen(true)}
+            >
+              ⋯
+            </button>
+          )}
         </div>
       </header>
 

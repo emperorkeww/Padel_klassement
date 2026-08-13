@@ -24,6 +24,7 @@ import type {
   Team,
 } from "@/types";
 import type { PredictionStanding } from "@/features/matches/predictions";
+import { seasonFromId, type Season } from "@/features/rating/seasons";
 
 const NOW = "2026-07-01T12:00:00Z";
 
@@ -98,6 +99,9 @@ function renderTab(
     completedMatches?: Match[];
     teams?: Record<string, Team>;
     zwartePiet?: ZwartePietHolder | null;
+    season?: Season | null;
+    seasons?: Season[];
+    seizoenRatings?: Record<string, number> | null;
   } = {},
 ) {
   return render(
@@ -109,12 +113,13 @@ function renderTab(
         teams={overrides.teams ?? {}}
         profiles={profiles}
         ratings={ratings}
+        seizoenRatings={overrides.seizoenRatings ?? null}
         histories={histories}
         memberList={memberList}
         myId="p1"
-        season={null}
+        season={overrides.season ?? null}
         setSeasonId={() => {}}
-        seasons={[]}
+        seasons={overrides.seasons ?? []}
         shownStandings={standings}
         champion={null}
         shownPredictionStandings={predictions}
@@ -148,13 +153,13 @@ describe("<GroupStandTab /> tabellen in .table-scroll (#358)", () => {
 
   it("punten-tabel", () => {
     renderTab();
-    fireEvent.click(screen.getByRole("button", { name: "Punten" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Punten" }));
     expectTablesWrapped();
   });
 
   it("toto-tabel", () => {
     renderTab();
-    fireEvent.click(screen.getByRole("button", { name: "Toto" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Toto" }));
     expectTablesWrapped();
   });
 });
@@ -245,5 +250,62 @@ describe("<GroupStandTab /> Zwarte Piet-kaart onderaan (#607)", () => {
     expect(screen.getByText("🃏 De Zwarte Piet")).toBeInTheDocument();
     expect(screen.getByText("slikte een bagel 🥯")).toBeInTheDocument();
     expect(screen.queryByText(/De Piet is vrij/)).toBeNull();
+  });
+});
+
+// #1298: de seizoenskiezer zat alleen in de punten- en toto-weergave, terwijl
+// rating de standaard is. Wie de Stand opende, zag dus nooit dat er iets te
+// bladeren viel — en de eregalerij eronder was daarmee onbereikbaar.
+describe("<GroupStandTab /> seizoenskiezer en weergavekeuze (#1298)", () => {
+  const q1 = seasonFromId("2026-q1")!;
+
+  it("toont de seizoenskiezer in élke weergave", () => {
+    renderTab({ seasons: [q1] });
+    expect(screen.getByLabelText("Seizoen")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Punten" }));
+    expect(screen.getByLabelText("Seizoen")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Rating" }));
+    expect(screen.getByLabelText("Seizoen")).toBeInTheDocument();
+  });
+
+  it("presenteert de weergavekeuze als echte tabbalk", () => {
+    renderTab({ seasons: [q1] });
+    const balk = screen.getByRole("tablist", { name: /standweergave/i });
+    expect(balk).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Rating" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Toto" }));
+    expect(screen.getByRole("tab", { name: "Toto" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("toont bij een afgesloten seizoen de ratings van tóén", () => {
+    renderTab({
+      seasons: [q1],
+      season: q1,
+      // Omgekeerde volgorde t.o.v. `ratings`: p5 stond toen bovenaan.
+      seizoenRatings: { p1: 1000, p2: 1010, p3: 1020, p4: 1030, p5: 1040 },
+    });
+
+    expect(screen.getByText(/eindstand van/i)).toHaveTextContent("Q1 2026");
+    // Het podium toont de stand van toen, niet die van nu.
+    expect(screen.getByText("1040")).toBeInTheDocument();
+    expect(screen.queryByText("1200")).toBeNull();
+    // Een ▲/▼ van vandaag zegt niets over een afgesloten kwartaal.
+    expect(document.querySelector(".stat__delta")).toBeNull();
+    expect(document.querySelector(".sparkline")).toBeNull();
+  });
+
+  it("houdt de live rating zolang er geen seizoen gekozen is", () => {
+    renderTab({ seasons: [q1] });
+    expect(screen.getByText("1200")).toBeInTheDocument();
+    expect(screen.queryByText(/eindstand van/i)).toBeNull();
   });
 });

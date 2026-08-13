@@ -63,3 +63,33 @@ describe("journeyFor — status naast toon", () => {
     expect(j.label).toMatch(/plan een speeldag/i);
   });
 });
+
+// `tab` lag er sinds #1121 bij zonder lezer; sinds #1298 bepaalt hij waar de
+// reis-pil in de groepskop je heen brengt. Alles wat om een handeling vraagt
+// wijst naar de agenda; alleen een geboekte dag van vandaag houdt je hier.
+describe("journeyFor — waar de reis heen wijst", () => {
+  it("stuurt alles wat om een handeling vraagt naar de agenda", () => {
+    expect(journeyFor([poll()], [optie()], VANDAAG, NU).tab).toBe("agenda");
+    expect(
+      journeyFor(
+        [poll({ status: "locked", locked_option_id: "o1" })],
+        [optie()],
+        VANDAAG,
+        NU,
+      ).tab,
+    ).toBe("agenda");
+    expect(journeyFor([], [], VANDAAG, NU).tab).toBe("agenda");
+  });
+
+  it("houdt een geboekte dag van vandaag bij de groep zelf", () => {
+    const geboekt = (datum: string) =>
+      journeyFor(
+        [poll({ status: "booked", locked_option_id: "o1" })],
+        [optie({ date: datum })],
+        VANDAAG,
+        NU,
+      ).tab;
+    expect(geboekt(VANDAAG)).toBe("vandaag");
+    expect(geboekt("2026-08-14")).toBe("agenda");
+  });
+});

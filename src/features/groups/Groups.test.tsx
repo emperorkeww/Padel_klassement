@@ -247,4 +247,37 @@ describe("<Groups />", () => {
     await userEvent.click(screen.getByRole("button", { name: /maak deze groep/i }));
     expect(supabase.from).toHaveBeenCalledWith("groups");
   });
+
+  // #1298: de hub begon met 131px kop waarvan de subtitel nog polls beloofde
+  // (die verhuisden met #1121 naar de agenda), "+ Groep maken" was de
+  // nadrukkelijkste knop van het scherm terwijl een groep maken zeldzaam is, en
+  // het paneel dat die knop opende stond 269px lager, ná de groepenrij.
+  it("houdt de paginakop bij zijn eigen belofte", async () => {
+    const { container } = renderPage();
+    await screen.findByRole("link", { name: /vrijdagavond padel/i });
+
+    expect(container.querySelector(".page-subtitle")).not.toHaveTextContent(
+      /polls?/i,
+    );
+    // Eén primaire actie op het scherm: de zwevende "+ Match" in de sectie.
+    expect(screen.getByRole("button", { name: /groep maken/i })).not.toHaveClass(
+      "btn--primary",
+    );
+  });
+
+  it("opent het aanmaakpaneel bij de knop, niet onder de groepen", async () => {
+    const { container } = renderPage();
+    await screen.findByRole("link", { name: /vrijdagavond padel/i });
+
+    await userEvent.click(screen.getByRole("button", { name: /groep maken/i }));
+    const paneel = (await screen.findByLabelText(/groepsnaam/i)).closest(
+      "section",
+    )!;
+    const groepen = screen.getByRole("region", { name: /mijn groepen/i });
+    expect(
+      paneel.compareDocumentPosition(groepen) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(container.querySelector(".page-head")).not.toContainElement(paneel);
+  });
 });

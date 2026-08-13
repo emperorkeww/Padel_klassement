@@ -19,6 +19,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { getProfile, displayName } from "@/features/profiles/api";
 import { CoachBubble } from "@/features/coach/components/CoachBubble";
 import {
@@ -47,6 +48,10 @@ const SLEUTELS: readonly UitlegSleutel[] = ["intro", ...ZICHTBAAR.map((s) => s.i
 export function Uitleg() {
   const { user } = useAuth();
   const { hash } = useLocation();
+  // Als enige route zette deze pagina geen titel (#1299): in de tabbladenrij
+  // van de browser heette hij "Vamos!", en sinds deze issue zou de mobiele
+  // topbalk hem net zo naamloos laten.
+  usePageTitle("Hoe werkt het?");
   const myId = user?.id ?? "";
   const profile = useAsync(
     () => (myId ? getProfile(myId) : Promise.resolve(null)),

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { useAsync } from "@/lib/hooks/useAsync";
+import { useAsync, type AsyncState } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { EmptyState } from "@/ui/EmptyState";
 import { Aankondiging } from "@/ui/Aankondiging";
@@ -24,7 +24,7 @@ import { getMyFriendships, categorize, otherId } from "@/features/friends/api";
 import { MatchHistory } from "@/features/matches/components/MatchHistory";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { NewMatchSheet, type NewMatchMode } from "@/features/matches/components/NewMatchSheet";
-import type { Profile } from "@/types";
+import type { Match, Profile } from "@/types";
 import "./Matches.css";
 
 /** Hoeveel matches per keer geladen worden; "toon oudere" telt er zoveel bij. */
@@ -52,6 +52,8 @@ export function MatchesSectie({
   verbergActie = false,
   zonderNieuweMatch = false,
   titel,
+  bron,
+  initieelZichtbaar,
 }: {
   /** "" = alle groepen. Losse matches (zonder groep) vallen daarmee buiten een
    *  gekozen groep. */
@@ -82,6 +84,22 @@ export function MatchesSectie({
    *  groepspagina zet er "Gespeelde matches" boven, want daar gaat het over de
    *  geschiedenis van déze groep en niet over "recent" (#1212). */
   titel?: string;
+  /** Een al geladen matchlijst van de pagina erboven. Zonder deze prop haalt de
+   *  sectie zelf de globale recente lijst op, met een plafond en een "toon
+   *  oudere"-knop.
+   *
+   *  De groepspagina heeft zijn eigen, complete lijst al in handen
+   *  (`getGroupMatches`) en geeft die hier mee (#1298). Daarvóór haalde de
+   *  sectie op die tab een tweede keer op — globaal en afgekapt op 100 — en
+   *  filterde dat client-side terug naar de groep: een groep die een maand niet
+   *  speelde zag straks een halve historie plus een melding over een plafond dat
+   *  op die pagina nergens op sloeg, terwijl de volledige lijst al in het
+   *  geheugen van dezelfde pagina stond. */
+  bron?: AsyncState<Match[]>;
+  /** Hoeveel matches de historie eerst toont; de rest komt achter één knop.
+   *  Zonder waarde staat de hele lijst er (#1298). Dit gaat over renderen, niet
+   *  over ophalen: het plafond van de server heeft zijn eigen melding. */
+  initieelZichtbaar?: number;
 }) {
   const { user } = useAuth();
   const myId = user?.id ?? "";
@@ -111,10 +129,17 @@ export function MatchesSectie({
   const [limiet, setLimiet] = useState(PAGINA);
   // De zwevende logknop wijkt bij vooruitscrollen (#942).
   const fabVerborgen = useVerbergBijScrollen();
-  const matches = useAsync(() => getRecentMatches(limiet), [limiet]);
+  // Krijgt de sectie een lijst mee, dan haalt hij zelf niets op: geen tweede
+  // lezer op dezelfde data, en geen plafond waar de pagina erboven er geen
+  // heeft (#1298).
+  const eigen = useAsync(() => getRecentMatches(limiet), [limiet], {
+    enabled: !bron,
+  });
+  const matches = bron ?? eigen;
   // Kreeg de server precies de limiet terug, dan zit er waarschijnlijk meer
-  // achter. Minder betekent: dit is alles.
-  const afgekapt = (matches.data?.length ?? 0) >= limiet;
+  // achter. Minder betekent: dit is alles. Bij een meegegeven lijst is er geen
+  // limiet om tegenaan te lopen.
+  const afgekapt = !bron && (matches.data?.length ?? 0) >= limiet;
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getAllProfiles, []);
   const friendships = useAsync(getMyFriendships, []);
@@ -163,7 +188,7 @@ export function MatchesSectie({
   useRealtime("matches", reloadAll);
 
   // Geplande matches waarin ik meedoe: bovenaan met inline score-invoer.
-  const plannedMine = useMemo(
+  const plannedAlle = useMemo(
     () =>
       (matches.data ?? []).filter(
         (m) =>
@@ -174,9 +199,25 @@ export function MatchesSectie({
       ),
     [matches.data, tmap, myId],
   );
+  // ...door dezelfde filters als de historie eronder (#1298). Zonder dit stonden
+  // op de Historie-tab van groep A ook de geplande matches van groep B — mét de
+  // knop "Uitslag invullen", dus je vulde vanuit de ene groep de uitslag van de
+  // andere in zonder dat iets dat verraadde.
+  const plannedMine = useMemo(
+    () =>
+      filterOpPeriode(
+        filterOpGroep(plannedAlle, groepId),
+        periode,
+        club.timezone,
+      ),
+    [plannedAlle, groepId, periode, club.timezone],
+  );
+  // Wat hierboven staat hoort niet nóg een keer in de historie. Bewust op de
+  // óngefilterde set: een geplande match die door het periodefilter valt, is
+  // geen geschiedenis die er ineens bij mag komen.
   const plannedIds = useMemo(
-    () => new Set(plannedMine.map((m) => m.id)),
-    [plannedMine],
+    () => new Set(plannedAlle.map((m) => m.id)),
+    [plannedAlle],
   );
 
   // De recente-lijst toont alles behalve mijn eigen geplande matches — die
@@ -195,6 +236,19 @@ export function MatchesSectie({
       ),
     [matches.data, plannedIds, groepId, periode, club.timezone],
   );
+
+  // De hub toont eerst een stuk van de historie (#1298): alles in één keer
+  // rendert daar 62 kaarten en 56 dagkoppen, en duwt de verwijzing naar de
+  // banen naar 9.814px. Dit is een render-grens, geen ophaal-grens — vandaar
+  // apart van `limiet` hierboven, dat over de server gaat.
+  const [alleZichtbaar, setAlleZichtbaar] = useState(false);
+  const ingekort =
+    !!initieelZichtbaar && !alleZichtbaar && recent.length > initieelZichtbaar;
+  const zichtbaar = ingekort ? recent.slice(0, initieelZichtbaar) : recent;
+  // Filteren herschikt de lijst; dan hoort de inkorting weer vanaf het begin.
+  useEffect(() => {
+    setAlleZichtbaar(false);
+  }, [groepId, periode]);
 
   return (
     <>
@@ -249,7 +303,7 @@ export function MatchesSectie({
 
       <MatchHistory
         title={titel}
-        matches={recent}
+        matches={zichtbaar}
         teams={tmap}
         profiles={pmap}
         myId={myId}
@@ -290,10 +344,25 @@ export function MatchesSectie({
         }
       />
 
+      {/* Eerst de rest van wat er al is (#1298), pas daarna de vraag of er nóg
+          meer van de server moet komen. Nooit twee "toon meer"-knoppen onder
+          elkaar: die zouden hetzelfde beloven en iets anders doen. */}
+      {ingekort && !matches.loading && !matches.error && (
+        <div className="matches__meer">
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setAlleZichtbaar(true)}
+          >
+            Toon oudere matches ({recent.length - zichtbaar.length})
+          </button>
+        </div>
+      )}
+
       {/* Afkapping expliciet melden (#914): zonder dit leek de lijst compleet,
           terwijl alles ouder dan de limiet simpelweg niet geladen was. Ook het
           antwoord op de filter-valkuil — filteren gebeurt op wat er geladen is. */}
-      {!matches.loading && !matches.error && afgekapt && (
+      {!ingekort && !matches.loading && !matches.error && afgekapt && (
         <div className="matches__meer">
           <p className="matches__meer-note">
             Alleen de laatste {limiet} matches zijn geladen. Zoek je iets ouders

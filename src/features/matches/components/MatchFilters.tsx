@@ -36,7 +36,11 @@ export function MatchFilters({
    *  overschrijven (zie speelParams.ts). */
   onWis: () => void;
 }) {
-  const actief = !!periode || !!groep;
+  // Alleen wissen wat op déze pagina te wissen valt (#1298). Op de groepspagina
+  // is `groep` het route-id: altijd gevuld, maar niet door een filter gezet en
+  // dus ook niet door `onWis` te verwijderen. De knop stond daar permanent en
+  // deed bij een klik niets — de URL was er ná de klik identiek.
+  const actief = !!periode || (groepen.length > 0 && !!groep);
 
   return (
     <div className="match-filters" role="group" aria-label="Matches filteren">

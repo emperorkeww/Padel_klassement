@@ -2,6 +2,8 @@ import { Suspense, useMemo, useState, type ReactNode } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
+import { useBackTo } from "@/lib/hooks/useBackTo";
+import { usePaginaTitel } from "@/lib/hooks/usePageTitle";
 import { getProfile, displayName } from "@/features/profiles/api";
 import { useTierAnnouncement } from "@/features/standings/useTierAnnouncement";
 import { useBadgeAnnouncement } from "@/features/standings/useBadgeAnnouncement";
@@ -120,6 +122,74 @@ const sidebarGroups = (myId: string): { title: string; items: NavItem[] }[] => [
 // aan `item.end`.
 const TABBAR: NavItem[] = [AGENDA, SPELEN, OVERZICHT, KLASSEMENT, FEED];
 
+/**
+ * Verdient dit pad een terugweg in de shell (#1299)?
+ *
+ * De maatstaf is "is dit exact een tabbestemming", niet "is er een tab actief".
+ * Een groepsdetail markeert Spelen wél, maar je staat er twee stappen diep — en
+ * de losse terug-link die daar stond is met deze balk vervallen. Alle vijf
+ * tabbestemmingen zijn exacte paden, dus een gelijkheidstest volstaat;
+ * querystrings (`/spelen?groep=…`) zitten niet in `pathname`.
+ */
+export function moetTerugTonen(pathname: string) {
+  return !TABBAR.some((item) => pathname === item.to);
+}
+
+/**
+ * Waar de ← heen gaat als er géén historie is om op terug te vallen — een
+ * deeplink uit een pushbericht of een gedeelde link (#910).
+ *
+ * Per sectie de plek waar zo'n link vandaan komt. `/spelers/:id` heeft er twee:
+ * je eigen kaart hoort bij het overzicht, die van een ander bij het klassement.
+ */
+export function terugFallback(pathname: string, mijnProfiel: string) {
+  if (pathname.startsWith("/speeldag")) return "/agenda";
+  if (pathname.startsWith("/groepen") || pathname.startsWith("/matches"))
+    return "/spelen";
+  if (pathname === "/profiel") return mijnProfiel;
+  if (pathname.startsWith("/spelers"))
+    return pathname === mijnProfiel ? "/" : "/klassement";
+  return "/";
+}
+
+/**
+ * De titel van de huidige pagina in de mobiele topbalk (#1299).
+ *
+ * Eigen component zodat alleen dit `<span>` opnieuw rendert als een pagina zijn
+ * titel laat binnenkomen — de shell eromheen blijft staan. Zolang de titel
+ * onbekend is (lazy-laden, een groepsnaam die nog moet komen) draagt de balk
+ * het merk; dat is eerlijker dan de titel van de vorige pagina.
+ */
+function TopbarTitel() {
+  const titel = usePaginaTitel();
+  return <span className="topbar__titel">{titel ?? "Vamos!"}</span>;
+}
+
+/**
+ * Eén terugknop voor de hele app (#1299), in twee vormen: als pijl in de
+ * mobiele topbalk en als knop boven de inhoud op desktop — daar bestaat de
+ * topbalk niet, en een geïnstalleerde PWA heeft geen browserknop om op terug te
+ * vallen. De CSS kiest welke van de twee je ziet.
+ */
+function TerugKnop({
+  fallback,
+  className,
+  children,
+  label,
+}: {
+  fallback: string;
+  className: string;
+  children: ReactNode;
+  label?: string;
+}) {
+  const terug = useBackTo(fallback);
+  return (
+    <button type="button" className={className} onClick={terug} aria-label={label}>
+      {children}
+    </button>
+  );
+}
+
 export function DashboardLayout() {
   const { user, signOut } = useAuth();
   const { pathname } = useLocation();
@@ -143,6 +213,10 @@ export function DashboardLayout() {
   // — wie de app opende op Klassement of Clubblad zag niet dat er een stem of
   // een uitslag op hem wachtte. Deelt zijn bronnen met het overzicht en de hub.
   const attentie = useAttentie(myId);
+  // Terugweg in de shell (#1299): op elk pad dat geen tabbestemming is, in de
+  // topbalk op mobiel en boven de inhoud op desktop.
+  const moetTerug = moetTerugTonen(pathname);
+  const terugNaar = terugFallback(pathname, mijnProfiel);
   /** Verdient dit tabblad een stip, en wat hoort de screenreader dan? */
   function stipVoor(item: NavItem): string | null {
     if (item.to === AGENDA.to && attentie.agenda)
@@ -208,20 +282,39 @@ export function DashboardLayout() {
       {/* Open source-signaal: schuine GitHub-ribbon in de rechterbovenhoek
           (#252). Enkel op desktop; op mobiel staat daar de avatar. */}
       <GithubRibbon />
-      {/* Mobiele topbalk: merk links, de ?-knop en de eigen avatar rechts.
+      {/* Mobiele topbalk: waar je bent links, de ingangen rechts.
+          Links stond tot #1299 het woordmerk met een link naar het overzicht —
+          op elke route hetzelfde, en dezelfde bestemming als de bal in de
+          onderbalk. Nu draagt die plek de titel van de pagina, met de terugweg
+          ervoor zodra je dieper dan een tabbestemming staat.
           De ?-knop is de vaste ingang naar "Hoe werkt het?" (#989) en springt
           waar mogelijk naar de sectie van het scherm waar je nú staat. Op
           desktop staat diezelfde ingang in de zijbalk hieronder. */}
       <header className="topbar glas glas--sterk glas--balk glas--levend" ref={topbarRef}>
-        <Link to="/" className="topbar__brand" aria-label="Naar overzicht">
-          <BallIcon size={22} />
-          <span>Vamos!</span>
-        </Link>
+        <div className="topbar__plek">
+          {moetTerug ? (
+            <TerugKnop
+              className="topbar__terug"
+              fallback={terugNaar}
+              label="Terug"
+            >
+              <IconTerug />
+            </TerugKnop>
+          ) : (
+            // Merkteken, geen link: de bal in de onderbalk gaat al naar het
+            // overzicht en stond daar op de duimplek (#1299).
+            <span className="topbar__merk" aria-hidden="true">
+              <BallIcon size={22} />
+            </span>
+          )}
+          <TopbarTitel />
+        </div>
         <div className="topbar__acties">
-          {/* Jokerstatus (#1003): ligt je kaart van deze maand er nog? Vast in
-              de shell, want daarop plan je je speeldag — niet iets waarvoor je
-              eerst een wedstrijdkaart moet openen. */}
-          <JokerKnop myId={myId || null} />
+          {/* Jokerstatus stond hier tot #1299 als vierde cirkel (#1003). Vier
+              even zware knoppen voor vier heel ongelijke dingen: de joker is
+              een stand van zaken, de bel en de ? zijn ingangen. Hij woont nu op
+              /profiel#jokers en op desktop in de zijbalkvoet; de balk houdt de
+              drie dingen over waar je iets mee doet. */}
           {/* Meldingen (#1090): om dezelfde reden hoort de bel hier en niet in
               de onderbalk. Op desktop is deze balk verborgen en staat dezelfde
               ingang in de zijbalk. */}
@@ -310,9 +403,10 @@ export function DashboardLayout() {
         </nav>
 
         <div className="sidebar__foot">
-          {/* Dezelfde status op desktop, zodat de voorraad geen mobiel-only
-              kennis wordt — net als de ?-knop, die hierboven in de navigatie
-              staat. */}
+          {/* De jokerstatus op desktop. Hier is ruimte in de voet en concurreert
+              hij met niets; op mobiel verdween hij uit de topbalk (#1299) en
+              loopt de weg erheen via je profiel (/profiel#jokers), waar de
+              jokers zelf ook staan. */}
           <JokerKnop myId={myId || null} className="sidebar__joker" />
           <Link to={mijnProfiel} className="sidebar__user">
             <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={36} />
@@ -338,6 +432,14 @@ export function DashboardLayout() {
 
       <main className="content" id="content" tabIndex={-1}>
         <div className="content__inner">
+          {/* Dezelfde terugweg op desktop, waar de topbalk verborgen is (#1299).
+              Buiten de foutgrens en de Suspense: hij hoort bij de shell, dus hij
+              moet blijven staan als de pagina eronder crasht of nog laadt. */}
+          {moetTerug && (
+            <TerugKnop className="btn btn--sm content__terug" fallback={terugNaar}>
+              ← Terug
+            </TerugKnop>
+          )}
           {/* Suspense hier (i.p.v. rond alle routes) houdt de balken gemount
               tijdens het lazy-laden van een pagina — zo springt de navigatie
               op mobiel niet weg. De skeleton is tekstloos en volgt sinds #949
@@ -457,6 +559,16 @@ function IconFeed() {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M3 12h4l3-8 4 16 3-8h4" />
+    </svg>
+  );
+}
+
+// Terug: de chevron van de topbalk (#1299). Een pijlpunt, geen "←"-teken, zodat
+// hij naast de line-iconen van de onderbalk in dezelfde taal staat.
+function IconTerug() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M15 5 8 12l7 7" />
     </svg>
   );
 }

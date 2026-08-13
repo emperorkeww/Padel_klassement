@@ -18,6 +18,7 @@ import { getGroupPlayerStandings } from "@/features/standings/api";
 import {
   getPlayerRatings,
   getRatingHistoriesForMatches,
+  getRatingsAsOf,
   getRecentRatingHistories,
   mergeRatingHistories,
 } from "@/features/standings/ratingsApi";
@@ -39,6 +40,7 @@ import {
   isSeasonClosed,
   listSeasons,
   seasonFromId,
+  seizoenEinddag,
 } from "@/features/rating/seasons";
 import { errorMessage } from "@/lib/utils/errors";
 import { groupByRound, openGeplandeRonde } from "./groupDetailHelpers";
@@ -184,6 +186,17 @@ function GroepPagina() {
     onPredictions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matches.reload, standings.reload, teams.reload, ratings.reload, histories.reload, matchHistories.reload, piet.reload, onPredictions]);
+  // De matchlijst zoals de Historie-tab hem krijgt: onze eigen, complete lijst
+  // met onze eigen reload eronder (#1298).
+  const matchesBron = useMemo(
+    () => ({
+      data: matches.data,
+      loading: matches.loading,
+      error: matches.error,
+      reload: onMatches,
+    }),
+    [matches.data, matches.loading, matches.error, onMatches],
+  );
   // Alleen reageren op wijzigingen binnen déze groep, niet op elke match
   // die ergens anders wordt gelogd.
   useRealtime("matches", onMatches, `group_id=eq.${id}`);
@@ -266,6 +279,17 @@ function GroepPagina() {
   // kwartaal of "Alle tijden", dan is er geen kampioen om te vieren (#1216).
   const eregalerijSeizoen =
     season && isSeasonClosed(season) ? season : null;
+  // Rating × afgesloten seizoen (#1298): de ratingstand negeerde het seizoen
+  // volledig, dus onder de eregalerij van toen stonden de ratings van nu. De
+  // stand van tóén komt van de server — één rij per speler, dezelfde RPC als
+  // de tijdmachine in het klassement (#731); uit de gedeelde historie plukken
+  // kan niet, dat is een venster van de laatste matches en geen archief.
+  const eindDag = eregalerijSeizoen ? seizoenEinddag(eregalerijSeizoen) : null;
+  const seizoenRatings = useAsync(
+    () => (eindDag ? getRatingsAsOf(eindDag) : Promise.resolve(null)),
+    [eindDag],
+    { enabled: standSeen },
+  );
   const seasonStandings: PlayerStanding[] | null = season
     ? computePlayerStandings(
         matchesInSeason(completedMatches, season),
@@ -372,7 +396,7 @@ function GroepPagina() {
   // Tabs in reis-volgorde (#106, #674 A1): vandaag → stand. Het plannen zelf
   // begint sinds #1121 op de agenda, over al je groepen heen.
   // Tellers alleen tonen als er iets te tellen valt; ze zitten in de
-  // toegankelijke naam van de tab ("Leden, 6") — zie PageTabs.
+  // toegankelijke naam van de tab ("Groep, 6") — zie PageTabs.
   const tabs: PageTabItem<View>[] = [
     { id: "vandaag", label: "Vandaag", count: rounds.length || undefined },
     {
@@ -381,7 +405,11 @@ function GroepPagina() {
       count: completedMatches.length || undefined,
     },
     { id: "stand", label: "Stand" },
-    { id: "leden", label: "Leden", count: memberList.length || undefined },
+    // Heette "Leden", maar de tab draagt ook het uitnodigen, de
+    // groepsinstellingen en het verwijderen/verlaten (#1298). De URL-key blijft
+    // `leden`: die staat in gedeelde links, en labels en keys zijn hier sinds
+    // #673 bewust losgekoppeld.
+    { id: "leden", label: "Groep", count: memberList.length || undefined },
   ];
 
   if (group.loading)
@@ -405,12 +433,10 @@ function GroepPagina() {
 
   return (
     <div>
-      {/* Terugnavigatie hoort bóven de kop (#946); als knop naast "Leden
-          uitnodigen" stond de weg omhoog ónder de groepstitel, tussen de
-          acties van deze pagina. */}
-      <Link className="terug-link" to="/spelen">
-        <span aria-hidden="true">←</span> Alle groepen
-      </Link>
+      {/* Terugnavigatie hoort bóven de kop (#946) — sinds #1299 draagt de shell
+          hem: de topbalk op mobiel, boven de inhoud op desktop. De losse
+          "← Alle groepen"-link die hier stond was de vierde eigen terugvorm in
+          de app en is daarmee vervallen. */}
       {/* De kop droeg alleen naam plus eigenaar-badge, terwijl de groepskaart
           op de hub wél avatar, ledenrij en reisstatus toont (#917) — de
           groepspagina voelde daardoor minder "van de groep" dan het overzicht
@@ -440,16 +466,37 @@ function GroepPagina() {
                 {journey && (
                   /* De wikkel pakt op telefoonbreedte de hele regel, de pil
                      erin houdt z'n eigen breedte (#975) — zonder wikkel rekte
-                     de pil zelf mee tot een balk over het hele scherm. */
+                     de pil zelf mee tot een balk over het hele scherm.
+
+                     De pil wijst naar de agenda zodra hij om een handeling
+                     vraagt ("stem mee", "boek de baan", "Plan een speeldag →").
+                     Dat is wat `journey.tab` al die tijd zei en niemand las
+                     (#1298): de kop beloofde met een pijl een bestemming en was
+                     een gewone <span>, terwijl de groepspagina sinds #1121
+                     helemaal geen route naar plannen meer had. Wijst de reis
+                     naar vandaag, dan is de pil een mededeling over deze dag —
+                     die blijft tekst, precies zoals hij er staat. */
                   <span className="group-head__journey-rij">
-                    <span
-                      className={`group-head__journey group-head__journey--${journey.tone}`}
-                    >
-                      {journey.icon && (
-                        <span aria-hidden="true">{journey.icon}</span>
-                      )}
-                      {journey.label}
-                    </span>
+                    {journey.tab === "agenda" ? (
+                      <Link
+                        className={`group-head__journey group-head__journey--${journey.tone}`}
+                        to="/agenda"
+                      >
+                        {journey.icon && (
+                          <span aria-hidden="true">{journey.icon}</span>
+                        )}
+                        {journey.label}
+                      </Link>
+                    ) : (
+                      <span
+                        className={`group-head__journey group-head__journey--${journey.tone}`}
+                      >
+                        {journey.icon && (
+                          <span aria-hidden="true">{journey.icon}</span>
+                        )}
+                        {journey.label}
+                      </span>
+                    )}
                   </span>
                 )}
               </p>
@@ -488,7 +535,7 @@ function GroepPagina() {
             </span>
           </CoachBubble>
           <p className="empty-group__hint">
-            Nodig vrienden uit via de Leden-tab om deze groep tot leven te
+            Nodig vrienden uit via de Groep-tab om deze groep tot leven te
             brengen.
           </p>
           {/* Sinds #776 nodigt elk lid uit, dus deze knop is niet meer
@@ -554,7 +601,12 @@ function GroepPagina() {
 
             De groepskeuze-rij blijft weg (vaste groep, `groepen` leeg) en de
             zwevende +Match-knop ook: loggen is binnen de groep de taak van de
-            Vandaag-tab. */}
+            Vandaag-tab.
+
+            De matchlijst komt van deze pagina (#1298): die is compleet en al
+            geladen, terwijl de sectie er anders een tweede, globale en op 100
+            afgekapte lijst naast zet. Herladen loopt via onMatches, zodat een
+            uitslag die je hier invult ook de stand en de Piet bijwerkt. */}
         {view === "matches" && (
           <MatchesSectie
             groepId={id}
@@ -564,6 +616,7 @@ function GroepPagina() {
             onWisFilters={speel.wisFilters}
             titel="Gespeelde matches"
             zonderNieuweMatch
+            bron={matchesBron}
           />
         )}
 
@@ -584,6 +637,7 @@ function GroepPagina() {
             teams={tmap}
             profiles={pmap}
             ratings={ratings.data ?? {}}
+            seizoenRatings={seizoenRatings.data ?? null}
             histories={hmap}
             memberList={memberList}
             myId={myId}

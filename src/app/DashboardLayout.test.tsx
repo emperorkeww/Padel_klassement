@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
@@ -41,7 +41,11 @@ vi.mock("@/features/meldingen/api", async (importOriginal) => ({
   markeerAllesGelezen: vi.fn().mockResolvedValue(undefined),
 }));
 
-import DashboardLayout from "@/app/DashboardLayout";
+import DashboardLayout, {
+  moetTerugTonen,
+  terugFallback,
+} from "@/app/DashboardLayout";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { invalidateAll } from "@/lib/supabase/queryCache";
 import { PLAY_POLL_VOTES, TABLES } from "@/test/fixtures";
 import { supabase } from "@/lib/supabase/client";
@@ -81,19 +85,27 @@ const pt = (
   played_at: "2026-07-02T10:00:00.000Z",
 });
 
-function renderShell(pad = "/") {
+// Een echte pagina zet zijn titel via usePageTitle; sinds #1299 voedt diezelfde
+// aanroep de topbalk. `null` is de staat waarin de titel nog moet laden.
+function Pagina({ titel }: { titel: string | null }) {
+  usePageTitle(titel);
+  return <div>pagina-inhoud</div>;
+}
+
+function renderShell(pad = "/", titel: string | null = "Overzicht") {
+  const inhoud = <Pagina titel={titel} />;
   return render(
     <MemoryRouter initialEntries={[pad]}>
       <AuthProvider>
         <ToastProvider>
           <Routes>
             <Route element={<DashboardLayout />}>
-              <Route path="/" element={<div>pagina-inhoud</div>} />
-              <Route path="/groepen/:id" element={<div>pagina-inhoud</div>} />
-              <Route path="/matches/:id" element={<div>pagina-inhoud</div>} />
+              <Route path="/" element={inhoud} />
+              <Route path="/groepen/:id" element={inhoud} />
+              <Route path="/matches/:id" element={inhoud} />
               {/* #1211: de landing van "Ik" en de instellingen ernaast. */}
-              <Route path="/spelers/:id" element={<div>pagina-inhoud</div>} />
-              <Route path="/profiel" element={<div>pagina-inhoud</div>} />
+              <Route path="/spelers/:id" element={inhoud} />
+              <Route path="/profiel" element={inhoud} />
             </Route>
           </Routes>
         </ToastProvider>
@@ -708,5 +720,104 @@ describe("openstaand vriendschapsverzoek in de shell (#1232)", () => {
       screen.getAllByRole("button", { name: /^meldingen/i })[0],
     ).toHaveAttribute("aria-label", expect.stringContaining("Meldingen"));
     expect(screen.queryByText(/vriendschapsverzoek/i)).toBeNull();
+  });
+});
+
+// De topbalk was op elke route hetzelfde — merk, joker, bel, ?, avatar — en zei
+// dus nergens waar je was; op alles wat geen tabbestemming is (spelersprofiel,
+// instellingen, matchdetail, groepsdetail) was er bovendien geen weg terug in
+// de shell (#1299). Deze twee helpers dragen dat gedrag.
+describe("terugweg in de shell (#1299)", () => {
+  it("laat de tabbestemmingen met rust", () => {
+    for (const pad of ["/", "/agenda", "/spelen", "/klassement", "/clubblad"]) {
+      expect(moetTerugTonen(pad)).toBe(false);
+    }
+  });
+
+  it("toont de terugweg op alles wat een stap dieper ligt", () => {
+    for (const pad of [
+      "/groepen/g1",
+      "/matches/m1",
+      "/speeldag/p1",
+      "/spelers/p1",
+      "/profiel",
+      "/uitleg",
+      "/vrienden",
+      "/banen",
+      "/meldingen",
+      "/admin",
+      "/bestaat-niet",
+    ]) {
+      expect(moetTerugTonen(pad)).toBe(true);
+    }
+  });
+
+  it("kiest per sectie het vangnet waar zo'n deeplink vandaan komt", () => {
+    const ik = "/spelers/p1";
+    expect(terugFallback("/groepen/g1", ik)).toBe("/spelen");
+    expect(terugFallback("/matches/m1", ik)).toBe("/spelen");
+    expect(terugFallback("/speeldag/p1", ik)).toBe("/agenda");
+    expect(terugFallback("/profiel", ik)).toBe(ik);
+    // Je eigen kaart hoort bij het overzicht (#1211), die van een ander bij de
+    // ranglijst waar je hem tegenkwam.
+    expect(terugFallback("/spelers/p1", ik)).toBe("/");
+    expect(terugFallback("/spelers/p2", ik)).toBe("/klassement");
+    expect(terugFallback("/vrienden", ik)).toBe("/");
+  });
+});
+
+describe("topbalk zegt waar je bent (#1299)", () => {
+  const topbalk = () => document.querySelector("header.topbar") as HTMLElement;
+
+  it("toont de titel van de pagina in plaats van op elke route het merk", async () => {
+    renderShell("/spelers/p2", "Bob Boers");
+    await screen.findByText("pagina-inhoud");
+    expect(topbalk()).toHaveTextContent("Bob Boers");
+  });
+
+  it("valt op het merk terug zolang de titel nog onbekend is", async () => {
+    // Een groepsnaam of spelernaam komt pas na een fetch; tot die tijd is de
+    // titel van de vórige pagina fout en het merk eerlijk.
+    renderShell("/groepen/g1", null);
+    await screen.findByText("pagina-inhoud");
+    expect(topbalk()).toHaveTextContent("Vamos!");
+  });
+
+  it("zet een terugpijl in de balk op een pagina onder een tab", async () => {
+    renderShell("/spelers/p2", "Bob Boers");
+    await screen.findByText("pagina-inhoud");
+    expect(
+      within(topbalk()).getByRole("button", { name: "Terug" }),
+    ).toBeInTheDocument();
+  });
+
+  it("laat de pijl weg op een tabbestemming; daar staat het merkteken", async () => {
+    renderShell("/", "Overzicht");
+    await screen.findByText("pagina-inhoud");
+    expect(within(topbalk()).queryByRole("button", { name: "Terug" })).toBeNull();
+    expect(topbalk().querySelector(".topbar__merk")).not.toBeNull();
+  });
+
+  it("houdt drie ingangen rechts; de joker staat in de zijbalkvoet", async () => {
+    // Vier even zware cirkels voor vier ongelijke dingen (#1299): de joker is
+    // een stand van zaken en hoort niet naast de twee ingangen te wegen.
+    const { container } = renderShell();
+    await screen.findByText("pagina-inhoud");
+    // Wat er wél staat: bel, ?, avatar.
+    const acties = topbalk().querySelector(".topbar__acties") as HTMLElement;
+    expect(acties.children).toHaveLength(3);
+    expect(topbalk().querySelector(".joker-knop")).toBeNull();
+    // De zijbalkvoet houdt hem; dat hij daar niets rendert komt doordat de
+    // jokerdata in deze suite niet geladen wordt (de knop toont zich pas als
+    // hij zijn maand kent) — het gaat hier om de plek, niet om de stand.
+    expect(container.querySelector(".sidebar__foot")).not.toBeNull();
+  });
+
+  it("draagt de terugweg ook buiten de topbalk, voor desktop", async () => {
+    // Daar is de topbalk verborgen en heeft een geïnstalleerde PWA geen
+    // browserknop; beide knoppen komen uit dezelfde component.
+    const { container } = renderShell("/profiel", "Instellingen");
+    await screen.findByText("pagina-inhoud");
+    expect(container.querySelector(".content__terug")).not.toBeNull();
   });
 });

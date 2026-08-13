@@ -80,6 +80,20 @@
   color: var(--ink-soft);
   font-weight: 600;
 }
+/* Vraagt de reis om een handeling, dan is de pil een link naar de agenda
+   (#1298). De pilvorm blijft leidend, dus geen vaste onderstreping; bij hover
+   en toetsenbordfocus komt hij erbij zodat kleur niet het enige signaal is. */
+a.group-head__journey {
+  text-decoration: none;
+}
+a.group-head__journey:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+a.group-head__journey:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
 .group-head__acties {
   flex-shrink: 0;
 }
@@ -96,10 +110,9 @@
   border-left: 3px solid var(--success);
 }
 
-/* Stand-tab: Rating/Punten-toggle in de kaartkop + rating-weergave (#52). */
-.card__head .tabs--head {
-  margin: 0;
-}
+/* Stand-tab: rating-weergave (#52). De weergavekeuze is sinds #1298 een
+   PageTabs-segmentbalk ónder de kaartkop; de seizoenskiezer staat in de kop
+   zelf — die zegt wélke periode je bekijkt, de balk hóe. */
 .rating-thin .rating-cell,
 .rating-thin .stat__delta {
   opacity: 0.55;
@@ -109,7 +122,10 @@
   color: var(--ink-soft);
 }
 .stand-season {
-  margin-bottom: var(--sp-3);
+  flex-shrink: 0;
+}
+.card__head + .tabs--segment {
+  margin-bottom: var(--sp-4);
 }
 
 /* ---- "Wie speelt er?" (aanwezigheid per speeldag) ---- */
@@ -257,11 +273,22 @@
   margin-right: var(--sp-2);
   accent-color: var(--accent);
 }
-.invite-url {
-  width: 100%;
-  margin-top: var(--sp-2);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: var(--fs-sm);
+/* Acties horen bij wat erboven staat, dus links uitgelijnd (#1298). In
+   .form-actions (flex-end) stond "Voeg toe" op 1280px 860px van het vinkje
+   waar hij bij hoorde. */
+.groep-acties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+/* De onomkeerbare acties in een eigen zone (#1298): rand en kop zeggen wat de
+   bevestigingsdialoog al deed, maar dan vóór de klik. */
+.card--gevaren {
+  border-color: var(--danger-line);
+}
+.card--gevaren .card__title {
+  color: var(--danger);
 }
 
 /* Groepskampioen-banner (zelfde look als het globale klassement). */
@@ -293,7 +320,10 @@
 }
 
 /* Gast toevoegen aan een groep: naam-invoer + knop. */
-.guest-add {
+/* Heette .guest-add, net als het gastenblok in NewMatchSheet.css — twee
+   globale bladen met dezelfde klassenamen, waarbij het laatst geladen blad won
+   (#1298). */
+.groep-gast {
   display: flex;
   gap: var(--sp-2);
   /* Het veld draagt sinds #924 een zichtbaar label; de knop lijnt daarom uit op
@@ -301,11 +331,11 @@
   align-items: end;
   margin-top: var(--sp-2);
 }
-.guest-add__veld {
+.groep-gast__veld {
   flex: 1;
   min-width: 0;
 }
-.guest-add__input {
+.groep-gast__input {
   width: 100%;
   min-width: 0;
 }
@@ -335,20 +365,5 @@
   margin-bottom: 1.5rem;
 }
 
-/* Terugnavigatie boven de groepskop (#946). Zelfde toon als de andere
-   secundaire ingangen: een link, geen knop — de weg omhoog concurreert niet
-   met de acties van deze pagina. */
-.terug-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-1);
-  margin-bottom: var(--sp-2);
-  min-height: 32px;
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--ink-soft);
-  text-decoration: none;
-}
-.terug-link:hover {
-  color: var(--accent);
-}
+/* De terugnavigatie boven de groepskop (#946) is met #1299 naar de shell
+   verhuisd; `.terug-link` bestaat daarom niet meer. */

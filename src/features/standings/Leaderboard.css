@@ -175,31 +175,10 @@
   opacity: 0.7;
 }
 
-/* ---------- Rating-cel: pil + ratingverloop samen ---------- */
-.rating-cell {
-  display: inline-block;
-  padding: 0.125rem var(--sp-2);
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  border: 1px solid var(--accent-line);
-  font-weight: 700;
-  font-size: var(--fs-sm);
-  font-variant-numeric: tabular-nums;
-}
-/* Rating is het hoofdgetal van het spelersklassement (#139). */
-.rating-cell--lead {
-  font-size: 1.05rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  padding: 0.15rem var(--sp-3);
-}
-.rating-wrap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--sp-2);
-}
+/* De rating-cel (.rating-cell, .rating-cell--lead, .rating-wrap) stond hier,
+   maar de groeps-Stand gebruikt dezelfde markup terwijl dit blad alleen op de
+   klassement-route laadt: daar plakten de divisie-badge en het getal tegen
+   elkaar ("Bankvuller I892", #1298). Verhuisd naar ui.css, dat overal geldt. */
 
 /* ---------- Punten: hoofdgetal in het teamklassement; bij spelers gedempt ---------- */
 .pts-cell {

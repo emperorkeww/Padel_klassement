@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { openScoreSheets } from "@/test/plannedCard";
 import { MemoryRouter } from "react-router-dom";
@@ -17,15 +17,16 @@ import { useSpeelParams } from "./speelParams";
 import { supabase } from "@/lib/supabase/client";
 import { makeQuery } from "@/test/supabaseMock";
 import { invalidateAll } from "@/lib/supabase/queryCache";
-import { MATCH_DONE } from "@/test/fixtures";
+import { MATCH_DONE, MATCH_PLANNED } from "@/test/fixtures";
 
 /** De sectie zoals de Spelen-hub hem monteert (#1123): met de échte
  *  URL-bedrading eromheen, zodat de filter- en ?log=1-tests toetsen wat er in
  *  de app gebeurt en niet wat een testkopie van die bedrading doet. */
-function Harnas() {
+function Harnas({ initieelZichtbaar }: { initieelZichtbaar?: number }) {
   const speel = useSpeelParams();
   return (
     <MatchesSectie
+      initieelZichtbaar={initieelZichtbaar}
       groepId={speel.groep}
       onGroep={speel.zetGroep}
       groepen={[{ id: "g1", name: "Vrijdagavond padel" }]}
@@ -38,12 +39,12 @@ function Harnas() {
   );
 }
 
-function renderPage(url = "/") {
+function renderPage(url = "/", initieelZichtbaar?: number) {
   return render(
     <MemoryRouter initialEntries={[url]}>
       <AuthProvider>
         <ToastProvider>
-          <Harnas />
+          <Harnas initieelZichtbaar={initieelZichtbaar} />
         </ToastProvider>
       </AuthProvider>
     </MemoryRouter>,
@@ -425,6 +426,93 @@ describe("<MatchesSectie />", () => {
       expect(
         screen.queryByRole("button", { name: /toon oudere matches/i }),
       ).toBeNull();
+    } finally {
+      herstel();
+    }
+  });
+
+  // #1298: "Te spelen" leidde zijn lijst af zónder de filters die de historie
+  // eronder wél kreeg. Op elke groepscontext stonden dus dezelfde vier geplande
+  // matches, mét de knop "Uitslag invullen".
+  it("houdt Te spelen binnen het groepsfilter", async () => {
+    const herstel = metMatches([
+      { ...MATCH_DONE, id: "in-groep", group_id: "g1" },
+      { ...MATCH_PLANNED, id: "plan-g1", group_id: "g1" },
+      { ...MATCH_PLANNED, id: "plan-elders", group_id: "g2" },
+      { ...MATCH_PLANNED, id: "plan-los", group_id: null },
+    ]);
+    try {
+      renderPage();
+      // Zonder groepskeuze staan ze er alle drie.
+      expect(await screen.findByText(/te spelen/i)).toBeInTheDocument();
+      const alles = screen.getByText(/te spelen/i).closest("section")!;
+      expect(within(alles).getByText("3")).toBeInTheDocument();
+
+      await userEvent.selectOptions(screen.getByLabelText("Groep"), "g1");
+      const gefilterd = screen.getByText(/te spelen/i).closest("section")!;
+      // Alleen de geplande match van deze groep blijft over.
+      expect(within(gefilterd).getByText("1")).toBeInTheDocument();
+    } finally {
+      herstel();
+    }
+  });
+
+  it("houdt Te spelen binnen het periodefilter", async () => {
+    const herstel = metMatches([
+      { ...MATCH_DONE, id: "vers", played_at: new Date().toISOString() },
+      {
+        ...MATCH_PLANNED,
+        id: "plan-oud",
+        played_at: "2020-01-05T18:00:00.000Z",
+        created_at: "2020-01-05T18:00:00.000Z",
+      },
+    ]);
+    try {
+      renderPage();
+      expect(await screen.findByText(/te spelen/i)).toBeInTheDocument();
+
+      await userEvent.selectOptions(screen.getByLabelText("Periode"), "7d");
+      expect(screen.queryByText(/te spelen/i)).toBeNull();
+      // En de geplande match glipt ook niet alsnog de historie in.
+      expect(await screen.findByText(/1 match in de historie\./)).toBeInTheDocument();
+    } finally {
+      herstel();
+    }
+  });
+
+  // #1298: de hub rendert de hele historie in één keer — 62 kaarten en 56
+  // dagkoppen, 10.037px lang, met de verwijzing naar de banen op 9.814px.
+  it("kort de historie in en toont de rest achter één knop", async () => {
+    const herstel = metMatches(veelMatches(30));
+    try {
+      const { container } = renderPage("/", 15);
+      await screen.findByText(/recente matches/i);
+      await waitFor(() =>
+        expect(container.querySelectorAll(".match-card")).toHaveLength(15),
+      );
+
+      // Eén knop, niet twee: het serverplafond meldt zich pas als alles staat.
+      expect(screen.queryByText(/alleen de laatste/i)).toBeNull();
+      await userEvent.click(
+        screen.getByRole("button", { name: /toon oudere matches \(15\)/i }),
+      );
+      expect(container.querySelectorAll(".match-card")).toHaveLength(30);
+      expect(
+        screen.queryByRole("button", { name: /toon oudere matches \(/i }),
+      ).toBeNull();
+    } finally {
+      herstel();
+    }
+  });
+
+  it("laat de groepspagina de volledige historie houden", async () => {
+    const herstel = metMatches(veelMatches(30));
+    try {
+      const { container } = renderPage();
+      await screen.findByText(/recente matches/i);
+      await waitFor(() =>
+        expect(container.querySelectorAll(".match-card")).toHaveLength(30),
+      );
     } finally {
       herstel();
     }

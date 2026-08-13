@@ -434,10 +434,13 @@
   gap: 4px;
 }
 
-/* Kopacties naast "← Terug": delen en het ⋯-beheermenu (#1144). */
+/* Kopacties: delen en het ⋯-beheermenu (#1144). Stonden tot #1299 naast een
+   "← Terug"-knop die de linkerhelft van de rij vulde; nu die in de shell zit,
+   houdt deze rij zichzelf rechts. */
 .md-kopacties {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--sp-2);
 }
 

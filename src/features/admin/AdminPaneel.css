@@ -144,32 +144,14 @@
   margin-bottom: 0.75rem;
 }
 
-/* Eenmalig geheim: een herstel-link of tijdelijk wachtwoord. */
+/* Eenmalig geheim: een herstel-link of tijdelijk wachtwoord. Het veld met de
+   kopieerknop is sinds #1298 het gedeelde .kopieerveld (ui.css); dit is alleen
+   nog de omkadering die zegt dat het om een geheim gaat. */
 .admin-geheim {
   margin-top: 0.75rem;
   padding: 0.625rem 0.75rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-md, 0.5rem);
-}
-
-.admin-geheim__label {
-  display: block;
-  font-size: 0.8125rem;
-  color: var(--muted);
-  margin-bottom: 0.25rem;
-}
-
-.admin-geheim__rij {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.admin-geheim__waarde {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.875rem;
 }
 
 .admin-audit__meta {

@@ -251,6 +251,31 @@ textarea {
   font-weight: 400;
   color: var(--ink-soft);
 }
+/* Waarde om door te geven (link, code) met een kopieerknop ernaast (#1298).
+   Gedeeld door de uitnodigingslink van een groep en de eenmalige geheimen in
+   het adminpaneel. */
+.kopieerveld {
+  display: grid;
+  gap: var(--sp-1);
+}
+.kopieerveld__label {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.kopieerveld__rij {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.kopieerveld__waarde {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--fs-sm);
+}
+.kopieerveld__rij .btn {
+  flex: none;
+}
 /* Compacte filter-select in een toolbar (volle breedte op mobiel). */
 .select--filter {
   max-width: 220px;
@@ -311,6 +336,36 @@ textarea {
   align-items: center;
   gap: var(--sp-2);
   min-width: 0;
+}
+
+/* Rating-cel: pil + divisie-badge + ratingverloop naast elkaar. Stond tot
+   #1298 in Leaderboard.css, dat alleen op de klassement-route laadt — terwijl
+   de groeps-Stand dezelfde markup rendert. Zonder deze regels was `.rating-wrap`
+   daar een gewone inline-span zonder gap en `.rating-cell` een kaal getal:
+   "🪑 Bankvuller I" eindigde op x=289 en "892" begon op x=289. */
+.rating-cell {
+  display: inline-block;
+  padding: 0.125rem var(--sp-2);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-line);
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+/* Rating is het hoofdgetal van het spelersklassement (#139). */
+.rating-cell--lead {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  padding: 0.15rem var(--sp-3);
+}
+.rating-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-2);
 }
 /* Schande-token-emoji naast een naam (🃏 Zwarte Piet / 🤡 Pias, #523): enkel
    het tekentje, iets kleiner en niet meegeknipt door een ellipsis-naam. */
@@ -1052,6 +1107,15 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--sp-3);
+}
+/* Dezelfde rij met alles rechts. Ontstond toen de terugknop links uit een paar
+   van die rijen verdween (#1299): wat overblijft hoort niet naar links te
+   schuiven, want de plek van die acties was rechts. */
+.row-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   gap: var(--sp-3);
 }
 /* Pagina-toolbar: tabs/filters boven een lijst of tabel. */
