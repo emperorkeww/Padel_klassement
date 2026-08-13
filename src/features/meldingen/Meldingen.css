@@ -1,6 +1,14 @@
 /* De route /meldingen (#1090). De rijen komen uit MeldingenLijst.css; hier
    staat alleen wat de pagina eromheen nodig heeft. */
 
+/* De kaart is dekkend, dus hier mag het tijdstempel wél zakken (#1273): op
+   --surface haalt --ink-soft-strong 5,76 licht en 11,85 donker. Op het glazen
+   paneel gold dat niet — daar hangt de lijst boven de FUT-kaart — en daarom
+   staat de kleur op een variabele die de drager zet, niet in de rij zelf. */
+.meldingen-pagina .card {
+  --melding-tijd-ink: var(--ink-soft-strong);
+}
+
 .meldingen-pagina__meer {
   display: flex;
   justify-content: center;

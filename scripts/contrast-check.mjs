@@ -318,6 +318,40 @@ for (const [rand, drager, min, label] of RANDEN) {
   );
 }
 
+// ---- Betekenisdragende grenzen, in béíde thema's (#1273) ----
+// De sectie hierboven rekent alleen op donker: de lichte randen zijn oude
+// schuld die te groot is om hier in één keer om te gooien. Voor een lijn die
+// niet decoratief is maar het enige verschil tússen twee items, is dat te
+// weinig — in het lichte thema stond de scheiding in de meldingenlijst op
+// 1,22:1 en viel de rij-indeling volledig op witruimte terug. Zulke lijnen
+// krijgen een eigen token en worden hier in beide thema's hard getoetst.
+// [rand, drager, minimale ratio, omschrijving]
+const GRENZEN = [
+  ["melding-scheiding", "surface", 3.0, "scheiding tussen twee meldingen (1.4.11)"],
+];
+
+console.log("\n— Betekenisdragende grenzen: ≥3:1, beide thema's —");
+for (const [rand, drager, min, label] of GRENZEN) {
+  for (const [naam, tokens] of [
+    ["licht", light],
+    ["donker", dark],
+  ]) {
+    const f = tokens[rand];
+    const b = tokens[drager];
+    if (!f || !b || !parseColor(f) || !parseColor(b)) {
+      console.error(`  FAIL ${rand} of ${drager} ontbreekt in thema ${naam}`);
+      randFailures++;
+      continue;
+    }
+    const c = contrast(f, b);
+    const ok = c >= min;
+    if (!ok) randFailures++;
+    console.log(
+      `  ${ok ? "ok  " : "FAIL"} ${c.toFixed(2).padStart(5)} ≥ ${min}  ${rand} op ${drager}, thema ${naam} (${label})`,
+    );
+  }
+}
+
 // ---- Plafond op het meubilair (#1264) ----
 // De ladder hierboven kent alleen ondergrenzen, en die zijn met omhoog
 // schuiven altijd te halen: sinds #1255 kroop elk niveau een stap op tot de

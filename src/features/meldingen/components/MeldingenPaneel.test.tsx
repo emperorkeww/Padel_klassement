@@ -213,8 +213,62 @@ describe("<MeldingenPaneel /> (#1090)", () => {
         />
       </MemoryRouter>,
     );
-    // De stip is aria-hidden; "ongelezen" staat als tekst in de regel.
+    // Het icoon is aria-hidden; "ongelezen" staat als tekst in de regel.
     expect(container.querySelector(".melding--ongelezen")).not.toBeNull();
     expect(screen.getAllByText(/ongelezen/i).length).toBeGreaterThan(0);
+  });
+
+  // #1273: negen soorten die op één regel leken.
+  describe("de rij draagt haar soort (#1273)", () => {
+    it("geeft elke soort een eigen icoonvlak in zijn accentfamilie", () => {
+      const { container } = render(
+        <MemoryRouter>
+          <MeldingenPaneel
+            open
+            onClose={() => {}}
+            meldingen={[
+              melding({ id: "n1", soort: "poll", tag: "t1" }),
+              melding({ id: "n2", soort: "var", tag: "t2", title: "VAR" }),
+              melding({ id: "n3", soort: "uitslag", tag: "t3", title: "Gewonnen" }),
+            ]}
+            laadt={false}
+            limiet={20}
+            onVeranderd={() => {}}
+          />
+        </MemoryRouter>,
+      );
+      expect(container.querySelector(".melding__icoon--poll")).not.toBeNull();
+      expect(container.querySelector(".melding__icoon--warn")).not.toBeNull();
+      expect(container.querySelector(".melding__icoon--success")).not.toBeNull();
+      // Elke rij heeft er precies één, ook als de servertitel al een emoji had.
+      expect(container.querySelectorAll(".melding__icoon")).toHaveLength(3);
+    });
+
+    it("valt terug op een neutraal icoon voor een soort die deze bundel nog niet kent", () => {
+      const { container } = render(
+        <MemoryRouter>
+          <MeldingenPaneel
+            open
+            onClose={() => {}}
+            meldingen={[melding({ soort: "teleportatie" })]}
+            laadt={false}
+            limiet={20}
+            onVeranderd={() => {}}
+          />
+        </MemoryRouter>,
+      );
+      expect(container.querySelector(".melding__icoon--neutraal")).not.toBeNull();
+    });
+
+    it("laat de emoji uit de servertitel weg, want het icoon draagt dat al", () => {
+      toon([melding({ title: "🎾 Nieuwe ronde staat klaar" })]);
+      expect(screen.getByText("Nieuwe ronde staat klaar")).toBeInTheDocument();
+      expect(screen.queryByText(/🎾/)).toBeNull();
+    });
+
+    it("noemt de soort voor wie luistert", () => {
+      toon([melding({ soort: "var", title: "Er wordt een punt betwist" })]);
+      expect(screen.getByText("VAR:")).toBeInTheDocument();
+    });
   });
 });
