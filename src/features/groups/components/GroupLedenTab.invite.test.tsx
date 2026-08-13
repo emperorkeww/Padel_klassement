@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { makeSupabaseMock } from "@/test/supabaseMock";
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -51,9 +51,18 @@ const group: Group = {
   created_at: "2026-01-01T00:00:00Z",
 };
 
+// Waar de tab na verlaten/verwijderen heen navigeert (#1298).
+let huidigPad = "";
+const pad = () => huidigPad;
+function LocatiePeiler() {
+  huidigPad = useLocation().pathname;
+  return null;
+}
+
 function renderTab(zwartePiet: ZwartePietHolder | null = null) {
   return render(
     <MemoryRouter>
+      <LocatiePeiler />
       <ToastProvider>
         <GroupLedenTab
           groupId="gr1"
@@ -144,8 +153,9 @@ describe("<GroupLedenTab /> — leden nodigen zelf uit (#776)", () => {
 });
 
 // #924: de 🃏-badge droeg zijn betekenis alleen in een `title` op een <span> —
-// niet focusbaar, dus met het toetsenbord én op touch onbereikbaar.
-it("noemt de drager van de Zwarte Piet bij naam voor een screenreader", () => {
+// niet focusbaar, dus met het toetsenbord én op touch onbereikbaar. #1298 haalt
+// hem ook uit sr-only: een rode pil met alleen een joker erin zei zíend niets.
+it("noemt de drager van de Zwarte Piet bij naam, ook zichtbaar", () => {
   renderTab({
     groupId: "gr1",
     holderId: "p1",
@@ -157,5 +167,75 @@ it("noemt de drager van de Zwarte Piet bij naam voor een screenreader", () => {
     since: "2026-01-01T00:00:00Z",
   });
 
-  expect(screen.getByText("Draagt de Zwarte Piet")).toBeInTheDocument();
+  const badge = screen.getByText("Zwarte Piet");
+  expect(badge).toBeInTheDocument();
+  expect(badge.closest(".badge")).not.toHaveClass("sr-only");
+});
+
+// #1298: één kaart droeg vier taken; de gast-aanmaak stond twee keer
+// uitgeschreven (Enter én klik), de uitnodigingslink had geen kopieerknop, en
+// verlaten/verwijderen navigeerde via /groepen — een omleiding naar /spelen.
+describe("<GroupLedenTab /> — vier taken, vier kaarten (#1298)", () => {
+  it("zet leden, uitnodigen en de gevarenzone in eigen kaarten", async () => {
+    const { container } = renderTab();
+    await screen.findByText(/vrienden toevoegen/i);
+
+    const koppen = [...container.querySelectorAll("section.card > h2")].map(
+      (h) => h.textContent,
+    );
+    expect(koppen).toEqual(["Leden", "Uitnodigen", "Gevarenzone"]);
+    // De onomkeerbare actie staat in de gevarenzone, niet onder een naamveld.
+    const zone = container.querySelector(".card--gevaren")!;
+    expect(
+      within(zone as HTMLElement).getByRole("button", { name: /groep verlaten/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("voegt een gast ook met Enter toe", async () => {
+    renderTab();
+
+    await userEvent.type(
+      await screen.findByLabelText(/naam van de gast/i),
+      "Dirk{Enter}",
+    );
+
+    expect(supabase.rpc).toHaveBeenCalledWith("create_guest_player", {
+      p_name: "Dirk",
+    });
+  });
+
+  it("geeft de uitnodigingslink een kopieerknop", async () => {
+    const schrijf = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText: schrijf } });
+    renderTab();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /maak uitnodigingslink/i }),
+    );
+    await screen.findByLabelText(/^uitnodigingslink$/i);
+    schrijf.mockClear();
+
+    // Aanmaken kopieert al één keer; deze knop is de herhaalroute.
+    await userEvent.click(screen.getByRole("button", { name: /^kopieer$/i }));
+    expect(schrijf).toHaveBeenCalledWith(
+      `${window.location.origin}/groepen/join/tok-776`,
+    );
+    expect(
+      await screen.findByRole("button", { name: /^gekopieerd$/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("stuurt na verlaten naar de hub zelf, niet via de omleiding", async () => {
+    renderTab();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /groep verlaten/i }),
+    );
+    const dialoog = await screen.findByRole("dialog");
+    await userEvent.click(
+      within(dialoog).getByRole("button", { name: /^verlaten$/i }),
+    );
+
+    await waitFor(() => expect(pad()).toBe("/spelen"));
+  });
 });

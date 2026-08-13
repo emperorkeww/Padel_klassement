@@ -273,11 +273,22 @@ a.group-head__journey:focus-visible {
   margin-right: var(--sp-2);
   accent-color: var(--accent);
 }
-.invite-url {
-  width: 100%;
-  margin-top: var(--sp-2);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: var(--fs-sm);
+/* Acties horen bij wat erboven staat, dus links uitgelijnd (#1298). In
+   .form-actions (flex-end) stond "Voeg toe" op 1280px 860px van het vinkje
+   waar hij bij hoorde. */
+.groep-acties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+/* De onomkeerbare acties in een eigen zone (#1298): rand en kop zeggen wat de
+   bevestigingsdialoog al deed, maar dan vóór de klik. */
+.card--gevaren {
+  border-color: var(--danger-line);
+}
+.card--gevaren .card__title {
+  color: var(--danger);
 }
 
 /* Groepskampioen-banner (zelfde look als het globale klassement). */
@@ -309,7 +320,10 @@ a.group-head__journey:focus-visible {
 }
 
 /* Gast toevoegen aan een groep: naam-invoer + knop. */
-.guest-add {
+/* Heette .guest-add, net als het gastenblok in NewMatchSheet.css — twee
+   globale bladen met dezelfde klassenamen, waarbij het laatst geladen blad won
+   (#1298). */
+.groep-gast {
   display: flex;
   gap: var(--sp-2);
   /* Het veld draagt sinds #924 een zichtbaar label; de knop lijnt daarom uit op
@@ -317,11 +331,11 @@ a.group-head__journey:focus-visible {
   align-items: end;
   margin-top: var(--sp-2);
 }
-.guest-add__veld {
+.groep-gast__veld {
   flex: 1;
   min-width: 0;
 }
-.guest-add__input {
+.groep-gast__input {
   width: 100%;
   min-width: 0;
 }

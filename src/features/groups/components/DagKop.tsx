@@ -215,7 +215,10 @@ function AutomaatChip({
       return (
         <span className="dagkop__chip dagkop__chip--let-op">
           ✋ Rudy staat uit ·{" "}
-          <Link to={`/groepen/${groupId}?tab=leden`}>aanzetten bij Leden</Link>
+          {/* De tab heet sinds #1298 "Groep"; de URL-key bleef `leden`. */}
+          <Link to={`/groepen/${groupId}?tab=leden`}>
+            aanzetten bij Instellingen
+          </Link>
         </span>
       );
   }

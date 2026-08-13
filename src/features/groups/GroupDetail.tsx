@@ -396,7 +396,7 @@ function GroepPagina() {
   // Tabs in reis-volgorde (#106, #674 A1): vandaag → stand. Het plannen zelf
   // begint sinds #1121 op de agenda, over al je groepen heen.
   // Tellers alleen tonen als er iets te tellen valt; ze zitten in de
-  // toegankelijke naam van de tab ("Leden, 6") — zie PageTabs.
+  // toegankelijke naam van de tab ("Groep, 6") — zie PageTabs.
   const tabs: PageTabItem<View>[] = [
     { id: "vandaag", label: "Vandaag", count: rounds.length || undefined },
     {
@@ -405,7 +405,11 @@ function GroepPagina() {
       count: completedMatches.length || undefined,
     },
     { id: "stand", label: "Stand" },
-    { id: "leden", label: "Leden", count: memberList.length || undefined },
+    // Heette "Leden", maar de tab draagt ook het uitnodigen, de
+    // groepsinstellingen en het verwijderen/verlaten (#1298). De URL-key blijft
+    // `leden`: die staat in gedeelde links, en labels en keys zijn hier sinds
+    // #673 bewust losgekoppeld.
+    { id: "leden", label: "Groep", count: memberList.length || undefined },
   ];
 
   if (group.loading)
@@ -531,7 +535,7 @@ function GroepPagina() {
             </span>
           </CoachBubble>
           <p className="empty-group__hint">
-            Nodig vrienden uit via de Leden-tab om deze groep tot leven te
+            Nodig vrienden uit via de Groep-tab om deze groep tot leven te
             brengen.
           </p>
           {/* Sinds #776 nodigt elk lid uit, dus deze knop is niet meer
