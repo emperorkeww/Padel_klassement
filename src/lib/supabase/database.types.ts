@@ -1588,6 +1588,27 @@ export type Database = {
             foreignKeyName: "play_poll_presence_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "play_poll_presence_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "play_poll_presence_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "play_poll_presence_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2741,6 +2762,7 @@ export type Database = {
         Args: { p_match: string; p_uid: string }
         Returns: boolean
       }
+      _mag_speeldag_beheren: { Args: { p_option_id: string }; Returns: boolean }
       _player_joker: {
         Args: { p_match: string; p_player: string }
         Returns: Database["public"]["Enums"]["joker_type"]
@@ -3002,24 +3024,12 @@ export type Database = {
       delete_match: { Args: { p_match_id: string }; Returns: undefined }
       expire_point_appeals: { Args: never; Returns: number }
       first_match_date: { Args: never; Returns: string }
-      delete_round: {
-        Args: {
-          p_dag: string
-          p_group_id: string
-          p_round_number: number
-        }
-        Returns: number
-      }
       generate_americano_round: {
         Args: { p_group_id: string; p_played_at?: string }
         Returns: string[]
       }
       generate_mexicano_round: {
-        Args: {
-          p_group_id: string
-          p_played_at?: string
-          p_players?: string[]
-        }
+        Args: { p_group_id: string; p_played_at?: string; p_players?: string[] }
         Returns: string[]
       }
       get_friend_suggestions: {
