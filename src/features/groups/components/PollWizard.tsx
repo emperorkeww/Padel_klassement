@@ -19,6 +19,7 @@ import {
   DURATIONS,
   EVENING_FROM,
   MAX_OPTIONS,
+  duurLabel,
   floorHalfHour,
   fmtDate,
   longDay,
@@ -38,6 +39,7 @@ export function PollWizard({
   initialDay,
   initialPicked,
   storageKey,
+  bezetteDagen,
   submitLabel,
   confirmHint,
   onSubmit,
@@ -60,6 +62,9 @@ export function PollWizard({
   initialPicked?: Map<string, NewPollOption>;
   /** sessionStorage-sleutel: selectie overleeft een uitstap naar /banen. */
   storageKey?: string;
+  /** Dagen waarop al een speeldag staat (#1308) — een stip in de dagstrip.
+   *  Ontbreekt waar de wizard die kennis niet heeft (de speeldagkaart). */
+  bezetteDagen?: Set<string>;
   submitLabel: (count: number) => string;
   /** Waarschuwing die eerst bevestigd moet worden (bv. momenten vervallen). */
   confirmHint?: (picked: Map<string, NewPollOption>) => string | null;
@@ -107,8 +112,12 @@ export function PollWizard({
   });
   // Een dag verder vooruit dan het beschikbaarheidsvenster opent meteen het
   // handmatige pad, met die dag al ingevuld: alleen het uur is nog aan jou.
+  // Voorgevuld met de dag die je bedoelde, of anders de eerste dag ná het
+  // banenvenster (#1308): een leeg datumveld met een uitgegrijsde knop ernaast
+  // liet je zelf uitzoeken waar dit paneel überhaupt over ging.
   const [manualDate, setManualDate] = useState(
-    concept?.manualDate ?? (buitenVenster ? (initialDay as string) : ""),
+    concept?.manualDate ??
+      (buitenVenster ? (initialDay as string) : addDays(today, 7)),
   );
   const [manualOpen, setManualOpen] = useState(
     concept?.manualOpen ?? buitenVenster,
@@ -243,6 +252,11 @@ export function PollWizard({
     setManualDate("");
   }
 
+  // Staat er al iets gekozen met een andere duur dan de select nu toont? Dan
+  // verdient dat één stille regel — zonder die regel lijkt de select over álle
+  // momenten te gaan (#1308).
+  const gemengdeDuur = [...picked.values()].some((o) => o.duration !== duration);
+
   const hint = confirmHint?.(picked) ?? null;
 
   async function publish() {
@@ -282,7 +296,7 @@ export function PollWizard({
 
       {/* Dag-navigator. */}
       <div className="day-strip" role="tablist" aria-label="Kies een dag">
-        {dagen.map((d) => {
+        {dagen.map((d, i) => {
           const starts = visibleStarts(d.date);
           const n = starts?.length ?? 0;
           const on = selectedDay === d.date;
@@ -290,22 +304,39 @@ export function PollWizard({
           // "do 20" leest daar als de dag erna, dus draagt hij de volle datum
           // als naam (en een scheiding in de CSS).
           const ver = buitenVenster && d.date === initialDay;
+          const isVandaag = d.date === today;
+          const bezet = bezetteDagen?.has(d.date) ?? false;
+          // De strip liep over een maandgrens zonder dat te zeggen: "Do 13"
+          // naast "Za 1" leest als dezelfde maand (#1308). De eerste chip van
+          // een nieuwe maand draagt daarom de maandnaam.
+          const nieuweMaand =
+            i > 0 && d.date.slice(0, 7) !== dagen[i - 1].date.slice(0, 7);
           return (
             <button
               key={d.date}
               role="tab"
               aria-selected={on}
-              className={`day-chip${on ? " is-active" : ""}${n === 0 ? " is-empty" : ""}${ver ? " day-chip--ver" : ""}`}
+              className={`day-chip${on ? " is-active" : ""}${n === 0 ? " is-empty" : ""}${ver ? " day-chip--ver" : ""}${isVandaag ? " is-vandaag" : ""}`}
               title={ver ? longDay(d.date) : undefined}
-              aria-label={ver ? longDay(d.date) : undefined}
+              // De naam noemt altijd de volle dag plus wat er al staat: "do 13
+              // aug" alleen zegt niets over de maand, en een stip zegt niets
+              // tegen een schermlezer (#1308).
+              aria-label={`${longDay(d.date)}${isVandaag ? " — vandaag" : ""}${bezet ? " — er staat al een speeldag" : ""}`}
               onClick={() => setSelectedDay(d.date)}
             >
               <span className="day-chip__name">
-                {fmtDate(d.date, { weekday: "short" }).replace(".", "")}
+                {nieuweMaand
+                  ? fmtDate(d.date, { month: "short" }).replace(".", "")
+                  : fmtDate(d.date, { weekday: "short" }).replace(".", "")}
               </span>
               <span className="day-chip__num">
                 {fmtDate(d.date, { day: "numeric" })}
               </span>
+              {/* Staat er al een speeldag op deze dag? Dan is dat geen verbod —
+                  twee groepen plannen los van elkaar — maar wel iets wat je wil
+                  weten vóór je hem aantikt. Zelfde stip als in het maandraster,
+                  dat pal achter dit sheet ligt. */}
+              {bezet && <span className="day-chip__bezet" aria-hidden="true" />}
               {(() => {
                 const w = summarizeDay(wizardWeather.data?.[d.date] ?? []);
                 return (
@@ -325,10 +356,12 @@ export function PollWizard({
         })}
       </div>
 
-      {/* Uren van de gekozen dag. */}
-      <div className="poll-wizard__slots">
-        {/* Standaard avond-focus; deze knop klapt de vroegere uren uit/in. */}
-        {(hasEarlier || (wholeDay && !manual)) && (
+      {/* Standaard avond-focus; deze knop klapt de vroegere uren uit/in. Boven
+          het raster en niet erin (#1308): als flex-item in het raster moest hij
+          kiezen tussen een volle regel (een pil van 348px met vier woorden
+          erin) en een plek náást de eerste slotchip. */}
+      {(hasEarlier || (wholeDay && !manual)) && (
+        <p className="poll-wizard__slot-kop">
           <button
             type="button"
             className="btn btn--sm poll-wizard__earlier"
@@ -337,7 +370,11 @@ export function PollWizard({
           >
             {wholeDay ? "↓ Alleen avonduren" : "↑ Vroegere uren tonen"}
           </button>
-        )}
+        </p>
+      )}
+
+      {/* Uren van de gekozen dag. */}
+      <div className="poll-wizard__slots">
         {weekLoading && <p className="empty">Vrije banen laden…</p>}
         {!weekLoading && dayStartsVisible == null && (
           <p className="empty">
@@ -360,6 +397,15 @@ export function PollWizard({
               type="button"
               className={`slot-chip${on ? " is-active" : ""}`}
               aria-pressed={on}
+              // Het cijfer erin plakte in de naam aan de tijd vast ("20:001
+              // baan vrij") en zei sowieso niet wát er één was (#1308). Eén
+              // expliciete naam lost allebei op; de legenda onder het raster
+              // doet hetzelfde werk voor het oog.
+              aria-label={
+                manual
+                  ? s.time
+                  : `${s.time} — ${s.courts.length} ${s.courts.length === 1 ? "baan" : "banen"} vrij`
+              }
               onClick={() => toggle(selectedDay, s.time, manual ? null : s.courts.length)}
             >
               {s.time}
@@ -378,6 +424,15 @@ export function PollWizard({
         })}
       </div>
 
+      {/* Wat het cijfer op een slot betekent (#1308). "21:30 ①" was zonder
+          uitleg een raadsel: één wat — banen, plekken, euro's? Eén regel, en
+          alleen waar de cijfers ook echt staan. */}
+      {!manual && dayStartsVisible != null && dayStartsVisible.length > 0 && (
+        <p className="poll-wizard__legenda">
+          Het cijfer is het aantal vrije banen op dat uur.
+        </p>
+      )}
+
       <div className="poll-wizard__controls">
         {/* De avond/vroeger-toggle staat nu boven het raster (poll-wizard__earlier).
             Banen-verkenning in context (#106): opent de Banen-pagina in de app
@@ -386,12 +441,19 @@ export function PollWizard({
             handmatige locatie: daar is geen Playtomic-banenpagina (#322). */}
         {!manual && (
           <Link
-            className="poll-wizard__toggle"
+            className="btn btn--sm poll-wizard__banen-link"
             to={`/banen?datum=${selectedDay}`}
           >
             Verken alle vrije banen →
           </Link>
         )}
+        {/* De duur geldt voor de momenten die je hierná aantikt (#1308). Elk
+            gekozen moment houdt de duur waarmee het gekozen is — dat kan de
+            database ook (`play_poll_options.duration` staat per rij), en het is
+            legitiem: vrijdag 60 minuten omdat er niets anders vrij is, zondag
+            90. Wat ontbrak was dat je het zág: de chip in de voet noemde de
+            duur niet, dus je startte een speeldag van 90 terwijl het scherm
+            120 zei. */}
         <label className="poll-wizard__toggle">
           Duur{" "}
           <select
@@ -407,13 +469,24 @@ export function PollWizard({
           </select>
         </label>
       </div>
+      {gemengdeDuur && (
+        <p className="poll-wizard__duur-uitleg">
+          De duur geldt voor wat je hierna kiest; gekozen momenten houden de
+          hunne.
+        </p>
+      )}
 
+      {/* Verder vooruit dan het banenvenster (#1308). Was een uitklap met twee
+          lege systeemvelden en een uitgegrijsde knop: "Ander moment (verder
+          vooruit)" zei niet dat hier de enige weg lag naar een dag over twee
+          weken. Nu een gewone stap met een voorgevulde datum — alleen het uur
+          is nog aan jou. */}
       <details
         className="poll-wizard__manual-details"
         open={manualOpen}
         onToggle={(e) => setManualOpen(e.currentTarget.open)}
       >
-        <summary>Ander moment (verder vooruit)</summary>
+        <summary>Verder vooruit plannen — datum zelf kiezen</summary>
         <div className="poll-wizard__manual">
           <label className="proposal-form__field">
             <span>Datum</span>
@@ -444,8 +517,9 @@ export function PollWizard({
             + Voeg toe
           </button>
           <p className="proposal-form__note">
-            Buiten deze week is de beschikbaarheid nog onbekend; de poll
-            markeert dat bij het moment.
+            Zo ver vooruit weten we de vrije banen nog niet; bij het moment
+            staat dan &ldquo;beschikbaarheid onbekend&rdquo; — dezelfde woorden
+            als in de agenda.
           </p>
         </div>
       </details>
@@ -465,7 +539,7 @@ export function PollWizard({
                 type="button"
                 className="picked-chip"
                 title="Verwijderen"
-                aria-label={`${shortDay(o.date)} ${o.startTime} verwijderen`}
+                aria-label={`${shortDay(o.date)} ${o.startTime}, ${duurLabel(o.duration)} — verwijderen`}
                 onClick={() => {
                   setArmed(false);
                   setPicked((cur) => {
@@ -476,7 +550,7 @@ export function PollWizard({
                 }}
               >
                 <span aria-hidden="true">
-                  {shortDay(o.date)} {o.startTime}
+                  {shortDay(o.date)} {o.startTime} · {duurLabel(o.duration)}
                   {o.courtsFree == null ? " ?" : ""} ×
                 </span>
               </button>

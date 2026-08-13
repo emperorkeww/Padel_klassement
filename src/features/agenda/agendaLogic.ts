@@ -5,7 +5,7 @@ import {
   fromMinutes,
   toMinutes,
 } from "@/lib/utils/time";
-import { longDay } from "@/features/groups/planPollHelpers";
+import { duurLabel, longDay } from "@/features/groups/planPollHelpers";
 import { hoortBijMoment } from "@/features/groups/speeldagMatches";
 import { laatsteWijziging } from "@/features/groups/speeldagIcs";
 import type {
@@ -908,16 +908,11 @@ export function markerHaalbaarheid(
   };
 }
 
-/**
- * Hoe lang een speeldag duurt, als losse regel naast de begintijd (#1112).
- * Hele uren lezen als uren ("2 uur"), de rest blijft in minuten ("90 min") —
- * "1,5 uur" is precies de omrekening die je niet wil moeten maken.
- */
-export function duurLabel(duration: number): string {
-  if (duration % 60 !== 0) return `${duration} min`;
-  const uren = duration / 60;
-  return uren === 1 ? "1 uur" : `${uren} uur`;
-}
+/** Hoe lang een speeldag duurt (#1112). Woont sinds #1308 bij de
+ *  speeldag-helpers — de wizard toont hem nu ook — en staat hier alleen nog
+ *  als doorgeefluik, zodat de agenda-kant niets hoeft te weten van waar hij
+ *  vandaan komt. */
+export { duurLabel };
 
 /**
  * De toegankelijke naam van een dagknop. Het raster is een raster: elke dag

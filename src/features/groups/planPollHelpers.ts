@@ -24,6 +24,22 @@ export const longDay = (date: string) =>
 export const shortDay = (date: string) =>
   fmtDate(date, { weekday: "short", day: "numeric", month: "short" });
 
+/**
+ * Hoe lang een moment duurt (#1112, hierheen verhuisd in #1308). Hele uren
+ * lezen als uren ("2 uur"), de rest blijft in minuten ("90 min") — "1,5 uur"
+ * is precies de omrekening die je niet wil moeten maken.
+ *
+ * Woont bij de speeldag-helpers en niet meer bij de agenda: sinds de wizard de
+ * duur van elk gekozen moment toont, heeft het planwerk hem net zo hard nodig
+ * als het overzicht. De agenda re-exporteert hem, zodat er geen import van
+ * groups naar agenda ontstaat.
+ */
+export function duurLabel(duration: number): string {
+  if (duration % 60 !== 0) return `${duration} min`;
+  const uren = duration / 60;
+  return uren === 1 ? "1 uur" : `${uren} uur`;
+}
+
 /** "20:15" → "20:00": lookup-sleutel voor het halfuur-raster. */
 export function floorHalfHour(time: string): string {
   const [h, m] = time.split(":").map(Number);

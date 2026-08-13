@@ -272,6 +272,13 @@ export function Agenda() {
     [alleMarkers, groepFilter],
   );
   const perDag = useMemo(() => markersByDay(markers), [markers]);
+  // Dagen waarop al iets staat (#1308) — de wizard zet er een stip bij, zodat
+  // je dat ziet zonder eerst terug te bladeren naar het raster. Ongefilterd:
+  // dit gaat over de baan die bezet raakt, niet over welke chips aanstaan.
+  const bezetteDagen = useMemo(
+    () => new Set(Object.keys(markersByDay(alleMarkers))),
+    [alleMarkers],
+  );
   // Wat er gespeeld is hoort bij de speeldag waarop het gespeeld is (#1221).
   // Alleen wat bij geen enkele speeldag hoort — los gelogd, zonder poll — blijft
   // een eigen rij; de rest is een teller op de speeldagkaart.
@@ -806,6 +813,11 @@ export function Agenda() {
           // sleutel draagt groep en dag, want daarmee weet de agenda bij
           // terugkomst welke wizard hij moet heropenen.
           storageKey={conceptSleutel(planGroepId, gekozenDag)}
+          // Waar al iets staat (#1308): een stip in de dagstrip, dezelfde
+          // informatie die het maandraster pal hierachter toont. Geen verbod —
+          // twee groepen plannen los van elkaar — wel iets wat je wil weten
+          // vóórdat je een dag aantikt.
+          bezetteDagen={bezetteDagen}
           onClose={sluitSheet}
           onCreated={() => {
             sluitSheet();

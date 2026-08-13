@@ -188,6 +188,19 @@
   color: var(--ink-soft);
   opacity: 0.5;
 }
+/* Vandaag (#1308): de strip begint er meestal op, maar zei dat nergens. */
+.day-chip.is-vandaag .day-chip__name {
+  color: var(--accent);
+  font-weight: 700;
+}
+/* Er staat al een speeldag op deze dag — dezelfde stip als in het maandraster
+   dat achter dit sheet ligt. Geen verbod, wel een waarschuwing. */
+.day-chip__bezet {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--accent);
+}
 /* De dag die je in de agenda aantikte, maar die voorbij het banenvenster ligt.
    Hij hoort bij de rij, maar sluit er niet op aan — de streep en de
    extra ruimte zeggen dat er dagen tussen zitten die de strip niet toont. */
@@ -252,14 +265,33 @@
   background: var(--gold);
   color: var(--ink);
 }
-/* "Vroegere uren tonen"-knop: eigen regel bovenaan het slot-raster (#322). */
+/* "Vroegere uren tonen": eigen regel bovenaan het slot-raster (#322). Een
+   gewone kleine pil, zoals elke andere secundaire actie in de app (#1308) — hij
+   was een gestippelde knop over de volle breedte (die las als een leeg vak dat
+   om inhoud vroeg) en daarna een onderstreepte tekstregel (die als enige in dit
+   sheet zo keek). Links uitgelijnd: hij hoort bij het raster eronder. */
+.poll-wizard__slot-kop {
+  margin: 0;
+}
 .poll-wizard__earlier {
-  flex-basis: 100%;
-  justify-content: center;
-  background: transparent;
-  border-style: dashed;
+  /* Raakdoel (#374). */
+  min-height: 44px;
+}
+
+/* Wat het cijfer op een slot betekent (#1308). Eén regel onder het raster,
+   in dezelfde toon als de hint erboven. */
+.poll-wizard__legenda {
+  margin: 0;
+  font-size: var(--fs-xs);
   color: var(--ink-soft);
-  font-weight: 600;
+}
+
+/* De duur geldt voor wat je hierna kiest; dit staat er alleen zodra dat
+   verschil bestaat (#1308). */
+.poll-wizard__duur-uitleg {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
 }
 .poll-wizard__controls {
   display: flex;
@@ -288,10 +320,45 @@
   font-size: var(--fs-sm);
   color: var(--ink-soft);
 }
+/* "Verken alle vrije banen →" is een wegwijzer naar een andere pagina, en zo
+   ziet hij er nu ook uit: dezelfde kleine pil als "Bekijk de speeldag →" op de
+   stemkaart (#1308). Als kale onderstreepte tekst stond hij naast een select
+   in dezelfde rij, en dan lijkt hij eerder een label dan een uitstap. */
+.poll-wizard__banen-link {
+  min-height: 44px;
+}
+/* De uitklap "verder vooruit plannen" (#1308). Droeg het systeemdriehoekje en
+   week daarmee af van elke andere uitklap in de app (de suggestiekaart, het
+   deelnameblok in het dag-sheet): eigen chevron rechts, geen marker, en de hele
+   rij is het raakdoel. */
+.poll-wizard__manual-details {
+  border-top: 1px solid var(--line);
+  padding-top: var(--sp-2);
+}
 .poll-wizard__manual-details > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  list-style: none;
   cursor: pointer;
   font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft-strong);
+}
+.poll-wizard__manual-details > summary::-webkit-details-marker {
+  display: none;
+}
+.poll-wizard__manual-details > summary::after {
+  content: "⌄";
+  margin-left: auto;
+  font-size: 1.1rem;
+  line-height: 1;
   color: var(--ink-soft);
+  transition: transform 0.15s ease;
+}
+.poll-wizard__manual-details[open] > summary::after {
+  transform: rotate(180deg);
 }
 .poll-wizard__manual {
   display: flex;
@@ -326,6 +393,13 @@
 .wizard-footer {
   position: sticky;
   bottom: 0;
+  /* Dekkend, en niet alleen gefrost (#1308). Het glas hierboven leunt op
+     `backdrop-filter`, en die doet niets in een element dat zelf al binnen een
+     backdrop root ligt — precies wat een sheet met .glas is. Op iOS bleef deze
+     balk daardoor volledig doorzichtig: je las de datumvelden dwars door
+     "Nog geen momenten gekozen" en de knoppen heen. De tint van .glas blijft
+     erover liggen; alleen de bodem is nu ondoorzichtig. */
+  background-color: var(--surface);
   z-index: 2; /* boven de content die eronderdoor scrolt */
   display: grid;
   gap: var(--sp-2);
@@ -340,7 +414,10 @@
   gap: var(--sp-2);
 }
 .picked-chip {
-  padding: var(--sp-1) var(--sp-2);
+  /* Raakdoel (#374): dit is de enige manier om een gekozen moment weer weg te
+     halen, en hij stond op 26px. */
+  min-height: 44px;
+  padding: var(--sp-1) var(--sp-3);
   border: 1px solid var(--accent-line);
   border-radius: 999px;
   background: var(--accent-soft);

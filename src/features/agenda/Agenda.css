@@ -1102,6 +1102,10 @@
 .sheet--dag .dagsheet__voet {
   position: sticky;
   bottom: 0;
+  /* Dekkend, niet alleen gefrost (#1308): `backdrop-filter` doet niets binnen
+     een element dat zelf al een backdrop root is (het glazen sheet), en dan
+     scrolt de inhoud leesbaar onder de balk door. Zie de wizard-voet. */
+  background-color: var(--surface);
   z-index: 2; /* boven de inhoud die eronderdoor scrolt */
   display: flex;
   gap: var(--sp-2);
