@@ -97,7 +97,9 @@ describe("<PollWizard /> — de duur hoort bij het moment (#1308)", () => {
   afterEach(() => vi.useRealTimers());
 
   it("publiceert de duur die op de chip staat, ook na een wissel", async () => {
-    const onSubmit = vi.fn((_opts: NewPollOption[]) => Promise.resolve());
+    const onSubmit = vi.fn<(opts: NewPollOption[]) => Promise<void>>(
+      () => Promise.resolve(),
+    );
     toon(onSubmit);
 
     // 21:00 kan alleen 60 minuten; kies hem bij de standaardduur van 90 → hij
