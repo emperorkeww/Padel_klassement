@@ -259,7 +259,7 @@ describe("<DagSheet />", () => {
         open({ optionId: "opt-9", pollId: "poll-9", date: "2026-08-16" }),
       ],
     );
-    expect(screen.getByText("Andere momenten in deze poll")).toBeInTheDocument();
+    expect(screen.getByText("Andere momenten voor deze speeldag")).toBeInTheDocument();
     expect(screen.getByText("za 15 aug · 18:30")).toBeInTheDocument();
     expect(screen.queryByText(/16 aug/)).not.toBeInTheDocument();
 
@@ -272,7 +272,7 @@ describe("<DagSheet />", () => {
   it("laat het kopje weg als de poll maar één moment heeft", () => {
     toon([open()]);
     expect(
-      screen.queryByText("Andere momenten in deze poll"),
+      screen.queryByText("Andere momenten voor deze speeldag"),
     ).not.toBeInTheDocument();
   });
 
@@ -566,10 +566,10 @@ describe("<DagSheet /> — ingangen en toegangscode (#1308)", () => {
   });
 
   it("schrijft de status net zo als de kaart erachter", () => {
-    // Dezelfde tekst uit dezelfde functie stond op de kaart als "Open poll" en
-    // hier als "open poll" — allebei tegelijk in beeld.
+    // Dezelfde tekst uit dezelfde functie stond op de kaart als "Stemmen open" en
+    // hier als "stemmen open" — allebei tegelijk in beeld.
     toon([marker({ status: "open" })]);
-    expect(screen.getByText("Open poll")).toBeInTheDocument();
+    expect(screen.getByText("Stemmen open")).toBeInTheDocument();
   });
 });
 

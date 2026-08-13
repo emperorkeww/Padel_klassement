@@ -19,7 +19,7 @@ const profielen = {
 
 const journey = (over: Partial<Journey> = {}): Journey => ({
   icon: null,
-  label: "Poll loopt — stem mee",
+  label: "Stemmen loopt — stem mee",
   tone: "act",
   status: "open",
   tab: "agenda",
@@ -64,7 +64,7 @@ describe("<GroepKaart /> (#1134)", () => {
     toon({ eigenaar: true, journey: journey() });
     expect(
       screen.getByRole("link", {
-        name: /balleke slaan.*eigenaar.*6 leden.*poll loopt — stem mee/i,
+        name: /balleke slaan.*eigenaar.*6 leden.*stemmen loopt — stem mee/i,
       }),
     ).toBeInTheDocument();
   });
@@ -102,7 +102,7 @@ describe("<GroepKaart /> (#1134)", () => {
   it("zet de status als glyph én als tekst neer", () => {
     const { container } = toon({ journey: journey({ status: "booked" }) });
     expect(container.querySelector(".agenda-glyph--booked")).not.toBeNull();
-    expect(screen.getByText(/poll loopt — stem mee/i)).toBeInTheDocument();
+    expect(screen.getByText(/stemmen loopt — stem mee/i)).toBeInTheDocument();
   });
 
   // Elders is het label een aansporing met pijl; op de kaart zou die pijl een

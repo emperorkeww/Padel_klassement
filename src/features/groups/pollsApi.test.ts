@@ -169,7 +169,7 @@ describe("createPoll", () => {
     enqueue({ data: [] });
     await expect(
       createPoll({ groupId: "g1", createdBy: "p1", club, options: [option()] }),
-    ).rejects.toThrow("Poll aanmaken mislukte.");
+    ).rejects.toThrow("Speeldag aanmaken mislukte.");
   });
 
   it("rolt de poll terug als de opties falen", async () => {

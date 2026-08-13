@@ -4,7 +4,10 @@ import { dateInZone } from "@/lib/utils/time";
 import { getWeekAvailability, type WeekDay } from "@/features/availability/api";
 import { ClubPicker } from "@/features/availability/components/ClubPicker";
 import type { Club } from "@/features/availability/club";
+import type { GroupSummary } from "@/features/groups/api";
 import { createPoll } from "@/features/groups/pollsApi";
+import { longDay } from "@/features/groups/planPollHelpers";
+import { GroepPicker } from "./GroepPicker";
 import { PollWizard } from "./PollWizard";
 import { PollWizardSheet } from "./PollWizardSheet";
 
@@ -19,11 +22,19 @@ import { PollWizardSheet } from "./PollWizardSheet";
 /* ervoor vroeg hem ook, op dezelfde state, en dat is twee keer dezelfde*/
 /* vraag in twee schermen. Hier heeft ze betekenis — de vrije banen per */
 /* slot hieronder komen van deze club.                                  */
+/*                                                                      */
+/* Sinds #1308 geldt dat ook voor de groep, en is dat plan-sheet ermee   */
+/* verdwenen: het stelde één vraag, opende met een dode hoofdknop en had */
+/* een "Terug" die de hele keten sloot. De kop draagt nu groep, club én  */
+/* dag — met twee groepen die allebei op donderdag spelen was dat het    */
+/* enige wat je nog fout kon hebben, en het stond nergens.               */
 /* ------------------------------------------------------------------ */
 
 export function NieuweSpeeldagSheet({
   open,
+  groepen = [],
   groupId,
+  onGroep,
   myId,
   club,
   onClub,
@@ -33,7 +44,10 @@ export function NieuweSpeeldagSheet({
   onCreated,
 }: {
   open: boolean;
+  /** Je groepen, voor de kiezer in de kop (#1308). */
+  groepen?: GroupSummary[];
   groupId: string;
+  onGroep?: (id: string) => void;
   myId: string;
   /** Locatie voor déze poll; los van de globale clubvoorkeur (#322). */
   club: Club;
@@ -59,8 +73,20 @@ export function NieuweSpeeldagSheet({
     <PollWizardSheet
       open={open}
       onClose={onClose}
-      title="Nieuwe speeldag"
-      headerExtra={<ClubPicker value={club} onPick={onClub} allowManual />}
+      title="Speeldag plannen"
+      headerExtra={
+        <>
+          {/* Voor wie, waar en wanneer — de drie dingen die vaststaan terwijl
+              je momenten aantikt (#1308). */}
+          {groepen.length > 0 && onGroep && (
+            <GroepPicker groepen={groepen} groupId={groupId} onGroep={onGroep} />
+          )}
+          <ClubPicker value={club} onPick={onClub} allowManual />
+          {initialDay && (
+            <p className="wizard-sheet__dag">{longDay(initialDay)}</p>
+          )}
+        </>
+      }
     >
       <PollWizard
         today={today}
@@ -69,7 +95,7 @@ export function NieuweSpeeldagSheet({
         club={club}
         initialDay={initialDay}
         storageKey={storageKey}
-        submitLabel={(n) => `Start poll (${n})`}
+        submitLabel={(n) => `Start speeldag (${n})`}
         onSubmit={async (opts) => {
           await createPoll({
             groupId,
@@ -77,7 +103,7 @@ export function NieuweSpeeldagSheet({
             club,
             options: opts,
           });
-          toast.success("Poll gestart — de groep kan stemmen.");
+          toast.success("Speeldag staat open — de groep kan stemmen.");
         }}
         onClose={onClose}
         onDone={() => {

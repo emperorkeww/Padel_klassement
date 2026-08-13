@@ -206,7 +206,7 @@ describe("<Groups />", () => {
     });
     // De fixture-poll staat open → er wordt een stem gevraagd.
     expect(
-      await within(kaart).findByText(/poll loopt — stem mee/i),
+      await within(kaart).findByText(/stemmen loopt — stem mee/i),
     ).toBeInTheDocument();
     // De stip draagt dezelfde status in vorm (WCAG 1.4.1) en is decoratief.
     expect(kaart.querySelector(".agenda-glyph--open")).not.toBeNull();

@@ -27,12 +27,17 @@ export type AgendaStand = {
   open: string | null;
   weergave: Weergave;
   /**
-   * Instapvlag: open het plan-sheet meteen voor de gekozen dag (#1213).
+   * Staat de plan-wizard open, voor de gekozen dag? (#1213, toestand sinds
+   * #1308)
    *
-   * Bewust een instap en geen toestand, zoals `?log=1` op het matchoverzicht:
-   * de agenda leest hem één keer bij binnenkomst en wist hem daarna. Het
-   * sheet zelf blijft lokale state — het geeft het stokje door aan de wizard,
-   * en dat is geen keten die je halverwege wil kunnen delen.
+   * Was een instapvlag die de agenda één keer las en daarna wiste, zoals
+   * `?log=1` op het matchoverzicht — het sheet erachter was lokale state. Dat
+   * hield één ding buiten de geschiedenis: de terugknop. Het dag-sheet duwt
+   * bewust een entry zodat Android's terug hém sluit, de wizard deed dat niet,
+   * en dus haalde één tik op terug de pagina onder een openstaande wizard
+   * vandaan zonder hem te sluiten.
+   *
+   * Nu een gewone toestand: openen duwt een entry, terug sluit de wizard.
    */
   plan: boolean;
   /**

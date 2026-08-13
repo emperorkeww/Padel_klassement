@@ -816,7 +816,7 @@ export function toetsStap(date: string, key: string): string | null {
 const STATUS_WOORD: Record<AgendaStatus, string> = {
   booked: "geboekt",
   locked: "vastgelegd, nog te boeken",
-  open: "open poll",
+  open: "stemmen open",
 };
 
 /** "20:00 — 21:30": het tijdvak van een moment. Een slot dat over middernacht

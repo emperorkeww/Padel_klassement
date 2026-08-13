@@ -179,7 +179,7 @@ describe("<PollCard /> — speeldag uit de agenda halen (#1099)", () => {
       booked_at: null,
     });
 
-    await screen.findByRole("button", { name: /annuleer poll/i });
+    await screen.findByRole("button", { name: /annuleer speeldag/i });
     expect(
       screen.queryByRole("button", { name: /haal uit je agenda/i }),
     ).not.toBeInTheDocument();
@@ -424,7 +424,7 @@ describe("<PollCard /> — elk moment vastlegbaar (#1181)", () => {
       { options: [option, tweede], isOwner: false },
     );
 
-    await screen.findByRole("heading", { name: /speeldag-poll/i });
+    await screen.findByRole("heading", { name: /speeldag — stemmen open/i });
     expect(
       screen.queryByRole("button", { name: /ander moment/i }),
     ).not.toBeInTheDocument();
@@ -460,7 +460,7 @@ describe("<PollCard /> — elk moment vastlegbaar (#1181)", () => {
       ],
     });
 
-    await screen.findByRole("heading", { name: /speeldag-poll/i });
+    await screen.findByRole("heading", { name: /speeldag — stemmen open/i });
     expect(
       screen.queryByText(/gaat deze speeldag niet door/i),
     ).not.toBeInTheDocument();

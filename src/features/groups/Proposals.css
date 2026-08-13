@@ -370,10 +370,33 @@
   border-top: 1px solid rgb(var(--glas-diep) / 0.08);
   border-bottom: 0;
 }
-/* Locatiekeuze voor een nieuwe poll, als rij onder de sheet-kop. */
+/* De voet van de wizard volgt sinds #1308 de vorm van elke andere sheet-voet
+   (`.sheet__foot` in ui.css): annuleren links, de hoofdactie rechts en op volle
+   hoogte. Hij zat hier als een rij `btn--sm` mét de hoofdactie vooraan — 40px
+   hoog, terwijl dezelfde app 44 aanhoudt (#374). Alleen de bovenmarge hoeft
+   weg: de balk eromheen zet de ruimte al. */
+.wizard-footer .sheet__foot {
+  margin-top: 0;
+}
+.wizard-footer .sheet__foot .btn {
+  min-height: 44px;
+}
+
+/* Voor wie, waar en wanneer: de rij onder de sheet-kop (#1308). Stond er als
+   losse clubkiezer; sinds het plan-sheet ervóór is opgegaan in deze wizard
+   dragen de groep en de dag hem mee. */
 .wizard-sheet__club {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
   margin-bottom: var(--sp-3);
+}
+.wizard-sheet__dag {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft-strong);
 }
 
 
