@@ -167,7 +167,10 @@ export function DagSheet({
       );
       return uit;
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Alleen de sleutel: `teLaden` is elke render een nieuwe array, en de
+    // inhoud die ertoe doet — welke (club, dag)-paren — staat erin samengevat.
+    // (De disable-regel die hier stond dekte een waarschuwing die deze hook niet
+    // meer geeft; `useAsync` neemt een dep-array, geen effect-body.)
     [baanSleutel],
     { enabled: teLaden.length > 0 },
   );
