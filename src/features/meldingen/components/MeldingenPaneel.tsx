@@ -1,11 +1,11 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Sheet } from "@/ui/Sheet";
 import { EmptyState } from "@/ui/EmptyState";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { Skeleton } from "@/ui/Skeleton";
 import { aantalTekst } from "@/lib/utils/format";
-import { markeerAllesGelezen, type Melding } from "../api";
+import { type Melding } from "../api";
+import { MeldingenActies } from "./MeldingenActies";
 import { MeldingenLijst } from "./MeldingenLijst";
 import "./MeldingenPaneel.css";
 
@@ -41,18 +41,7 @@ export function MeldingenPaneel({
   /** Na een leesmarkering: de teller in de balk moet meteen meebewegen. */
   onVeranderd: () => void;
 }) {
-  const [bezig, setBezig] = useState(false);
   const ongelezen = meldingen.filter((m) => !m.read_at).length;
-
-  async function allesGelezen() {
-    setBezig(true);
-    try {
-      await markeerAllesGelezen();
-      onVeranderd();
-    } finally {
-      setBezig(false);
-    }
-  }
 
   return (
     <Sheet
@@ -92,17 +81,8 @@ export function MeldingenPaneel({
         </p>
       )}
 
-      {ongelezen > 0 && (
-        <div className="meldingen__acties">
-          <button
-            type="button"
-            className="btn btn--sm"
-            onClick={allesGelezen}
-            disabled={bezig}
-          >
-            {bezig ? "Bezig…" : "Alles gelezen"}
-          </button>
-        </div>
+      {meldingen.length > 0 && (
+        <MeldingenActies ongelezen={ongelezen} onVeranderd={onVeranderd} />
       )}
 
       {fout ? (

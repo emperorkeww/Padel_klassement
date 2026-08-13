@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
+import { ToastProvider } from "@/ui/ToastProvider";
 import type { Melding } from "./api";
 
 vi.mock("@/lib/supabase/client", async () => {
@@ -19,7 +20,11 @@ vi.mock("./api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./api")>()),
   getMeldingenVenster: vi.fn(),
   markeerGelezen: vi.fn().mockResolvedValue(undefined),
-  markeerAllesGelezen: vi.fn().mockResolvedValue(undefined),
+  markeerAllesGelezen: vi.fn().mockResolvedValue([]),
+  markeerOngelezen: vi.fn().mockResolvedValue(undefined),
+  veegWeg: vi.fn().mockResolvedValue(undefined),
+  zetTerug: vi.fn().mockResolvedValue(undefined),
+  zetAllesOngelezen: vi.fn().mockResolvedValue(undefined),
 }));
 
 import Meldingen from "./Meldingen";
@@ -41,16 +46,18 @@ const melding = (over: Partial<Melding> = {}): Melding => ({
 function toonPagina() {
   return render(
     <MemoryRouter>
-      <AuthProvider>
-        <Meldingen />
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <Meldingen />
+        </AuthProvider>
+      </ToastProvider>
     </MemoryRouter>,
   );
 }
 
 beforeEach(() => {
   vi.mocked(pushAvailability).mockReturnValue("ready");
-  vi.mocked(markeerAllesGelezen).mockClear().mockResolvedValue(undefined);
+  vi.mocked(markeerAllesGelezen).mockClear().mockResolvedValue([]);
   vi.mocked(getMeldingenVenster)
     .mockReset()
     .mockResolvedValue({ meldingen: [melding()], meer: false });
@@ -93,7 +100,7 @@ describe("/meldingen (#1090)", () => {
     expect(markeerAllesGelezen).toHaveBeenCalled();
   });
 
-  it("verbergt 'alles gelezen' als alles gelezen is", async () => {
+  it("houdt 'alles gelezen' op zijn plek, uitgeschakeld als alles gelezen is", async () => {
     vi.mocked(getMeldingenVenster).mockResolvedValue({
       meldingen: [melding({ read_at: "2026-08-01T10:00:00.000Z" })],
       meer: false,
@@ -101,8 +108,8 @@ describe("/meldingen (#1090)", () => {
     toonPagina();
     await screen.findByText("Uitslag ingevoerd");
     expect(
-      screen.queryByRole("button", { name: /alles gelezen/i }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("button", { name: /alles gelezen/i }),
+    ).toBeDisabled();
   });
 
   // De lege staat zegt iets in plaats van een streep te trekken, en wijst naar
@@ -137,7 +144,12 @@ describe("/meldingen (#1090)", () => {
   describe("filteren (#1273)", () => {
     const venster = () => ({
       meldingen: [
-        melding({ id: "n1", soort: "poll", title: "Nieuwe speeldag-poll", tag: "t1" }),
+        melding({
+          id: "n1",
+          soort: "poll",
+          title: "Nieuwe speeldag-poll",
+          tag: "t1",
+        }),
         melding({
           id: "n2",
           soort: "uitslag",
@@ -162,7 +174,13 @@ describe("/meldingen (#1090)", () => {
       expect(
         await screen.findByRole("group", { name: /meldingen filteren/i }),
       ).toBeInTheDocument();
-      for (const naam of [/^alles/i, /^ongelezen/i, /^speeldag/i, /^uitslag/i, /^var/i]) {
+      for (const naam of [
+        /^alles/i,
+        /^ongelezen/i,
+        /^speeldag/i,
+        /^uitslag/i,
+        /^var/i,
+      ]) {
         expect(chips().getByRole("button", { name: naam })).toBeInTheDocument();
       }
       // Geen chip voor een soort die er niet is: dat zou een dood spoor zijn.
@@ -182,7 +200,9 @@ describe("/meldingen (#1090)", () => {
       vi.mocked(getMeldingenVenster).mockResolvedValue(venster());
       toonPagina();
       await screen.findByRole("group", { name: /meldingen filteren/i });
-      await userEvent.click(chips().getByRole("button", { name: /^ongelezen/i }));
+      await userEvent.click(
+        chips().getByRole("button", { name: /^ongelezen/i }),
+      );
       expect(screen.getByText("Nieuwe speeldag-poll")).toBeInTheDocument();
       expect(screen.queryByText("Gewonnen")).toBeNull();
     });
@@ -191,7 +211,9 @@ describe("/meldingen (#1090)", () => {
       vi.mocked(getMeldingenVenster).mockResolvedValue(venster());
       toonPagina();
       await screen.findByRole("group", { name: /meldingen filteren/i });
-      await userEvent.click(chips().getByRole("button", { name: /^ongelezen/i }));
+      await userEvent.click(
+        chips().getByRole("button", { name: /^ongelezen/i }),
+      );
       await userEvent.click(chips().getByRole("button", { name: /^uitslag/i }));
       // Ongelezen + uitslag bestaat niet in dit venster; het filter is één as,
       // dus dit toont gewoon de uitslag. De lege staat toetsen we los.
