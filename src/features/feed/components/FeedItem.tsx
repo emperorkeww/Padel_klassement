@@ -151,7 +151,6 @@ export function FeedItem({
           icon={nieuw ? "✨" : omhoog ? "⬆️" : "⬇️"}
           label={`Klassement · ${nieuw ? "nieuw" : omhoog ? "stijger" : "daler"}`}
           to="/klassement"
-          at={event.at}
         >
           {nieuw ? (
             <>
@@ -195,7 +194,6 @@ export function FeedItem({
           icon="🏆"
           label="Seizoenskampioen"
           to={`/groepen/${event.groupId}?tab=stand&seizoen=${event.seasonLabel}`}
-          at={event.at}
         >
           {name(event.playerId)} {event.playerId === myId ? "bent" : "is"} kampioen van{" "}
           <strong>{event.groupName}</strong> ({event.seasonLabel})!
@@ -237,19 +235,19 @@ export function FeedItem({
       {
         const beschermd = pmap[event.playerId]?.roast_schild ?? false;
         return (
-          <FeedHighlight cat="roast" icon={beschermd ? "📊" : "🤡"} label={beschermd ? "Opvallende maand" : "Pias van de maand"} to={`/groepen/${event.groupId}`} at={event.at}>
+          <FeedHighlight cat="roast" icon={beschermd ? "📊" : "🤡"} label={beschermd ? "Opvallende maand" : "Pias van de maand"} to={`/groepen/${event.groupId}`}>
             {beschermd ? (
               <>
-                {name(event.playerId)} had een <strong>opvallende maand</strong> ({event.periodeLabel}): {event.detail}.
+                {name(event.playerId)} had een <strong>opvallende maand</strong> in {event.groupName} ({event.periodeLabel}): {event.detail}.
               </>
             ) : event.playerId === myId ? (
               <>
-                Jij bent de <strong>pias van de maand</strong> ({event.periodeLabel}): je {event.detail}.
+                Jij bent de <strong>pias van de maand</strong> in {event.groupName} ({event.periodeLabel}): je {event.detail}.
               </>
             ) : (
               <>
-                {name(event.playerId)} is de <strong>pias van de maand</strong> ({event.periodeLabel}):{" "}
-                {event.detail}.
+                {name(event.playerId)} is de <strong>pias van de maand</strong> in {event.groupName}{" "}
+                ({event.periodeLabel}): {event.detail}.
               </>
             )}
           </FeedHighlight>
@@ -258,8 +256,13 @@ export function FeedItem({
     case "pias-week":
       {
         const beschermd = pmap[event.playerId]?.roast_schild ?? false;
+        // De Zwarte Piet die in dezelfde partij verschoof staat op deze kaart
+        // (#1272) — zelfde nederlaag, zelfde tijdstip. Het schild geldt per
+        // speler: de Piet-drager kan een ander zijn dan de pias.
+        const piet = event.piet;
+        const pietBeschermd = piet ? (pmap[piet.toPlayerId]?.roast_schild ?? false) : false;
         return (
-          <FeedHighlight cat="roast" icon={beschermd ? "📊" : "🤡"} label={beschermd ? "Opvallende week" : "Pias van de week"} to={`/groepen/${event.groupId}`} at={event.at}>
+          <FeedHighlight cat="roast" icon={beschermd ? "📊" : "🤡"} label={beschermd ? "Opvallende week" : "Pias van de week"} to={`/groepen/${event.groupId}`} at={event.tijdEcht ? event.at : undefined}>
             {beschermd ? (
               <>
                 {name(event.playerId)} had een <strong>opvallende week</strong> in {event.groupName}:
@@ -276,6 +279,34 @@ export function FeedItem({
                 {piasDetail(event.reden, event.waarde)}.
               </>
             )}
+            {piet && (
+              <>
+                {" "}
+                {pietBeschermd ? (
+                  <>
+                    In diezelfde partij ging het <strong>schande-token</strong> naar{" "}
+                    {name(piet.toPlayerId)}
+                    {piet.fromPlayerId ? <> (van {name(piet.fromPlayerId)})</> : null}.
+                  </>
+                ) : piet.toPlayerId === event.playerId ? (
+                  <>
+                    Daarmee pak{event.playerId === myId ? "" : "t"}{" "}
+                    {event.playerId === myId ? "je" : name(piet.toPlayerId)} ook de{" "}
+                    <strong>Zwarte Piet</strong>
+                    {piet.fromPlayerId ? <> af van {name(piet.fromPlayerId)}</> : null}:{" "}
+                    {piet.detail}.
+                  </>
+                ) : (
+                  <>
+                    In diezelfde partij pakte{" "}
+                    {piet.toPlayerId === myId ? "jij" : name(piet.toPlayerId)} de{" "}
+                    <strong>Zwarte Piet</strong>
+                    {piet.fromPlayerId ? <> af van {name(piet.fromPlayerId)}</> : null}:{" "}
+                    {piet.detail}.
+                  </>
+                )}
+              </>
+            )}
           </FeedHighlight>
         );
       }
@@ -284,7 +315,7 @@ export function FeedItem({
         const beschermd = pmap[event.toPlayerId]?.roast_schild ?? false;
         if (beschermd) {
           return (
-            <FeedHighlight cat="roast" icon="📊" label="Schande-token" to={`/groepen/${event.groupId}`} at={event.at}>
+            <FeedHighlight cat="roast" icon="📊" label="Schande-token" to={`/groepen/${event.groupId}`} at={event.tijdEcht ? event.at : undefined}>
               {name(event.toPlayerId)} kreeg het <strong>schande-token</strong> in {event.groupName}
               {event.fromPlayerId ? ` van ${name(event.fromPlayerId)}` : ""}: {event.detail}.
             </FeedHighlight>
@@ -292,7 +323,7 @@ export function FeedItem({
         }
       }
       return (
-        <FeedHighlight cat="roast" icon="🃏" label="Zwarte Piet" to={`/groepen/${event.groupId}`} at={event.at}>
+        <FeedHighlight cat="roast" icon="🃏" label="Zwarte Piet" to={`/groepen/${event.groupId}`} at={event.tijdEcht ? event.at : undefined}>
           {event.toPlayerId === myId ? "Jij pakte" : `${name(event.toPlayerId)} pakte`} de{" "}
           <strong>Zwarte Piet</strong> in {event.groupName}
           {event.fromPlayerId ? ` af van ${name(event.fromPlayerId)}` : ""}: {event.detail}.

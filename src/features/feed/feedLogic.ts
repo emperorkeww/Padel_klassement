@@ -63,14 +63,9 @@ export type Highlight =
   | { type: "streak"; playerId: string; count: number }
   | { type: "duo"; teamId: string; count: number }
   | { type: "rating"; playerId: string; threshold: number }
-  | {
-      type: "tier";
-      playerId: string;
-      /** Volledige divisie waarin de speler nu zit, incl. sub-niveau ("Wannabe II"). */
-      label: string;
-      emoji: string;
-      richting: "promotie" | "degradatie";
-    }
+  // Een divisiewissel was hier ook een chip; die staat nu alleen nog als eigen
+  // kaart in de feed (#1272) — twee blokken met hetzelfde tijdstip voor één
+  // gebeurtenis leest als een dubbele melding.
   | {
       /** Vendetta-duel (#169): stand ná dit duel, vanuit de uitdager. */
       type: "vendetta";
@@ -149,8 +144,12 @@ export type FeedEvent =
   | { kind: "tier"; at: string; playerId: string; vanLabel: string; naarLabel: string; vanEmoji: string; naarEmoji: string; richting: "promotie" | "degradatie"; matchId: string }
   | { kind: "season-champion"; at: string; groupId: string; groupName: string; playerId: string; seasonLabel: string }
   | { kind: "maand-pias"; at: string; groupId: string; groupName: string; playerId: string; reden: PiasReden; detail: string; periodeLabel: string }
-  | { kind: "pias-week"; at: string; groupId: string; groupName: string; playerId: string; reden: PiasReden; waarde: number; winChance: number | null; weekStart: string }
-  | { kind: "zwarte-piet"; at: string; groupId: string; groupName: string; toPlayerId: string; fromPlayerId: string | null; reden: PiasReden; detail: string }
+  // `tijdEcht` scheidt de ankermatch van de terugval op een periodegrens: alleen
+  // in het eerste geval hoort er een kloktijd op de kaart (#1272). `piet` is
+  // gevuld als dezelfde nederlaag óók de Zwarte Piet verschoof — dan is het één
+  // kaart in plaats van twee met hetzelfde tijdstip.
+  | { kind: "pias-week"; at: string; tijdEcht: boolean; matchId: string; groupId: string; groupName: string; playerId: string; reden: PiasReden; waarde: number; winChance: number | null; weekStart: string; piet?: { toPlayerId: string; fromPlayerId: string | null; reden: PiasReden; detail: string } }
+  | { kind: "zwarte-piet"; at: string; tijdEcht: boolean; groupId: string; groupName: string; toPlayerId: string; fromPlayerId: string | null; reden: PiasReden; detail: string }
   | { kind: "in-form"; at: string; playerId: string; delta: number; matches: number; weekStart: string }
   | { kind: "on-fire"; at: string; playerId: string; streak: number; matchId: string }
   | { kind: "smoes"; at: string; matchId: string; groupId: string; groupName: string; playerId: string; smoes: string; match: Match | null }
@@ -578,15 +577,12 @@ export function buildFeed(input: {
           // Glazenwasser) is nieuwswaardig. Sub-niveaus (Wannabe III → II)
           // blijven volledig weg — geen chip én geen standalone tier-item
           // (#354), zodat een divisie-melding weer echt iets betekent.
+          // Eén blok per wissel (#1272): dit gaf hiervóór zowel een chip op de
+          // matchkaart als een eigen kaart met hetzelfde tijdstip, direct
+          // eronder. De kaart wint — die draagt het label, Rudy's opmerking, de
+          // confetti bij eigen promotie en het Klassement-filter.
           const wissel = tierChange(p.rating_before, p.rating_after);
           if (wissel?.hoofdtier) {
-            highlights.push({
-              type: "tier",
-              playerId: pid,
-              label: wissel.naar.label,
-              emoji: wissel.naar.emoji,
-              richting: wissel.richting,
-            });
             events.push({
               kind: "tier",
               at: m.played_at ?? m.created_at,
@@ -762,14 +758,17 @@ export function buildFeed(input: {
   // ── Pias van de week (#127): serverside aangeduid per groep, de grootste
   //    choke. We tonen enkel piassen van groepen die de feed kent (jouw
   //    groepen) zodat we een groepsnaam hebben. ──
+  const piasPerMatch = new Map<string, Extract<FeedEvent, { kind: "pias-week" }>>();
   for (const p of piasWeeks) {
     const groupName = groupNamesById.get(p.groupId);
     if (!groupName) continue;
     const m = matchById.get(p.matchId);
     const fallbackAt = addDays(p.weekStart, 6) + "T23:59:59Z";
-    events.push({
+    const event: Extract<FeedEvent, { kind: "pias-week" }> = {
       kind: "pias-week",
       at: m ? (m.played_at ?? m.created_at) : fallbackAt,
+      tijdEcht: Boolean(m),
+      matchId: p.matchId,
       groupId: p.groupId,
       groupName,
       playerId: p.playerId,
@@ -777,19 +776,37 @@ export function buildFeed(input: {
       waarde: p.waarde,
       winChance: p.winChance,
       weekStart: p.weekStart,
-    });
+    };
+    piasPerMatch.set(`${p.groupId}|${p.matchId}`, event);
+    events.push(event);
   }
 
   // ── Zwarte Piet (#185): de huidige drager per groep, gedateerd op de
   //    overname-match. Eén item per groep (geen stroom van overdrachten). ──
+  //    Gaat het om dezelfde nederlaag als de pias van de week, dan schuift hij
+  //    aan op díé kaart (#1272): het waren twee blokken met hetzelfde tijdstip
+  //    over hetzelfde verlies, elk met een eigen opmerking van Rudy eronder.
+  //    Let op: pias en Piet-drager hoeven niet dezelfde speler te zijn — vaak
+  //    zijn het de twee helften van het verliezende team.
   for (const t of shameTransfers) {
     const groupName = groupNamesById.get(t.groupId);
     if (!groupName) continue;
     const m = matchById.get(t.matchId);
     const at = m ? (m.played_at ?? m.created_at) : `${t.since}T00:00:00Z`;
+    const pias = piasPerMatch.get(`${t.groupId}|${t.matchId}`);
+    if (pias) {
+      pias.piet = {
+        toPlayerId: t.holderId,
+        fromPlayerId: t.fromId,
+        reden: t.reden,
+        detail: t.detail,
+      };
+      continue;
+    }
     events.push({
       kind: "zwarte-piet",
       at,
+      tijdEcht: Boolean(m),
       groupId: t.groupId,
       groupName,
       toPlayerId: t.holderId,
