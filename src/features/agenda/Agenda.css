@@ -474,7 +474,10 @@
   color: var(--ink);
 }
 
-.dagpaneel__lijst {
+/* Los gelogde partijen in het dag-sheet (#1270): dezelfde rij als in het
+   paneel, want het is dezelfde kaartvorm. */
+.dagpaneel__lijst,
+.dagsheet__wedstrijden {
   display: grid;
   gap: var(--sp-2);
   margin: 0;
@@ -753,9 +756,11 @@
   justify-items: start;
 }
 
-/* De groepskeuze van de suggesties (#1182): hoekiger en met een label ervoor,
-   zodat hij niet te verwarren is met de ronde filterchips boven het raster.
-   Daar zet je groepen aan en uit, hier kies je er één. */
+/* De groepskeuze van de suggesties. Kreeg in #1182 een label om hem van de
+   filterchips boven het raster te onderscheiden, maar bleef dezelfde vorm met
+   dezelfde namen erin — en een label repareert geen vorm die iets anders
+   belooft. Sinds #1270 een keuzelijst: die zegt "precies één" uit zichzelf,
+   terwijl de chips erboven schakelaars blijven. */
 .agenda-suggesties__keuze {
   display: grid;
   gap: 4px;
@@ -771,36 +776,8 @@
   color: var(--ink-soft);
 }
 
-.agenda-keuze {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.agenda-keuze__chip {
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1.5px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-.agenda-keuze__chip:hover {
-  border-color: var(--accent-line);
-}
-.agenda-keuze__chip:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-/* De gekozen groep draagt de accentrand en het accentvlak, maar houdt de gewone
-   inktkleur: accent op zacht accent haalt als tekstkleur de AA-drempel niet. */
-.agenda-keuze__chip[aria-pressed="true"] {
-  border-color: var(--accent-line);
-  background: var(--accent-soft);
-  color: var(--ink);
+.agenda-suggesties__select {
+  max-width: 100%;
 }
 
 .agenda-suggesties__kies {
@@ -1283,6 +1260,16 @@
   min-width: 0;
 }
 
+/* De enige zichtbare plan-actie (#1270). Hij hoort naast de weergavekeuze en
+   niet in de maandkop: die knoppenrij is in de lijstweergave `hidden`, en juist
+   dáár kon plannen helemaal niet. 44px hoog zoals de knop ernaast — het is
+   bediening van dezelfde orde. */
+.agenda-plan-knop {
+  flex: none;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
 /* Dezelfde ronde 44px-vorm als de maandnavigatie: het is bediening van
    dezelfde orde, en 44 is de aanraakmaat die dit blad aanhoudt. */
 .agenda-abo-knop {
@@ -1302,33 +1289,6 @@
   border-color: var(--accent-line);
 }
 .agenda-abo-knop:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-/* De regel onderaan de pagina die hetzelfde sheet opent. Eén regel, geen kaart:
-   wie hier komt scrolde langs alles heen en heeft een herinnering nodig, geen
-   tweede uitleg. */
-.agenda-abo-teaser {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-2);
-  width: 100%;
-  padding: var(--sp-3) var(--sp-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--ink);
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-}
-.agenda-abo-teaser:hover {
-  border-color: var(--accent-line);
-}
-.agenda-abo-teaser:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }

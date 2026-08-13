@@ -109,6 +109,12 @@ function toon(
   /** Zoals Agenda hem doorgeeft: afwezig voor een dag die geweest is. */
   onPlan: (() => void) | undefined = undefined,
   profielen: Record<string, Profile> = {},
+  /** Wat er die dag los gespeeld is, plus de tellers per speeldag (#1270). */
+  gespeeld: {
+    wedstrijden?: Parameters<typeof DagSheet>[0]["wedstrijden"];
+    wedstrijdenPerPoll?: Record<string, number>;
+    groepNamen?: Record<string, string>;
+  } = {},
 ) {
   const onGestemd = vi.fn();
   const onClose = vi.fn();
@@ -125,12 +131,17 @@ function toon(
           onGestemd={onGestemd}
           onPlan={onPlan}
           onClose={onClose}
+          {...gespeeld}
         />
       </ToastProvider>
     </MemoryRouter>,
   );
   return { onGestemd, onClose };
 }
+
+/** Losse partijen: het tijdstip doet er in dit sheet niet toe — die verdeling
+ *  is al gemaakt voordat het sheet iets te zien krijgt (#1221). */
+const wed = (...ids: string[]) => ids.map((id) => ({ id, atMs: 0 }));
 
 describe("<DagSheet />", () => {
   beforeEach(() => {
@@ -310,6 +321,59 @@ describe("<DagSheet />", () => {
     expect(screen.queryByRole("button", { name: PLAN })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Speeldag plannen" }));
     expect(onPlan).toHaveBeenCalledOnce();
+  });
+
+  /* -------- Wat er los gespeeld is (#1182, hierheen in #1270) -------- */
+
+  const LOS = { date: "2026-08-13", groupId: "g1" };
+
+  it("zegt niet dat er niets gespeeld is als er wél gespeeld is", () => {
+    // Deze rijen stonden in het dagpaneel, dat over de gekozen dag ging. Nu een
+    // tik meteen dít sheet opent, zou een avond met drie gelogde wedstrijden
+    // anders doodleuk "Niets gespeeld" heten.
+    toon([], [], undefined, {}, {
+      wedstrijden: [{ ...LOS, matches: wed("m1", "m2", "m3") }],
+      groepNamen: { g1: "Vrijdagavond Padel" },
+    });
+    expect(screen.queryByText(/deze dag is geweest/i)).not.toBeInTheDocument();
+    expect(screen.getByText("3 wedstrijden")).toBeInTheDocument();
+    // Meerdere wedstrijden: naar het matchoverzicht van de groep, want een
+    // dagfilter bestaat daar niet.
+    expect(screen.getByRole("link", { name: /3 wedstrijden/ })).toHaveAttribute(
+      "href",
+      "/spelen?groep=g1",
+    );
+  });
+
+  it("linkt bij één wedstrijd naar die wedstrijd", () => {
+    toon([], [], undefined, {}, {
+      wedstrijden: [{ ...LOS, matches: wed("m1") }],
+    });
+    expect(screen.getByRole("link", { name: /1 wedstrijd/ })).toHaveAttribute(
+      "href",
+      "/matches/m1",
+    );
+  });
+
+  it("geeft de gespeeld-rij dezelfde schil als een speeldagkaart (#1207)", () => {
+    toon([], [], undefined, {}, {
+      wedstrijden: [{ ...LOS, matches: wed("m1") }],
+    });
+    const rij = screen.getByRole("link", { name: /1 wedstrijd/ });
+    expect(rij).toHaveClass("speeldag");
+    expect(rij.className).not.toMatch(/speeldag--/);
+    // Het staafje draagt het statusverschil, zoals bij elke andere status.
+    expect(rij.querySelector(".speeldag__rail--past")).toBeInTheDocument();
+  });
+
+  it("zet de wedstrijden van een speeldag op die speeldag (#1221)", () => {
+    // Eén avond hoort één blok te zijn; een losse rij ernaast over dezelfde
+    // wedstrijden zette dezelfde avond er twee keer neer.
+    toon([marker({ past: true })], [], undefined, {}, {
+      wedstrijdenPerPoll: { "poll-1": 6 },
+    });
+    expect(screen.getByText("6 wedstrijden")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /wedstrijden/ })).toBeNull();
   });
 });
 

@@ -49,9 +49,12 @@ export function AgendaLijst({
     return (
       <div className="dagpaneel__leeg">
         <p className="dagpaneel__leeg-titel">Nog niets gepland</p>
+        {/* Verwees tot #1270 terug naar het maandoverzicht: in deze weergave
+            kón je helemaal niet plannen. De knop staat nu boven de lijst en
+            werkt in beide weergaven, dus hier hoeft alleen de stand van zaken
+            nog te staan. */}
         <p className="dagpaneel__leeg-tekst">
-          Er staat de komende maanden niets op de agenda. Kies een dag in het
-          maandoverzicht om er een speeldag op te zetten.
+          Er staat de komende maanden niets op de agenda.
         </p>
       </div>
     );
