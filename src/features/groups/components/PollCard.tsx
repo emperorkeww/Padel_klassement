@@ -548,6 +548,7 @@ export function PollCard({
                 club={club}
                 groupName={groupName}
                 profiles={profiles}
+                myId={myId}
                 isManager={isManager}
                 busy={busy}
                 run={run}

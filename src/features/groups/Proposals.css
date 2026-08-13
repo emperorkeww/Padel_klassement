@@ -796,6 +796,20 @@
   font-size: var(--fs-xs);
   color: var(--gold);
 }
+/* Afmelden ná het vastleggen (#1271): een stille regel onder de deelnemers.
+   Het is geen hoofdactie — de meesten komen gewoon — maar wie afhaakt moet het
+   kunnen zeggen zonder de organisator te appen. */
+.winner-card__afmelden {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin: var(--sp-2) 0 0;
+}
+.winner-card__afmeld-uitleg {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
 .winner-card__actions {
   display: flex;
   flex-wrap: wrap;

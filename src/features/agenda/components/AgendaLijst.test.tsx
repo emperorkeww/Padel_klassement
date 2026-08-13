@@ -37,11 +37,12 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
   };
 }
 
-function toon(markers: AgendaMarker[], laadt = false) {
+function toon(markers: AgendaMarker[], laadt = false, meer = 0) {
   const onOpenDag = vi.fn();
   render(
     <AgendaLijst
       items={dagItems(markers)}
+      meer={meer}
       laadt={laadt}
       ledenPerGroep={{ g1: 4 }}
       profielen={{}}
@@ -83,5 +84,22 @@ describe("<AgendaLijst />", () => {
     expect(screen.getByText("Speeldagen ophalen…")).toBeInTheDocument();
     // En meldt vooral niet dat er niets is terwijl dat nog niet vaststaat.
     expect(screen.queryByText("Nog niets gepland")).not.toBeInTheDocument();
+  });
+
+  it("zegt waar de lijst ophoudt (#1270)", () => {
+    // Hij kapte stil af op 40 speeldagen en op een kwartaal vooruit. Beide
+    // grenzen zijn redelijk, maar een lijst die ophoudt ziet er precies zo uit
+    // als een agenda die leeg raakt — en "Wat komt eraan" belooft alles.
+    toon([marker()]);
+    expect(
+      screen.getByText(/alles wat er de komende drie maanden gepland staat/i),
+    ).toBeInTheDocument();
+  });
+
+  it("noemt wat er buiten de lijst viel", () => {
+    toon([marker()], false, 3);
+    expect(
+      screen.getByText(/nog 3 speeldagen verderop/i),
+    ).toBeInTheDocument();
   });
 });

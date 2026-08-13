@@ -94,3 +94,50 @@ create policy "play_poll_votes_update_own" on public.play_poll_votes
 create policy "play_poll_votes_delete_own" on public.play_poll_votes
   for delete
   using (player_id = (select auth.uid()));
+
+-- Aanwezigheid (#1271): zichtbaar voor leden. Schrijven mag over jezelf — dat
+-- is het afmelden dat na het vastleggen nergens meer kon — en de organisator
+-- van de speeldag mag het over iedereen, want dat is precies de correctie die
+-- hij op de speeldagpagina maakt.
+create policy "play_poll_presence_select_member" on public.play_poll_presence
+  for select
+  using (public.is_group_member(group_id, (select auth.uid())));
+
+create policy "play_poll_presence_insert" on public.play_poll_presence
+  for insert
+  with check (
+    -- De speler over wie het gaat moet lid zijn; anders zet een correctie een
+    -- vreemde in de opstelling.
+    public.is_group_member(group_id, player_id)
+    -- group_id is gedenormaliseerd: borg dat hij echt bij de optie hoort.
+    and exists (
+      select 1 from public.play_poll_options o
+      where o.id = option_id
+        and o.group_id = play_poll_presence.group_id
+    )
+    and (
+      (
+        player_id = (select auth.uid())
+        and public.is_group_member(group_id, (select auth.uid()))
+      )
+      or public._mag_speeldag_beheren(option_id)
+    )
+  );
+
+create policy "play_poll_presence_update" on public.play_poll_presence
+  for update
+  using (
+    player_id = (select auth.uid())
+    or public._mag_speeldag_beheren(option_id)
+  )
+  with check (
+    player_id = (select auth.uid())
+    or public._mag_speeldag_beheren(option_id)
+  );
+
+create policy "play_poll_presence_delete" on public.play_poll_presence
+  for delete
+  using (
+    player_id = (select auth.uid())
+    or public._mag_speeldag_beheren(option_id)
+  );

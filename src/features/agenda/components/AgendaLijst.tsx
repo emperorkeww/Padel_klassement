@@ -24,6 +24,7 @@ import "../Agenda.css";
 
 export function AgendaLijst({
   items,
+  meer = 0,
   laadt,
   ledenPerGroep,
   profielen,
@@ -31,6 +32,9 @@ export function AgendaLijst({
 }: {
   /** De komende speeldagen, op volgorde; groepering per maand gebeurt hier. */
   items: DagItem[];
+  /** Hoeveel speeldagen er niet meer pasten (#1270). De lijst kapte stil af op
+   *  40 items, en dat ziet er precies zo uit als een agenda die leeg raakt. */
+  meer?: number;
   laadt: boolean;
   ledenPerGroep: Record<string, number>;
   profielen: Record<string, Profile>;
@@ -82,6 +86,14 @@ export function AgendaLijst({
           </ul>
         </section>
       ))}
+
+      {/* De twee grenzen die deze lijst heeft, uitgesproken (#1270). Beide zijn
+          redelijk — verder plant niemand — maar erover zwijgen is dat niet. */}
+      <p className="agenda-lijst__grens">
+        {meer > 0
+          ? `Nog ${meer} ${meer === 1 ? "speeldag" : "speeldagen"} verderop; die staan in het maandoverzicht.`
+          : "Dit is alles wat er de komende drie maanden gepland staat."}
+      </p>
     </div>
   );
 }

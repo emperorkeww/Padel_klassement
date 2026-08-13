@@ -29,7 +29,11 @@ create table public.notifications (
   -- delen één tag en worden dus één melding, twee losse matches niet.
   tag text not null,
   created_at timestamptz not null default now(),
-  read_at timestamptz
+  read_at timestamptz,
+  -- Weggeveegd door de ontvanger (#1273). Zacht, want "ongedaan maken" moet een
+  -- gewone update zijn: terugzetten na een echte delete zou een insert-recht
+  -- vragen dat er bewust niet is. prune_notifications ruimt na 90 dagen op.
+  dismissed_at timestamptz
 );
 
 -- De lijst in het paneel en op /meldingen.

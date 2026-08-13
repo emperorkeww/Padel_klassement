@@ -29,7 +29,6 @@ import {
   markersByDay,
   metHoofdletter,
   monthGrid,
-  ophaalVenster,
   schuifMaand,
   statusChip,
   telInMaand,
@@ -83,9 +82,24 @@ export function Agenda() {
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const globaleClub = useClub();
+  // Een klok die doortikt (#1270).
+  //
+  // `buildMarkers(…, Date.now())` zat in een useMemo, dus `past` bevroor op het
+  // moment dat het venster laadde. Het dag-sheet tikte daarom zelf al door
+  // (#1104), maar het raster, de kaarten en de actiestrook niet: een moment dat
+  // om 20:00 begon bleef "Jij moet nog stemmen" tot je herlaadde. En `vandaag`
+  // schoof om dezelfde reden niet mee over middernacht — de agenda bleef dan
+  // een dag lang gisteren aanwijzen.
+  //
+  // Dezelfde tik als in DagSheet: het gaat om de laatste minuten vóór een slot,
+  // en fijner meten kost renders zonder iets te zeggen.
+  const nu = useKlok();
   // "Vandaag" hangt aan de tijdzone van je clubkeuze, niet aan die van je
   // toestel: om 00:30 in een andere zone is het hier nog gisteren (#783).
-  const vandaag = dateInZone(globaleClub.timezone);
+  const vandaag = useMemo(
+    () => dateInZone(globaleClub.timezone, 0, nu),
+    [globaleClub.timezone, nu],
+  );
 
   // Wat je bekijkt staat in de URL (#1182): deelbaar, refresh-bestendig, en de
   // terugknop sluit het sheet in plaats van de pagina te verlaten. De gekozen
@@ -139,20 +153,26 @@ export function Agenda() {
   const lijst = useMemo(() => groepen.data ?? [], [groepen.data]);
   const groepSleutel = lijst.map((g) => g.id).join(",");
 
-  // Twee vensters, met opzet. `raster` is wat je ziet staan en bepaalt wanneer
-  // de toetsenbordnavigatie een maand doorbladert; `from`/`to` is wat we ophalen
-  // en loopt zes weken verder, zodat "Hierna" ook in een lege maand iets te
-  // wijzen heeft (#1112).
-  const raster = windowFor(maand);
-  const { from, to } = ophaalVenster(maand);
+  // Twee vensters, elk met een eigen vraag (#1270).
+  //
+  // `raster` beantwoordt "wat staat er in deze maand" en volgt dus wat je
+  // bekijkt. Het haalde tot nu toe zes weken extra op, zodat "Hierna" ook in een
+  // lege maand iets te wijzen had; sinds "Hierna" en het paneel uit het
+  // vooruitblik-venster komen, is die staart dood gewicht — hij kwam nooit in
+  // een cel terecht en telde nergens in mee. Precies de rastergrenzen dus, wat
+  // ook de vraag beantwoordt wanneer de toetsenbordnavigatie een maand
+  // doorbladert.
+  const { from, to } = windowFor(maand);
   const venster = useAsync<PollWindow>(
     () => getPollWindow(lijst.map((g) => g.id), from, to),
     [groepSleutel, from, to],
   );
-  // Het derde venster (#1182). Het raster toont een maand en `ophaalVenster`
-  // volgt dat; de lijst en de "wacht op jou"-strook gaan over wat er aankomt en
-  // mogen niet veranderen omdat jij naar december zit te bladeren. Vandaar een
-  // eigen, vaste blik van vandaag tot een kwartaal verder.
+  // Het vooruitblik-venster (#1182): de lijst, de "wacht op jou"-strook en het
+  // vandaag-paneel gaan over wat er aankomt, en mogen niet veranderen omdat jij
+  // naar december zit te bladeren. Vandaar een eigen, vaste blik van vandaag tot
+  // een kwartaal verder. Dat overlapt in de huidige maand grotendeels met het
+  // raster, maar samenvoegen kan niet: zodra je bladert gaan ze uit elkaar, en
+  // dan zou de één de ander meesleuren.
   const lijstEinde = addDays(vandaag, LIJST_DAGEN);
   const lijstVenster = useAsync<PollWindow>(
     () => getPollWindow(lijst.map((g) => g.id), vandaag, lijstEinde),
@@ -193,12 +213,16 @@ export function Agenda() {
   useRealtime("play_polls", herlaad);
   useRealtime("play_poll_options", herlaad);
   useRealtime("play_poll_votes", herlaad);
-  // Een uitslag die iemand logt zet een dag in het verleden aan (#1182).
-  useRealtime("matches", wedstrijden.reload);
+  // Een uitslag die iemand logt zet een dag in het verleden aan (#1182), maar
+  // alleen als het jóuw groepen betreft (#1270). Zonder filter wekte elke
+  // uitslag in de hele app dit venster, en de speeldagpagina filtert al net zo
+  // (#1141). Zolang de groepen nog laden is er niets te filteren.
+  const matchFilter = groepSleutel ? `group_id=in.(${groepSleutel})` : undefined;
+  useRealtime("matches", wedstrijden.reload, matchFilter);
 
   const alleMarkers = useMemo(
-    () => buildMarkers(venster.data ?? LEEG_VENSTER, lijst, myId, Date.now()),
-    [venster.data, lijst, myId],
+    () => buildMarkers(venster.data ?? LEEG_VENSTER, lijst, myId, nu),
+    [venster.data, lijst, myId, nu],
   );
   // De filterkeuze komt uit de URL en valt terug op wat je vorige bezoek
   // onthield (#1270). Beide worden elke render gezeefd langs de groepen die je
@@ -245,13 +269,15 @@ export function Agenda() {
   const lijstMarkers = useMemo(
     () =>
       filterOpGroepen(
-        buildMarkers(lijstVenster.data ?? LEEG_VENSTER, lijst, myId, Date.now()),
+        buildMarkers(lijstVenster.data ?? LEEG_VENSTER, lijst, myId, nu),
         groepFilter,
       ),
-    [lijstVenster.data, lijst, myId, groepFilter],
+    [lijstVenster.data, lijst, myId, groepFilter, nu],
   );
   const perDagLijst = useMemo(() => markersByDay(lijstMarkers), [lijstMarkers]);
-  const komende = useMemo(
+  // `meer` is hoeveel er buiten de lijst viel (#1270): die kapte stil af, en een
+  // lijst die ophoudt ziet er precies zo uit als een agenda die leeg raakt.
+  const { items: komende, meer } = useMemo(
     () => komendeItems(lijstMarkers, vandaag),
     [lijstMarkers, vandaag],
   );
@@ -345,20 +371,20 @@ export function Agenda() {
   const zichtbareStatussen = useMemo(() => {
     const aanwezig = new Set(
       markers
-        .filter((m) => m.date >= raster.from && m.date <= raster.to)
+        .filter((m) => m.date >= from && m.date <= to)
         .map((m) => m.status),
     );
     return (["booked", "locked", "open"] as const).filter((s) => aanwezig.has(s));
-  }, [markers, raster.from, raster.to]);
+  }, [markers, from, to]);
 
   // De ruit staat sinds #1221 alleen nog voor losse partijen: wat bij een
   // speeldag hoort draagt de stip van die speeldag al.
   const wedstrijdenInBeeld = useMemo(
     () =>
       Object.keys(indeling.losPerDag).some(
-        (d) => d >= raster.from && d <= raster.to,
+        (d) => d >= from && d <= to,
       ),
-    [indeling.losPerDag, raster.from, raster.to],
+    [indeling.losPerDag, from, to],
   );
 
   /**
@@ -369,7 +395,7 @@ export function Agenda() {
    */
   function verplaatsFocus(date: string) {
     setFocusDag(date);
-    if (date < raster.from || date > raster.to) zet({ maand: maandVan(date) });
+    if (date < from || date > to) zet({ maand: maandVan(date) });
   }
 
   /**
@@ -483,7 +509,10 @@ export function Agenda() {
           {/* De telling zegt erbij waarover ze gaat zodra er chips aanstaan
               (#1270): "Geen speeldagen deze maand" viel niet te rijmen met een
               raster vol stippen, en niets in die zin wees naar het filter. */}
-          <p className="agenda-kop__telling">
+          {/* Dezelfde live region als de titel erboven (#1270): met het
+              toetsenbord bladeren of een chip omzetten verandert dit getal, en
+              dat zei tot nu toe niets. */}
+          <p className="agenda-kop__telling" aria-live="polite">
             {weergave === "lijst"
               ? lijstVenster.loading && lijstVenster.data == null
                 ? " "
@@ -632,6 +661,7 @@ export function Agenda() {
           {weergave === "lijst" ? (
             <AgendaLijst
               items={komende}
+              meer={meer}
               laadt={lijstVenster.loading && lijstVenster.data == null}
               ledenPerGroep={ledenPerGroep}
               profielen={profielen.data ?? {}}
@@ -786,6 +816,25 @@ export function Agenda() {
       </Sheet>
     </div>
   );
+}
+
+/** Hoe vaak de agenda opnieuw kijkt hoe laat het is. Een minuut: het gaat om de
+ *  laatste minuten vóór een slot, en om middernacht. Zelfde tik als DagSheet. */
+const TIK_MS = 60_000;
+
+/**
+ * De klok, als waarde die doortikt (#1270).
+ *
+ * Alles wat "is dit al geweest?" beantwoordt hing aan één `Date.now()` in een
+ * useMemo, en dat getal bevroor op het moment van laden.
+ */
+function useKlok(): number {
+  const [nu, setNu] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNu(Date.now()), TIK_MS);
+    return () => clearInterval(id);
+  }, []);
+  return nu;
 }
 
 /** Een telling met de groep(en) erbij waarover ze gaat, of gewoon de telling

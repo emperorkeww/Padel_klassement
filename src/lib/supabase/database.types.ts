@@ -1350,6 +1350,7 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          dismissed_at: string | null
           id: string
           read_at: string | null
           soort: string
@@ -1361,6 +1362,7 @@ export type Database = {
         Insert: {
           body: string
           created_at?: string
+          dismissed_at?: string | null
           id?: string
           read_at?: string | null
           soort: string
@@ -1372,6 +1374,7 @@ export type Database = {
         Update: {
           body?: string
           created_at?: string
+          dismissed_at?: string | null
           id?: string
           read_at?: string | null
           soort?: string
@@ -1540,6 +1543,52 @@ export type Database = {
             columns: ["poll_id"]
             isOneToOne: false
             referencedRelation: "play_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      play_poll_presence: {
+        Row: {
+          aanwezig: boolean
+          group_id: string
+          option_id: string
+          player_id: string
+          updated_at: string
+        }
+        Insert: {
+          aanwezig: boolean
+          group_id: string
+          option_id: string
+          player_id: string
+          updated_at?: string
+        }
+        Update: {
+          aanwezig?: boolean
+          group_id?: string
+          option_id?: string
+          player_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "play_poll_presence_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "play_poll_presence_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "play_poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "play_poll_presence_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1986,11 +2035,11 @@ export type Database = {
           notify_match_reminder: boolean
           notify_new_round: boolean
           notify_poll: boolean
+          notify_rank_change: boolean
+          notify_result: boolean
           notify_stil_tot: string | null
           notify_stil_van: string | null
           notify_var: boolean
-          notify_rank_change: boolean
-          notify_result: boolean
           owner_id: string | null
           pias_avatar_bron: string | null
           pias_avatar_url: string | null
@@ -2017,11 +2066,11 @@ export type Database = {
           notify_match_reminder?: boolean
           notify_new_round?: boolean
           notify_poll?: boolean
+          notify_rank_change?: boolean
+          notify_result?: boolean
           notify_stil_tot?: string | null
           notify_stil_van?: string | null
           notify_var?: boolean
-          notify_rank_change?: boolean
-          notify_result?: boolean
           owner_id?: string | null
           pias_avatar_bron?: string | null
           pias_avatar_url?: string | null
@@ -2048,11 +2097,11 @@ export type Database = {
           notify_match_reminder?: boolean
           notify_new_round?: boolean
           notify_poll?: boolean
+          notify_rank_change?: boolean
+          notify_result?: boolean
           notify_stil_tot?: string | null
           notify_stil_van?: string | null
           notify_var?: boolean
-          notify_rank_change?: boolean
-          notify_result?: boolean
           owner_id?: string | null
           pias_avatar_bron?: string | null
           pias_avatar_url?: string | null
