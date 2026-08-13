@@ -69,6 +69,17 @@ export function afgeslotenSeizoenen(from: Date, now: Date = new Date()): Season[
   return listSeasons(from, now).filter((s) => isSeasonClosed(s, now));
 }
 
+/** De laatste dag van het kwartaal als YYYY-MM-DD — `end` is de dag erná
+ *  (exclusief). Voor `ratings_as_of`, dat de stand op het einde van die dag
+ *  geeft: zo toont een afgesloten seizoen de ratings van tóén (#1298). */
+export function seizoenEinddag(season: Season): string {
+  const dag = new Date(season.end);
+  dag.setDate(dag.getDate() - 1);
+  const mm = String(dag.getMonth() + 1).padStart(2, "0");
+  const dd = String(dag.getDate()).padStart(2, "0");
+  return `${dag.getFullYear()}-${mm}-${dd}`;
+}
+
 /** Seizoensnaam per kwartaal, op de meteorologische seizoenen van de Benelux
  *  (#474): Q1 (jan–mrt) valt in de winter, Q2 (apr–jun) in de lente, Q3
  *  (jul–sep) in de zomer en Q4 (okt–dec) in de herfst. Index = kwartaal − 1. */

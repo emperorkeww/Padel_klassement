@@ -5,6 +5,7 @@ import { BountyMark } from "@/features/rating/components/BountyMark";
 import { bountiesVoor } from "@/features/rating/bounty";
 import { getActiveBounties } from "@/features/standings/bountyApi";
 import { Podium } from "@/features/standings/components/Podium";
+import { PageTabs } from "@/ui/PageTabs";
 import { deltaToday } from "@/features/standings/ratingDelta";
 import { useClub } from "@/features/availability/club";
 import { TierBadge } from "@/features/rating/components/TierBadge";
@@ -19,7 +20,8 @@ import { RivalryCard } from "./RivalryCard";
 import { PiasCard } from "./PiasCard";
 import { ZwartePietCard } from "./ZwartePietCard";
 import type { PredictionStanding } from "@/features/matches/predictions";
-import type { Season } from "@/features/rating/seasons";
+import { seizoenEinddag, type Season } from "@/features/rating/seasons";
+import { matchesInSeason } from "@/features/rating/standings";
 import type {
   Group,
   GroupMember,
@@ -31,12 +33,24 @@ import type {
   Team,
 } from "@/types";
 
+type StandMode = "rating" | "punten" | "toto";
+
+const WEERGAVEN: { id: StandMode; label: string }[] = [
+  { id: "rating", label: "Rating" },
+  { id: "punten", label: "Punten" },
+  { id: "toto", label: "Toto" },
+];
+
 interface GroupStandTabProps {
   matches: Match[];
   completedMatches: Match[];
   teams: Record<string, Team>;
   profiles: Record<string, Profile>;
   ratings: Record<string, PlayerRating>;
+  /** De rating per speler aan het eind van een gekozen afgesloten seizoen
+   *  (#1298). Null = het lopende seizoen of "Alle tijden": dan is de rating
+   *  van nu het antwoord. */
+  seizoenRatings: Record<string, number> | null;
   histories: Record<string, RatingPoint[]>;
   memberList: GroupMember[];
   myId: string;
@@ -57,6 +71,7 @@ export function GroupStandTab({
   teams,
   profiles,
   ratings,
+  seizoenRatings,
   histories,
   memberList,
   myId,
@@ -73,9 +88,7 @@ export function GroupStandTab({
   // Stand-tab: rating is de standaard (#52); de punten-weergave blijft als
   // toggle tot eendaagse tornooien (#124) die rol overnemen — dan kan hij weg.
   // "toto" = het voorspellersklassement (#116).
-  const [standMode, setStandMode] = useState<"rating" | "punten" | "toto">(
-    "rating",
-  );
+  const [standMode, setStandMode] = useState<StandMode>("rating");
   const club = useClub();
 
   // De Pias van de lopende maand (#167) — zelfde client-side afleiding als de
@@ -94,6 +107,25 @@ export function GroupStandTab({
     [bounties.data, group.id],
   );
 
+  // Kijk je naar een afgesloten kwartaal, dan is de ratingstand die van tóén
+  // (#1298). Eén variabele voor "welk seizoen kijken we terug", zodat de
+  // renderkant niet twee dingen tegelijk hoeft te controleren.
+  const toenSeizoen = season && seizoenRatings ? season : null;
+  // Zelfde vorm als `ratings`, zodat groupRatingStandings er niets van hoeft te
+  // weten. `games` blijft 0: hoeveel matches iemand tóén op de teller had staat
+  // niet in deze bron, en een gok zou de gedimde ratings laten liegen. Gevolg:
+  // in het historische beeld dimt niets en breekt de gelijkstand op naam.
+  const toenRatings = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(seizoenRatings ?? {}).map(([pid, rating]) => [
+          pid,
+          { player_id: pid, rating, games: 0, updated_at: "" } as PlayerRating,
+        ]),
+      ),
+    [seizoenRatings],
+  );
+
   // Tekentjes naast de naam (#523, #805): enkel de emoji, betekenis via `title`.
   const marksFor = (playerId: string) => (
     <StandMarks
@@ -110,45 +142,82 @@ export function GroupStandTab({
       <section className="card">
         <div className="card__head">
           <h2 className="card__title card__title--tight">Groepsklassement</h2>
-          <div className="tabs tabs--head" role="group" aria-label="Klassement-weergave">
-            <button
-              className={`tab ${standMode === "rating" ? "is-active" : ""}`}
-              onClick={() => setStandMode("rating")}
-            >
-              Rating
-            </button>
-            <button
-              className={`tab ${standMode === "punten" ? "is-active" : ""}`}
-              onClick={() => setStandMode("punten")}
-            >
-              Punten
-            </button>
-            <button
-              className={`tab ${standMode === "toto" ? "is-active" : ""}`}
-              onClick={() => setStandMode("toto")}
-            >
-              Toto
-            </button>
-          </div>
+          {/* De seizoenskiezer stond binnen de punten- en toto-weergave, dus wie
+              op de standaardweergave (rating) bleef, zag nooit dat er iets te
+              bladeren viel — en de eregalerij eronder was daarmee onbereikbaar
+              (#1298). Hij hoort boven de weergavekeuze: hij zegt wélke periode
+              je bekijkt, de knoppenrij zegt hóe. */}
+          {seasons.length > 0 && (
+            <div className="stand-season">
+              <select
+                className="select select--filter"
+                aria-label="Seizoen"
+                value={season?.id ?? ""}
+                onChange={(e) => setSeasonId(e.target.value)}
+              >
+                <option value="">Alle tijden</option>
+                {season && !seasons.some((s) => s.id === season.id) && (
+                  <option value={season.id}>{season.label}</option>
+                )}
+                {seasons.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
+
+        {/* Zag eruit als een tabbalk, gedroeg zich als een knoppenrij: geen
+            aria-selected, geen pijltjestoetsen (#1298). PageTabs doet sinds
+            #674 B2 precies dit, met `variant="segment"` sinds #1089. */}
+        <PageTabs
+          tabs={WEERGAVEN}
+          value={standMode}
+          onChange={setStandMode}
+          ariaLabel="Standweergave"
+          variant="segment"
+        />
 
         {standMode === "rating" && (
           <>
             <p className="card__subtitle">
-              Gesorteerd op rating — hoe vaak iemand speelt telt niet mee.
-              Gedimde ratings zijn op minder dan 3 matches gebouwd.
+              {toenSeizoen ? (
+                <>
+                  Eindstand van <strong>{toenSeizoen.label}</strong> — de rating
+                  zoals hij op {seizoenEinddag(toenSeizoen)} stond, en de
+                  matches uit dat kwartaal.
+                </>
+              ) : (
+                <>
+                  Gesorteerd op rating — hoe vaak iemand speelt telt niet mee.
+                  Gedimde ratings zijn op minder dan 3 matches gebouwd.
+                </>
+              )}
             </p>
             {(() => {
-              const played = playedInGroup(matches, teams);
+              // Een afgesloten seizoen toont de stand van tóén: de ratings van
+              // de laatste dag van dat kwartaal, geteld over de matches uit dat
+              // kwartaal (#1298). Zonder seizoen is de rating van nu het
+              // antwoord — die loopt gewoon door.
+              const played = playedInGroup(
+                toenSeizoen
+                  ? matchesInSeason(completedMatches, toenSeizoen)
+                  : matches,
+                teams,
+              );
               const rows = groupRatingStandings(
                 memberList.map((m) => m.player_id),
-                ratings,
+                toenSeizoen ? toenRatings : ratings,
                 played,
                 (pid) => displayName(profiles[pid]),
               );
-              // Dag-cumulatieve ELO-beweging (#352), niet de laatste match.
+              // Dag-cumulatieve ELO-beweging (#352), niet de laatste match. In
+              // een afgesloten seizoen zegt "vandaag" niets over die stand, dus
+              // dan geen pijltje en geen sparkline: die lopen door tot nu.
               const dayDelta = (pid: string) =>
-                deltaToday(histories[pid] ?? [], club.timezone);
+                toenSeizoen ? null : deltaToday(histories[pid] ?? [], club.timezone);
               // Top 3 met rating op het podium; de tabel begint vanaf #4.
               const podium = rows.filter((r) => r.rating != null).slice(0, 3);
               const rest = rows.slice(podium.length);
@@ -166,7 +235,11 @@ export function GroupStandTab({
                       delta: dayDelta(r.playerId),
                       dimmed: r.thin,
                       tier: true,
-                      sub: `${r.playedInGroup}× in deze groep`,
+                      // "18× in deze groep" wrapte in een podiumkolom van
+                      // ~110px, en dan lijnden de drie tegels onderling niet
+                      // meer uit (#1298). Kort genoeg voor één regel — dat je
+                      // in deze groep kijkt, zegt de pagina al.
+                      sub: `${r.playedInGroup}× gespeeld`,
                     }))}
                   />
                   {rest.length > 0 && (
@@ -211,7 +284,7 @@ export function GroupStandTab({
                                       <span className="rating-cell">
                                         <strong>{r.rating}</strong>
                                       </span>
-                                      {hist.length > 0 && (
+                                      {!toenSeizoen && hist.length > 0 && (
                                         <Sparkline
                                           history={hist}
                                           name={displayName(profiles[r.playerId])}
@@ -225,7 +298,7 @@ export function GroupStandTab({
                                   )}
                                 </td>
                                 <td className="num">
-                                  {delta !== 0 && (
+                                  {delta != null && delta !== 0 && (
                                     <span
                                       className={`stat__delta ${delta > 0 ? "is-up" : "is-down"}`}
                                     >
@@ -246,27 +319,6 @@ export function GroupStandTab({
               );
             })()}
           </>
-        )}
-
-        {standMode !== "rating" && seasons.length > 0 && (
-          <div className="stand-season">
-            <select
-              className="select select--filter"
-              aria-label="Seizoen"
-              value={season?.id ?? ""}
-              onChange={(e) => setSeasonId(e.target.value)}
-            >
-              <option value="">Alle tijden</option>
-              {season && !seasons.some((s) => s.id === season.id) && (
-                <option value={season.id}>{season.label}</option>
-              )}
-              {seasons.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
         )}
 
         {standMode === "punten" && champion && season && (

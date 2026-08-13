@@ -82,8 +82,12 @@ export function Podium({
                 name={entry.name}
                 size={place === 1 ? 56 : 44}
               />
-              <span className="podium__name">
-                {entry.name}
+              {/* Naam en tekentjes zijn twee dingen (#1298): stonden ze in
+                  dezelfde afkappende span, dan at de ellips van "Alice
+                  Anders…" het 💰-teken half op. Zelfde opzet als in de
+                  tabellen: de naam krimpt, de markers houden hun breedte. */}
+              <span className="podium__naamrij">
+                <span className="podium__name">{entry.name}</span>
                 {entry.markers}
               </span>
               <span className={`podium__value${entry.dimmed ? " is-dim" : ""}`}>

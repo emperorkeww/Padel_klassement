@@ -103,6 +103,9 @@ const PAIRS = [
   ["accent-ink", "accent-strong", 4.5, "knoptekst op de ingedrukte knop"],
   ["lef", "surface", 4.5, "lef-tekst op kaart"],
   ["lef-ink", "lef", 4.5, "knoptekst op ingezette lef-knop"],
+  // De kroonpil boven het podium (#943): 12px bold kapitalen op --bigdaddy, dus
+  // 4,5. Stond hier niet, terwijl het paar wel op het scherm staat (#1298).
+  ["bigdaddy-ink", "bigdaddy", 4.5, "titel op de Big Daddy-kroonpil"],
   ["dorst", "surface", 4.5, "traktatie-tekst op kaart (#1004)"],
   ["dorst", "dorst-soft", 4.5, "traktatie-tekst op dorstvlak (#1004)"],
   ["dorst-ink", "dorst", 4.5, "knoptekst op ingeloste traktatie-knop (#1004)"],

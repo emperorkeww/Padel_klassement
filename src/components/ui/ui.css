@@ -312,6 +312,36 @@ textarea {
   gap: var(--sp-2);
   min-width: 0;
 }
+
+/* Rating-cel: pil + divisie-badge + ratingverloop naast elkaar. Stond tot
+   #1298 in Leaderboard.css, dat alleen op de klassement-route laadt — terwijl
+   de groeps-Stand dezelfde markup rendert. Zonder deze regels was `.rating-wrap`
+   daar een gewone inline-span zonder gap en `.rating-cell` een kaal getal:
+   "🪑 Bankvuller I" eindigde op x=289 en "892" begon op x=289. */
+.rating-cell {
+  display: inline-block;
+  padding: 0.125rem var(--sp-2);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-line);
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+/* Rating is het hoofdgetal van het spelersklassement (#139). */
+.rating-cell--lead {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  padding: 0.15rem var(--sp-3);
+}
+.rating-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
 /* Schande-token-emoji naast een naam (🃏 Zwarte Piet / 🤡 Pias, #523): enkel
    het tekentje, iets kleiner en niet meegeknipt door een ellipsis-naam. */
 .stand-mark {
