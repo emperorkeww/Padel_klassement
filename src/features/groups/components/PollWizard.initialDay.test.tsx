@@ -86,15 +86,19 @@ describe("<PollWizard initialDay />", () => {
   it("opent zonder initialDay gewoon op vandaag", () => {
     toon();
     expect(screen.getByRole("tab", { selected: true })).toHaveTextContent("7");
-    expect(manueleDatum().value).toBe("");
+    // Het handmatige veld staat voorgevuld op de eerste dag ná het venster
+    // (#1308): leeg met een uitgegrijsde knop ernaast liet je zelf uitzoeken
+    // waar dat paneel over ging.
+    expect(manueleDatum().value).toBe("2026-08-14");
   });
 
   it("selecteert een dag binnen het beschikbaarheidsvenster", () => {
     toon("2026-08-11");
     expect(screen.getByRole("tab", { selected: true })).toHaveTextContent("11");
-    // Binnen het venster hoort de handmatige weg dicht te blijven.
-    expect(manueleDatum().value).toBe("");
-    expect(screen.getByText("Ander moment (verder vooruit)").closest("details"))
+    // Binnen het venster hoort de handmatige weg dicht te blijven; het veld
+    // erachter staat op de eerste dag daarbuiten (#1308).
+    expect(manueleDatum().value).toBe("2026-08-14");
+    expect(screen.getByText("Verder vooruit plannen — datum zelf kiezen").closest("details"))
       .not.toHaveAttribute("open");
   });
 
@@ -113,7 +117,7 @@ describe("<PollWizard initialDay />", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^20:00/ })).toBeNull();
     expect(manueleDatum().value).toBe("2026-08-26");
-    expect(screen.getByText("Ander moment (verder vooruit)").closest("details"))
+    expect(screen.getByText("Verder vooruit plannen — datum zelf kiezen").closest("details"))
       .toHaveAttribute("open");
   });
 
@@ -131,6 +135,8 @@ describe("<PollWizard initialDay />", () => {
   it("negeert een dag in het verleden", () => {
     toon("2026-07-30");
     expect(screen.getByRole("tab", { selected: true })).toHaveTextContent("7");
-    expect(manueleDatum().value).toBe("");
+    // Ook hier staat het veld op de eerste dag ná het venster (#1308) — de
+    // dag uit het verleden komt er niet in terecht.
+    expect(manueleDatum().value).toBe("2026-08-14");
   });
 });

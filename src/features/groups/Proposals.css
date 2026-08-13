@@ -188,6 +188,19 @@
   color: var(--ink-soft);
   opacity: 0.5;
 }
+/* Vandaag (#1308): de strip begint er meestal op, maar zei dat nergens. */
+.day-chip.is-vandaag .day-chip__name {
+  color: var(--accent);
+  font-weight: 700;
+}
+/* Er staat al een speeldag op deze dag — dezelfde stip als in het maandraster
+   dat achter dit sheet ligt. Geen verbod, wel een waarschuwing. */
+.day-chip__bezet {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--accent);
+}
 /* De dag die je in de agenda aantikte, maar die voorbij het banenvenster ligt.
    Hij hoort bij de rij, maar sluit er niet op aan — de streep en de
    extra ruimte zeggen dat er dagen tussen zitten die de strip niet toont. */
@@ -252,14 +265,38 @@
   background: var(--gold);
   color: var(--ink);
 }
-/* "Vroegere uren tonen"-knop: eigen regel bovenaan het slot-raster (#322). */
+/* "Vroegere uren tonen": eigen regel bovenaan het slot-raster (#322), sinds
+   #1308 als stille tekstknop. Als gestippelde knop over de volle breedte woog
+   hij zwaarder dan de slots waar het om gaat — en hij leek een leeg vak dat om
+   inhoud vroeg. Zelfde register als "Verken alle vrije banen →". */
 .poll-wizard__earlier {
   flex-basis: 100%;
-  justify-content: center;
-  background: transparent;
-  border-style: dashed;
+  padding: var(--sp-2);
+  /* Raakdoel (#374); de knop staat alleen, dus dat mag hier gewoon. */
+  min-height: 44px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-sm);
   color: var(--ink-soft);
-  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Wat het cijfer op een slot betekent (#1308). Eén regel onder het raster,
+   in dezelfde toon als de hint erboven. */
+.poll-wizard__legenda {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+/* De duur geldt voor wat je hierna kiest; dit staat er alleen zodra dat
+   verschil bestaat (#1308). */
+.poll-wizard__duur-uitleg {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
 }
 .poll-wizard__controls {
   display: flex;
@@ -340,7 +377,10 @@
   gap: var(--sp-2);
 }
 .picked-chip {
-  padding: var(--sp-1) var(--sp-2);
+  /* Raakdoel (#374): dit is de enige manier om een gekozen moment weer weg te
+     halen, en hij stond op 26px. */
+  min-height: 44px;
+  padding: var(--sp-1) var(--sp-3);
   border: 1px solid var(--accent-line);
   border-radius: 999px;
   background: var(--accent-soft);

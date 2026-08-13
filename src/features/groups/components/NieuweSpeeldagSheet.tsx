@@ -40,6 +40,7 @@ export function NieuweSpeeldagSheet({
   onClub,
   initialDay,
   storageKey,
+  bezetteDagen,
   onClose,
   onCreated,
 }: {
@@ -56,6 +57,8 @@ export function NieuweSpeeldagSheet({
   initialDay?: string;
   /** sessionStorage-sleutel zodat de selectie een uitstap naar /banen overleeft. */
   storageKey?: string;
+  /** Dagen waarop al een speeldag staat (#1308): een stip in de dagstrip. */
+  bezetteDagen?: Set<string>;
   onClose: () => void;
   onCreated: () => void;
 }) {
@@ -95,6 +98,7 @@ export function NieuweSpeeldagSheet({
         club={club}
         initialDay={initialDay}
         storageKey={storageKey}
+        bezetteDagen={bezetteDagen}
         submitLabel={(n) => `Start speeldag (${n})`}
         onSubmit={async (opts) => {
           await createPoll({
