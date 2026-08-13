@@ -356,19 +356,25 @@ export function PollWizard({
         })}
       </div>
 
-      {/* Uren van de gekozen dag. */}
-      <div className="poll-wizard__slots">
-        {/* Standaard avond-focus; deze knop klapt de vroegere uren uit/in. */}
-        {(hasEarlier || (wholeDay && !manual)) && (
+      {/* Standaard avond-focus; deze knop klapt de vroegere uren uit/in. Boven
+          het raster en niet erin (#1308): als flex-item in het raster moest hij
+          kiezen tussen een volle regel (een pil van 348px met vier woorden
+          erin) en een plek náást de eerste slotchip. */}
+      {(hasEarlier || (wholeDay && !manual)) && (
+        <p className="poll-wizard__slot-kop">
           <button
             type="button"
-            className="poll-wizard__earlier"
+            className="btn btn--sm poll-wizard__earlier"
             onClick={() => setWholeDay((v) => !v)}
             aria-expanded={wholeDay}
           >
             {wholeDay ? "↓ Alleen avonduren" : "↑ Vroegere uren tonen"}
           </button>
-        )}
+        </p>
+      )}
+
+      {/* Uren van de gekozen dag. */}
+      <div className="poll-wizard__slots">
         {weekLoading && <p className="empty">Vrije banen laden…</p>}
         {!weekLoading && dayStartsVisible == null && (
           <p className="empty">
@@ -435,7 +441,7 @@ export function PollWizard({
             handmatige locatie: daar is geen Playtomic-banenpagina (#322). */}
         {!manual && (
           <Link
-            className="poll-wizard__toggle"
+            className="btn btn--sm poll-wizard__banen-link"
             to={`/banen?datum=${selectedDay}`}
           >
             Verken alle vrije banen →
