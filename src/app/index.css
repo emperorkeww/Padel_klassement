@@ -471,22 +471,35 @@
    zijn kleurfamilie niet meer. De neutralen (vlakken, randen) liggen
    allemaal op C* ≈ 4-6 rond h 270 — vóór #1255 liep de chroma onbedoeld op
    naar boven (--line-strong was met C* 9,3 de blauwste "neutraal" in de
-   app, pal naast smaragd- en lime-content). */
+   app, pal naast smaragd- en lime-content).
+
+   #1264 haalt dat meubilair weer omláág. Het uit elkaar trekken van #1255
+   ging steeds één kant op, en daardoor werd het thema tegelijk minder diep
+   én minder contrastvol: een zwarte pagina met een dikke bleke band op
+   L* 16-22 erbovenop. Diepte en contrast zijn hier dezelfde knop — elk vlak
+   dat zakt geeft alles wat erop staat gratis ruimte (inkt op de kaart
+   16,0 → 16,9:1, accent 6,6 → 7,0:1). Hue en chroma blijven staan, alleen de
+   lichtheid zakt; de opeenvolgende stappen worden er juist gróter van
+   (5,8 / 4,3 / 3,4 / 4,8 L*), dus hover leest nu duidelijker dan vóór #1264.
+   Nieuw bewaakt: het hoogste meubilairniveau mag niet boven L* 19 uitkomen
+   (contrast-check.mjs) — dat is de regel die het opkruipen tegenhoudt. */
 :root[data-theme="dark"] {
   /* Canvas → kaart → verhoogd: zwart als bodem, daarna stappen ≥ 3 L* per
      opeenvolgend niveau (#1255). */
   --bg: #000000; /* puur zwart — OLED laat deze pixels uit */
-  --surface: #16191e; /* kaarten */
-  --surface-2: #1e2228; /* subtiel vlak / tracks */
-  --surface-elevated: #25292f; /* hero, sheets, popovers */
-  --surface-hover: #2c3038; /* hover op kaarten, nav-items, knoppen */
-  --surface-active: #16372a; /* gekozen nav-item — smaragd getint */
-  /* Segmentbalk (#1255): de track zakt ónder het kaartniveau (L* 5,8 — een
-     verzonken goot, waar hij ook op ligt: pagina, kaart of sheet), het gekozen
-     segment ligt er ruim bovenop (L* 17,4, het hover-niveau). Vóór dit paar
-     leende de balk --surface-2/--surface en die keren op donker juist om:
-     het actieve segment las als een gat. */
-  --track: #101317;
+  --surface: #101318; /* kaarten */
+  --surface-2: #181c22; /* subtiel vlak / tracks */
+  --surface-elevated: #1f2329; /* hero, sheets, popovers */
+  --surface-hover: #292d35; /* hover op kaarten, nav-items, knoppen */
+  --surface-active: #0e3023; /* gekozen nav-item — smaragd getint */
+  /* Segmentbalk (#1255): de track zakt ónder het kaartniveau (een verzonken
+     goot, waar hij ook op ligt: pagina, kaart of sheet), het gekozen segment
+     ligt er ruim bovenop (het hover-niveau). Vóór dit paar leende de balk
+     --surface-2/--surface en die keren op donker juist om: het actieve segment
+     las als een gat. De track zakt in #1264 mee met de kaart — anders zou hij
+     op het nieuwe kaartniveau uitkomen en juist verdwijnen; op de zwarte
+     pagina draagt zijn rand hem, niet zijn vulling. */
+  --track: #060b10;
   --track-actief: #262b33;
   --background-navigation: #000000;
   --navigation-ink: #f2f4f7;
@@ -668,7 +681,9 @@
   --avatar-h7-bg: #2b3441; --avatar-h7-fg: #b4bfcc;
 
   --placeholder: #929aa4;
-  --skeleton-hi: #2c3038;
+  /* De glans van het skeleton loopt over --surface-2; hij zakt in #1264 mee,
+     zodat de amplitude van de shimmer (+6,7 L*) dezelfde blijft. */
+  --skeleton-hi: #262a31;
 
   /* Op donker dragen randen de hiërarchie; schaduwen kleiner en dieper —
      op bijna-zwart doet spreiding toch niets meer. */
@@ -733,7 +748,7 @@
   --paneel-om-ink: var(--ink);
   --paneel-om-ink-soft: var(--ink-soft);
   --paneel-om-label: var(--ink-soft);
-  --paneel-om-vlak: #2c3038; /* gelijk aan surface-hover — een stap hoger */
+  --paneel-om-vlak: var(--surface-hover); /* een stap hoger dan het paneel */
   --paneel-om-lijn: #3a3f46;
 
   /* Lime als focuskleur (#1074): op donker springt hij van élk vlak af (≥9:1
