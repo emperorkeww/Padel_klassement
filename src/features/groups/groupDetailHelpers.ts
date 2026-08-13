@@ -3,7 +3,13 @@ import type { Match } from "@/types";
 
 /**
  * Groepeert matches per ronde (round_number), losse matches op ronde 0, en
- * sorteert de rondes aflopend zodat de nieuwste bovenaan staat.
+ * sorteert oplopend — de volgorde waarin de avond gespeeld wordt.
+ *
+ * Het was aflopend, "zodat de nieuwste bovenaan staat". Dat leverde twee dingen
+ * op die niemand wil (#1271): ronde 3 bóven ronde 1, tegen de speelvolgorde in,
+ * en "Losse matches" (ronde 0) helemaal onderaan — onder de hele avond. Een
+ * speeldag lees je van boven naar beneden zoals je hem speelt; wélke ronde nu
+ * aan de beurt is zegt de open/dicht-stand van het blok al.
  */
 export function groupByRound(
   matches: Match[],
@@ -15,7 +21,7 @@ export function groupByRound(
     map.get(r)!.push(m);
   }
   return [...map.entries()]
-    .sort((a, b) => b[0] - a[0])
+    .sort((a, b) => a[0] - b[0])
     .map(([round, list]) => ({ round, list }));
 }
 

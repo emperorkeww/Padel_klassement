@@ -20,7 +20,8 @@ export function Uitslagen() {
       <p>
         <strong>Geen bereik in de kooi?</strong> Je invoer gaat in een wachtrij en
         wordt vanzelf verstuurd zodra je weer verbinding hebt. Je hoeft niets
-        opnieuw te doen.
+        opnieuw te doen. Dat geldt voor een losse partij én voor de uitslag van
+        een klaargezette ronde; die houdt het tijdstip waarop hij gepland stond.
       </p>
       <p>
         <strong>Verkeerd ingevuld?</strong> De uitslag corrigeren kan degene die

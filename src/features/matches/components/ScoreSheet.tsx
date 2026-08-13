@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Sheet } from "@/ui/Sheet";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
@@ -10,6 +10,11 @@ import {
   type SetScore,
 } from "@/features/matches/api";
 import { ScoreForm } from "@/features/matches/components/ScoreForm";
+import {
+  clearScoreDraft,
+  readScoreDraft,
+  writeScoreDraft,
+} from "@/features/matches/matchDraft";
 import { scoreGeldig } from "@/features/matches/setsCheck";
 import type { Match } from "@/types";
 
@@ -59,13 +64,19 @@ export function ScoreSheet({
   onClose: () => void;
   onSave: (invoer: ScoreInvoer) => Promise<void>;
 }) {
+  // Een half ingetikte score overleeft het sluiten (#1271). Elk sheet sluit
+  // sinds #1180 met een veeg omlaag, en dat gebeurt op de baan sneller dan je
+  // denkt: kleine veeg, invoer weg. Het concept staat in sessionStorage — deze
+  // avond, dit tabblad.
+  const concept = useState(() => readScoreDraft(match.id))[0];
   const [scoreA, setScoreA] = useState(
-    match.score_a != null ? String(match.score_a) : "",
+    concept?.scoreA ?? (match.score_a != null ? String(match.score_a) : ""),
   );
   const [scoreB, setScoreB] = useState(
-    match.score_b != null ? String(match.score_b) : "",
+    concept?.scoreB ?? (match.score_b != null ? String(match.score_b) : ""),
   );
   const [sets, setSets] = useState<SetPair[]>(() => {
+    if (concept) return concept.sets;
     const bestaand = readSetScores(match);
     return bestaand && bestaand.length > 0
       ? bestaand.map(([a, b]) => ({ a: String(a), b: String(b) }))
@@ -73,10 +84,16 @@ export function ScoreSheet({
   });
   // Sets openen zichzelf als er al een stand ligt: die wil je zien, niet zoeken.
   const [setsOpen, setSetsOpen] = useState(
-    () => (readSetScores(match)?.length ?? 0) > 0,
+    () => concept?.setsOpen ?? (readSetScores(match)?.length ?? 0) > 0,
   );
   const [busy, setBusy] = useState(false);
   const toast = useToast();
+
+  // Live wegschrijven zolang de sheet openstaat; leeg = geen concept.
+  useEffect(() => {
+    if (!open) return;
+    writeScoreDraft(match.id, { scoreA, scoreB, sets, setsOpen });
+  }, [open, match.id, scoreA, scoreB, sets, setsOpen]);
 
   if (!open) return null;
 
@@ -93,6 +110,8 @@ export function ScoreSheet({
         // Alle rijen leeg = sets bewust wissen; anders de nieuwe stand.
         setScores: setScores.length > 0 ? setScores : null,
       });
+      // De uitslag staat er (of staat in de wachtrij): het concept is klaar.
+      clearScoreDraft(match.id);
       onClose();
     } catch (err) {
       // Melden gebeurt hier, één keer, in plaats van in elke aanroeper. Een
@@ -104,7 +123,17 @@ export function ScoreSheet({
   }
 
   return (
-    <Sheet open onClose={onClose} title={titel} compact>
+    // De focus op het eerste scoreveld regelt het sheet zelf (#1271). Met
+    // `autoFocus` op het veld gebeurde er niets: React zet die in de
+    // commit-fase, waarna het focus-effect van Sheet hem stil terugpakte naar
+    // de dialoog. Gevolg: geen toetsenbord op de baan, en altijd een extra tik.
+    <Sheet
+      open
+      onClose={onClose}
+      title={titel}
+      compact
+      initialFocus=".input--score"
+    >
       <ScoreForm
         labelA={labelA}
         labelB={labelB}
@@ -116,12 +145,20 @@ export function ScoreSheet({
         onSets={setSets}
         setsOpen={setsOpen}
         onSetsOpen={setSetsOpen}
-        autoFocus
       >
         {ratingPreview}
       </ScoreForm>
       <footer className="sheet__foot">
-        <button className="btn" onClick={onClose} disabled={busy}>
+        {/* Annuleren is een besluit: het concept mag weg. Alleen wegvegen of
+            wegnavigeren laat je invoer staan (#1271). */}
+        <button
+          className="btn"
+          onClick={() => {
+            clearScoreDraft(match.id);
+            onClose();
+          }}
+          disabled={busy}
+        >
           Annuleren
         </button>
         <button

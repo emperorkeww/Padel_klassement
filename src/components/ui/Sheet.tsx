@@ -20,6 +20,7 @@ export function Sheet({
   title,
   ariaLabel,
   compact = false,
+  initialFocus,
   className,
   onKeyDown,
   children,
@@ -32,6 +33,11 @@ export function Sheet({
   ariaLabel?: string;
   /** Compacte variant (kleine popup i.p.v. volle sheet). */
   compact?: boolean;
+  /** CSS-selector binnen de dialoog die de focus krijgt bij openen (#1271).
+   *  Zonder waarde landt de focus op de dialoog zelf. Gebruik dit in plaats van
+   *  `autoFocus` op een kind: dat wordt door het focus-effect hieronder stil
+   *  overschreven. */
+  initialFocus?: string;
   className?: string;
   /** Extra toetsafhandeling op de dialoog (bv. pijltjes-navigatie). */
   onKeyDown?: (e: ReactKeyboardEvent<HTMLDivElement>) => void;
@@ -45,12 +51,24 @@ export function Sheet({
   useSleepSluiten(dialogRef, backdropRef, onClose, open);
 
   // Focus in de dialoog bij openen; terug naar de opener bij sluiten.
+  //
+  // `initialFocus` is een selector binnen de dialoog en gaat vóór (#1271).
+  // Een `autoFocus` op een veld in het sheet hielp niet: React past die toe in
+  // de commit-fase, en deze passive effect draait dáárna en zette de focus stil
+  // terug op de dialoog. In de score-sheet betekende dat: geen toetsenbord op de
+  // baan, en altijd een extra tik voordat je kon typen. Via het sheet zelf
+  // regelen houdt bovendien het teruggeven aan de opener intact — met autoFocus
+  // stond de focus hier al ín de dialoog en was de opener niet meer te vinden.
   useEffect(() => {
     if (!open) return;
     const opener = document.activeElement as HTMLElement | null;
-    dialogRef.current?.focus();
+    const dialoog = dialogRef.current;
+    const doel = initialFocus
+      ? (dialoog?.querySelector<HTMLElement>(initialFocus) ?? null)
+      : null;
+    (doel ?? dialoog)?.focus();
     return () => opener?.focus?.();
-  }, [open]);
+  }, [open, initialFocus]);
 
   // Escape sluit; de pagina eronder scrollt niet mee.
   useEffect(() => {

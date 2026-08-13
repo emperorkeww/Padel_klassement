@@ -28,6 +28,7 @@ import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
 import { teamLabel } from "@/features/matches/api";
 import { useIsAdmin } from "@/features/admin/useIsAdmin";
 import {
+  slaCorrectieOp,
   verwijderMatchSlim,
   verzetTijdstip,
   vulUitslagIn,
@@ -138,6 +139,8 @@ export function PlannedMatchCard({
   // De score-invoer zelf zit in ScoreSheet (#1144); hier blijft alleen of hij
   // openstaat en wat er (optimistisch) is opgeslagen.
   const [scoreOpen, setScoreOpen] = useState(false);
+  // Corrigeren vanaf de kaart (#1271), zonder de omweg via /matches/:id.
+  const [corrigeren, setCorrigeren] = useState(false);
   const [saved, setSaved] = useState<{
     a: number;
     b: number;
@@ -638,6 +641,55 @@ export function PlannedMatchCard({
               />
             )}
           </div>
+        )}
+        {/* Een typfout rechtzetten (#1271). De kaart klapte na het opslaan om
+            naar "opgeslagen ✓" en bood daarna niets meer: corrigeren betekende
+            naar /matches/:id, dan ⋯, dan "Score corrigeren". Op de avond zelf,
+            met natte handen, is dat de verkeerde kant op. */}
+        {rechten.magCorrigeren && (
+          <>
+            <button
+              className="btn btn--sm planned-saved__corrigeer"
+              onClick={() => setCorrigeren(true)}
+            >
+              Score corrigeren
+            </button>
+            {corrigeren && (
+              <ScoreSheet
+                open
+                match={
+                  {
+                    ...m,
+                    status: "completed",
+                    score_a: saved.a,
+                    score_b: saved.b,
+                  } as Match
+                }
+                labelA={labelA}
+                labelB={labelB}
+                titel="Uitslag corrigeren"
+                opslaanLabel="Score opslaan"
+                onClose={() => setCorrigeren(false)}
+                onSave={async (invoer) => {
+                  const { scoreA: a, scoreB: b } = invoer;
+                  await slaCorrectieOp(
+                    {
+                      matchId: m.id,
+                      winnerTeamId:
+                        a === b ? null : a > b ? m.team_a_id : m.team_b_id,
+                      scoreA: a,
+                      scoreB: b,
+                      setScores: invoer.setScores,
+                    },
+                    rechten.alsBeheerder,
+                  );
+                  setSaved((v) => (v ? { ...v, a, b } : v));
+                  setCorrigeren(false);
+                  onSaved?.();
+                }}
+              />
+            )}
+          </>
         )}
       </div>
     );
