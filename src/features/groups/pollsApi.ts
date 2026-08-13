@@ -484,6 +484,34 @@ export async function lockPoll(pollId: string, optionId: string): Promise<void> 
 }
 
 /**
+ * Verzet het vastgelegde moment naar een ander (#1271).
+ *
+ * Anders dan `lockPoll` raakt dit de status niet, en anders dan `reopenPoll`
+ * blijft de boeking staan: `booked_at`, `access_code` en `courts` overleven het.
+ * Dat is precies het geval waarvoor het bestaat — de baan is geboekt en het
+ * moet een half uur later. Tot nu toe was de enige weg "↩ Heropen stemmen", en
+ * die gooit je baancode weg om een uur te verschuiven.
+ *
+ * `locked_at` schuift wél op: hij voedt de SEQUENCE van het agenda-event
+ * (`laatsteWijziging`), en zonder die stap laten agenda-apps de wijziging
+ * liggen.
+ */
+export async function verzetMoment(
+  pollId: string,
+  optionId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("play_polls")
+    .update({
+      locked_option_id: optionId,
+      locked_at: new Date().toISOString(),
+    })
+    .eq("id", pollId);
+  if (error) throw error;
+  invalidate("play-poll");
+}
+
+/**
  * Markeert de gelockte poll als geboekt op Playtomic. `details` is optioneel
  * (#675, #802): laat een veld weg en die kolom blijft ongemoeid — boeken zonder
  * banen of code is nog altijd één actie. Meegeven (ook als lege string of null)

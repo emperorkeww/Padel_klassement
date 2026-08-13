@@ -7,6 +7,7 @@ import {
 } from "@/lib/utils/time";
 import { longDay } from "@/features/groups/planPollHelpers";
 import { hoortBijMoment } from "@/features/groups/speeldagMatches";
+import { laatsteWijziging } from "@/features/groups/speeldagIcs";
 import type {
   PlayPoll,
   PollOption,
@@ -214,9 +215,9 @@ export function buildMarkers(
       courts: poll.courts,
       accessCode: poll.access_code,
       courtsFree: option.courts_free,
-      // Boeken is de laatste stap, vastleggen de stap ervoor; zonder beide is
-      // de poll sinds het aanmaken niet meer van fase veranderd.
-      changedAt: poll.booked_at ?? poll.locked_at ?? poll.created_at,
+      // De jongste van boeken, vastleggen en aanmaken: een verzet moment schuift
+      // `locked_at` op nadat `booked_at` er al stond (#1271).
+      changedAt: laatsteWijziging(poll),
     });
   }
   return markers;

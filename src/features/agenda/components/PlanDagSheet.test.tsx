@@ -12,13 +12,6 @@ vi.mock("@/lib/supabase/client", async () => {
 
 import { PlanDagSheet } from "./PlanDagSheet";
 
-const CLUB = {
-  id: "91d8d419-3736-498e-90be-362de786d588",
-  name: "Padel De Panne",
-  city: "De Panne",
-  timezone: "Europe/Brussels",
-};
-
 function groep(id: string, name: string, leden = 8): GroupSummary {
   return {
     id,
@@ -42,8 +35,6 @@ function toon(props: Partial<Parameters<typeof PlanDagSheet>[0]> = {}) {
         groepen={TWEE}
         gekozenGroep={null}
         onGroep={onGroep}
-        club={CLUB}
-        onClub={() => {}}
         vensterEinde="2026-08-13"
         onClose={onClose}
         onDoor={onDoor}
@@ -92,11 +83,14 @@ describe("<PlanDagSheet />", () => {
     expect(screen.getByRole("button", { name: /Kies momenten/ })).toBeEnabled();
   });
 
-  it("noemt de club één keer, in de knop waarmee je hem verandert (#1270)", () => {
-    // De naam stond er ook als tekst links, en die kopie kortte op 390px in tot
-    // "LAG…" naast een knop die hem voluit toonde.
+  it("vraagt de club hier niet meer (#1270, #1271)", () => {
+    // De clubnaam stond hier eerst twee keer: als tekst links en in de knop
+    // rechts, wat op 390px "LAG…" opleverde naast dezelfde naam voluit (#1270).
+    // Daarna bleek de vraag zélf dubbel: het scherm hierna stelt hem opnieuw,
+    // op dezelfde state, en dáár zie je wat je keuze oplevert (#1271).
     toon();
-    expect(screen.getAllByText(/Padel De Panne/)).toHaveLength(1);
+    expect(screen.queryByText(/Padel De Panne/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Club")).not.toBeInTheDocument();
     expect(screen.queryByText("je huidige clubkeuze")).not.toBeInTheDocument();
   });
 

@@ -81,12 +81,28 @@ export function vastlegbaar(option: PollOption, today: string): boolean {
 }
 
 /**
- * Het moment dat de app voorstelt: onder de nog vastlegbare, niet-onhaalbare
- * opties die met de meeste ja-stemmen. Bij gelijkspel wint de vroegste — de
- * lijst komt gesorteerd binnen uit `pollOptions`.
+ * Het moment dat de app voorstelt — en dat de cron twaalf uur voor de tijd
+ * vanzelf vastlegt.
+ *
+ * Eén regel, twee plekken (#1271). Dit was er een eigen: de kaart nam het
+ * moment met de meeste ja's onder de niet-onhaalbare, zónder minimum. De cron
+ * eist daarnaast `ja + misschien >= 4`. Zo kon de kaart een moment aanbevelen
+ * dat de automaat een halve dag later níét koos, en niemand zag dat aankomen.
+ *
+ * De voorwaarden zijn nu dezelfde als in `kiesMoment`
+ * (supabase/functions/_shared/pollBeslissing.ts, met een pariteitstest ernaast):
+ *
+ * 1. de dag is nog niet voorbij;
+ * 2. genoeg volk voor één baan — ja plus misschien;
+ * 3. genoeg baan volgens de beschikbaarheid; onbekend telt als haalbaar.
+ *
+ * Winnaar is het moment met de meeste ja-stemmen; misschiens laten een moment
+ * meedoen, ze laten het niet winnen. Bij gelijkspel wint de vroegste — de lijst
+ * komt gesorteerd binnen uit `pollOptions`.
  *
  * Bewust een advies en geen wet (#1181): de beheerder mag in de MomentKiezer
- * élk moment vastleggen, ook een onhaalbaar of minder populair.
+ * élk moment vastleggen, ook een onhaalbaar of minder populair. Levert dit
+ * `null` op, dan verdwijnt alleen de één-tik-knop.
  *
  * `vrijOp` levert de vrije banen van een optie, zodat de kaart zijn live
  * beschikbaarheid kan meegeven in plaats van de momentopname op de rij.
@@ -100,9 +116,10 @@ export function besteOptie(
   let best: { option: PollOption; yes: number } | null = null;
   for (const o of options) {
     if (!vastlegbaar(o, today)) continue;
-    const yes = tallyOption(o, votes).yes.length;
-    if (optionState(yes, vrijOp(o)) === "onhaalbaar") continue;
-    if (!best || yes > best.yes) best = { option: o, yes };
+    const t = tallyOption(o, votes);
+    if (t.tekort > 0) continue;
+    if (optionState(t.yes.length, vrijOp(o)) === "onhaalbaar") continue;
+    if (!best || t.yes.length > best.yes) best = { option: o, yes: t.yes.length };
   }
   return best?.option ?? null;
 }

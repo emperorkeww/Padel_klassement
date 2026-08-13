@@ -136,14 +136,14 @@ describe("besteOptie", () => {
   /** Twee banen vrij, tenzij de optie zelf iets anders zegt. */
   const vrij = (o: PollOption) => o.courts_free;
 
+  /** n ja-stemmers op één optie. */
+  const jas = (n: number, optie: string) =>
+    Array.from({ length: n }, (_, i) => vote(`p${i + 1}`, "yes", optie));
+
   it("kiest het moment met de meeste ja-stemmen", () => {
     const vroeg = option({ id: "opt-1", date: "2026-07-10" });
     const laat = option({ id: "opt-2", date: "2026-07-11" });
-    const stemmen = [
-      vote("p1", "yes", "opt-1"),
-      vote("p1", "yes", "opt-2"),
-      vote("p2", "yes", "opt-2"),
-    ];
+    const stemmen = [...jas(4, "opt-1"), ...jas(5, "opt-2")];
 
     expect(besteOptie([vroeg, laat], stemmen, vrij, today)?.id).toBe("opt-2");
   });
@@ -151,20 +151,47 @@ describe("besteOptie", () => {
   it("laat bij gelijkspel het vroegste moment winnen", () => {
     const vroeg = option({ id: "opt-1", date: "2026-07-10" });
     const laat = option({ id: "opt-2", date: "2026-07-11" });
-    const stemmen = [vote("p1", "yes", "opt-1"), vote("p2", "yes", "opt-2")];
+    const stemmen = [...jas(4, "opt-1"), ...jas(4, "opt-2")];
 
     expect(besteOptie([vroeg, laat], stemmen, vrij, today)?.id).toBe("opt-1");
+  });
+
+  it("stelt niets voor onder de drempel van vier (#1271)", () => {
+    // Dit was het gat met de cron: de kaart beval een moment met twee ja's aan
+    // dat de automaat een halve dag later niet zou kiezen.
+    const o = option({ id: "opt-1", date: "2026-07-10" });
+    expect(besteOptie([o], jas(3, "opt-1"), vrij, today)).toBeNull();
+    expect(besteOptie([o], jas(4, "opt-1"), vrij, today)?.id).toBe("opt-1");
+  });
+
+  it("laat misschiens meedoen maar niet winnen (#1271)", () => {
+    const a = option({ id: "opt-1", date: "2026-07-10" });
+    const b = option({ id: "opt-2", date: "2026-07-11" });
+    const stemmen = [
+      // opt-1 haalt de drempel alleen dankzij twee twijfelaars; opt-2 heeft
+      // maar één stem en valt af.
+      ...jas(2, "opt-1"),
+      vote("p8", "maybe", "opt-1"),
+      vote("p9", "maybe", "opt-1"),
+      ...jas(1, "opt-2"),
+    ];
+
+    expect(besteOptie([a, b], stemmen, vrij, today)?.id).toBe("opt-1");
   });
 
   it("slaat onhaalbare en voorbije momenten over", () => {
     const voorbij = option({ id: "opt-1", date: "2026-07-01" });
     const vol = option({ id: "opt-2", date: "2026-07-10", courts_free: 1 });
     const kan = option({ id: "opt-3", date: "2026-07-11" });
-    // Vijf ja's → 2 banen nodig; opt-2 heeft er maar 1 vrij.
-    const stemmen = ["p1", "p2", "p3", "p4", "p5"].flatMap((p) => [
-      vote(p, "yes", "opt-1"),
-      vote(p, "yes", "opt-2"),
-    ]);
+    // Vijf ja's → 2 banen nodig; opt-2 heeft er maar 1 vrij. opt-3 haalt met
+    // vier ja's de drempel en heeft aan één baan genoeg.
+    const stemmen = [
+      ...["p1", "p2", "p3", "p4", "p5"].flatMap((p) => [
+        vote(p, "yes", "opt-1"),
+        vote(p, "yes", "opt-2"),
+      ]),
+      ...jas(4, "opt-3"),
+    ];
 
     expect(besteOptie([voorbij, vol, kan], stemmen, vrij, today)?.id).toBe(
       "opt-3",

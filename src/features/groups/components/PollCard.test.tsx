@@ -20,11 +20,13 @@ vi.mock("@/lib/supabase/client", async () => {
 // test over de keuze van de kaart gaat en niet over de netwerklaag.
 const lockPoll = vi.hoisted(() => vi.fn(async () => {}));
 const reopenPoll = vi.hoisted(() => vi.fn(async () => {}));
+const verzetMoment = vi.hoisted(() => vi.fn(async () => {}));
 
 vi.mock("@/features/groups/pollsApi", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/groups/pollsApi")>()),
   lockPoll,
   reopenPoll,
+  verzetMoment,
 }));
 
 import { PollCard } from "./PollCard";
@@ -296,13 +298,15 @@ describe("<PollCard /> — elk moment vastlegbaar (#1181)", () => {
     vi.restoreAllMocks();
     lockPoll.mockClear();
     reopenPoll.mockClear();
+    verzetMoment.mockClear();
   });
 
   it("legt het moment vast dat de beheerder kiest, niet dat van de telling", async () => {
     renderCard(openPoll, {
       options: [option, tweede],
-      // opt-1 leidt met 2 ja's; opt-2 heeft er geen.
-      votes: [stem("p1", "opt-1"), stem("p2", "opt-1")],
+      // opt-1 leidt met vier ja's — de drempel waarop ook de cron beslist
+      // (#1271); opt-2 heeft er geen.
+      votes: ["p1", "p2", "p3", "p4"].map((p) => stem(p, "opt-1")),
     });
 
     // De aanbeveling staat in de voet …
@@ -357,9 +361,58 @@ describe("<PollCard /> — elk moment vastlegbaar (#1181)", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: /20:00/ }));
 
-    expect(lockPoll).toHaveBeenCalledWith("poll-1", "opt-2");
+    // Verzetten is een eigen handeling (#1271): lockPoll zou de status
+    // opnieuw schrijven, en dat hoort niet bij "alleen de tijd schuift".
+    expect(verzetMoment).toHaveBeenCalledWith("poll-1", "opt-2");
+    expect(lockPoll).not.toHaveBeenCalled();
     // Heropenen zet iedereen terug in de stemfase; dat hoeft hier juist niet.
     expect(reopenPoll).not.toHaveBeenCalled();
+  });
+
+  it("verzet ook een geboekte speeldag, met behoud van de boeking (#1271)", async () => {
+    // Dit was de kern van de klacht: was de baan geboekt, dan was de enige weg
+    // naar een half uur later "↩ Heropen stemmen" — en die wist locked_at,
+    // booked_at, de toegangscode én de baannummers. Je gooide je baancode weg
+    // om een uur te verschuiven.
+    renderCard(
+      {
+        ...openPoll,
+        status: "booked",
+        locked_option_id: "opt-1",
+        locked_at: NOW,
+        booked_at: NOW,
+        access_code: "1234",
+        courts: "3,4",
+      },
+      { options: [option, tweede] },
+    );
+
+    // Een geboekte kaart opent dichtgeklapt; de acties staan achter "Details".
+    await userEvent.click(
+      await screen.findByRole("button", { name: /^details/i }),
+    );
+    await userEvent.click(
+      await screen.findByRole("button", { name: /ander moment/i }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: /20:00/ }));
+
+    expect(verzetMoment).toHaveBeenCalledWith("poll-1", "opt-2");
+    expect(reopenPoll).not.toHaveBeenCalled();
+    expect(lockPoll).not.toHaveBeenCalled();
+  });
+
+  it("opent geen kiezer als er niets anders te kiezen valt", async () => {
+    // Eén moment, en dat is al vastgelegd: het sheet had dan één regel, en die
+    // stond disabled met de badge "nu gekozen" (#1271).
+    renderCard(
+      { ...openPoll, status: "locked", locked_option_id: "opt-1", locked_at: NOW },
+      { options: [option] },
+    );
+
+    await screen.findByRole("heading", { name: /speeldag/i });
+    expect(
+      screen.queryByRole("button", { name: /ander moment/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("houdt de keuze bij de beheerder", async () => {

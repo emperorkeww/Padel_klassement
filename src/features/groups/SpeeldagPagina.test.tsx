@@ -144,8 +144,12 @@ describe("<SpeeldagPagina />", () => {
     tables.play_polls = [openPoll];
     tables.play_poll_options = [openOption, bookedOption];
     tables.play_poll_votes = [
+      // Vier ja's: de drempel waarop zowel de kaart als de cron een moment
+      // vastleggen (#1271). Met minder stelt de kaart bewust niets meer voor.
       vote("opt-open", "p1"),
       vote("opt-open", "p2"),
+      vote("opt-open", "p3"),
+      vote("opt-open", "p4"),
       vote("opt-booked", "p1"),
       vote("opt-booked", "p2"),
       vote("opt-booked", "p3"),
