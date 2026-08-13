@@ -1,10 +1,19 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const api = vi.hoisted(() => ({
+  getAanwezigheid: vi.fn(),
+  zetAanwezigheid: vi.fn(async () => {}),
+}));
+vi.mock("@/features/groups/aanwezigheidApi", () => api);
+
 import {
   aanwezigSleutel,
   bewaarKeuzes,
+  haalKeuzes,
   leesKeuzes,
   pasKeuzesToe,
   ruimOudeKeuzes,
+  zetKeuzes,
 } from "./aanwezigOpslag";
 
 const LEDEN = ["p1", "p2", "p3", "p4"];
@@ -125,5 +134,42 @@ describe("pasKeuzesToe", () => {
 
   it("tovert geen vertrokken lid terug de lijst in", () => {
     expect([...pasKeuzesToe(["p1"], ["p1", "p9"], { p9: true })]).toEqual(["p1"]);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Welke opslag? (#1271)                                               */
+/* ------------------------------------------------------------------ */
+
+describe("haalKeuzes / zetKeuzes", () => {
+  beforeEach(() => {
+    api.getAanwezigheid.mockClear();
+    api.zetAanwezigheid.mockClear();
+    api.getAanwezigheid.mockResolvedValue({ p3: false });
+  });
+
+  it("gaat naar de database zodra er een moment is", async () => {
+    expect(await haalKeuzes("g1", "2026-08-07", "opt-1")).toEqual({ p3: false });
+    expect(api.getAanwezigheid).toHaveBeenCalledWith("opt-1");
+  });
+
+  it("blijft lokaal zonder moment — dan is er niets om het aan te hangen", async () => {
+    // Teams maken op de Spelen-tab zonder poll: geen optie, dus geen rij.
+    bewaarKeuzes("g1", "2026-08-07", { p2: false });
+    expect(await haalKeuzes("g1", "2026-08-07", null)).toEqual({ p2: false });
+    expect(api.getAanwezigheid).not.toHaveBeenCalled();
+  });
+
+  it("valt terug op de lokale kopie als de database het laat afweten", async () => {
+    // Je correcties kwijt zijn is erger dan ze even alleen zelf te zien.
+    bewaarKeuzes("g1", "2026-08-07", { p2: false }, "opt-1");
+    api.getAanwezigheid.mockRejectedValue(new Error("offline"));
+    expect(await haalKeuzes("g1", "2026-08-07", "opt-1")).toEqual({ p2: false });
+  });
+
+  it("schrijft altijd óók lokaal, zodat de terugval iets te vinden heeft", async () => {
+    await zetKeuzes("g1", "2026-08-07", { p2: false }, "opt-1");
+    expect(api.zetAanwezigheid).toHaveBeenCalledWith("opt-1", "g1", { p2: false });
+    expect(leesKeuzes("g1", "2026-08-07", "opt-1")).toEqual({ p2: false });
   });
 });

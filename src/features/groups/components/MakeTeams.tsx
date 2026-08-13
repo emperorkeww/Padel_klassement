@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
@@ -24,9 +24,9 @@ import { tallyOption } from "@/features/groups/pollLogic";
 import { rondeStart, rondesOpDag } from "@/features/groups/speeldagRondes";
 import { FairTeamsCard } from "@/features/groups/components/FairTeams";
 import {
-  bewaarKeuzes,
-  leesKeuzes,
+  haalKeuzes,
   pasKeuzesToe,
+  zetKeuzes,
   type AanwezigKeuzes,
 } from "@/features/groups/aanwezigOpslag";
 import { SpelersKiezer } from "@/features/groups/components/SpelersKiezer";
@@ -185,10 +185,29 @@ export function MakeTeams({
   // voor iedereen die je nog niet hebt aangeraakt — zie aanwezigOpslag.ts.
   const defaultKey = (tonightYes ?? members.map((m) => m.player_id)).join(",");
   const ledenKey = members.map((m) => m.player_id).join(",");
+  //
+  // Sinds #1271 staan ze in de database zodra er een moment is (#1146 maakt dat
+  // per moment en niet per dag). Daarmee ziet een tweede organisator ze ook, en
+  // kan de speler die afzegt zichzelf uit de opstelling halen — voorheen leefde
+  // dit in localStorage en zag alleen jouw browser het.
   const [keuzes, setKeuzes] = useState<AanwezigKeuzes>({});
-  useEffect(() => {
-    setKeuzes(leesKeuzes(groupId, dag, momentId));
+  const herlaadKeuzes = useCallback(() => {
+    let levend = true;
+    void haalKeuzes(groupId, dag, momentId).then((k) => {
+      if (levend) setKeuzes(k);
+    });
+    return () => {
+      levend = false;
+    };
   }, [groupId, dag, momentId]);
+  useEffect(() => herlaadKeuzes(), [herlaadKeuzes]);
+  // Een afmelding halverwege de avond hoort meteen te landen: de indeling die
+  // je erna genereert hangt ervan af.
+  useRealtime(
+    "play_poll_presence",
+    herlaadKeuzes,
+    momentId ? `option_id=eq.${momentId}` : undefined,
+  );
 
   const selected = useMemo(
     () =>
@@ -200,10 +219,15 @@ export function MakeTeams({
     [ledenKey, defaultKey, keuzes],
   );
 
-  /** Eén plek waar een keuze zowel in beeld als in de opslag terechtkomt. */
+  /** Eén plek waar een keuze zowel in beeld als in de opslag terechtkomt.
+   *  Optimistisch: de pil springt meteen om, het wegschrijven mag daarachteraan
+   *  komen. Gaat dat mis, dan zegt de toast het — de lokale kopie in
+   *  `zetKeuzes` houdt je selectie dan wel vast. */
   const kiesAnders = (volgende: AanwezigKeuzes) => {
     setKeuzes(volgende);
-    bewaarKeuzes(groupId, dag, volgende, momentId);
+    void zetKeuzes(groupId, dag, volgende, momentId).catch((err) => {
+      toast.error(errorMessage(err));
+    });
   };
 
   const toggle = (id: string) => {

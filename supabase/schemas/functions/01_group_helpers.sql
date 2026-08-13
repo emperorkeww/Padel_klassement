@@ -83,3 +83,27 @@ as $$
       )
   );
 $$;
+-- Mag de huidige gebruiker deze speeldag beheren (#1271)?
+--
+-- Dezelfde kring als die het moment vastlegt: wie de poll aanmaakte of de groep
+-- bezit. SECURITY DEFINER omdat de policy op play_poll_presence anders langs de
+-- RLS van play_polls en play_poll_options zou moeten, en dat is precies het
+-- soort recursie waarvoor de helpers hierboven bestaan.
+create or replace function public._mag_speeldag_beheren(p_option_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = ''
+stable
+as $$
+  select exists (
+    select 1
+    from public.play_poll_options o
+    join public.play_polls p on p.id = o.poll_id
+    where o.id = p_option_id
+      and (
+        p.created_by = (select auth.uid())
+        or public.is_group_owner(p.group_id, (select auth.uid()))
+      )
+  );
+$$;
