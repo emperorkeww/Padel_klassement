@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
-import { useBackTo } from "@/lib/hooks/useBackTo";
 
 /**
  * Echte 404 (#910, raakt #189).
@@ -13,7 +12,6 @@ import { useBackTo } from "@/lib/hooks/useBackTo";
  */
 export function NotFound() {
   const { pathname } = useLocation();
-  const terug = useBackTo("/");
   usePageTitle("Pagina niet gevonden");
 
   return (
@@ -27,16 +25,13 @@ export function NotFound() {
           icon="🎾"
           title="Deze bal ging buiten de lijnen."
           action={
-            <div className="btn-row">
-              {/* Bewust niet "Naar overzicht": dat is al de toegankelijke
-                  naam van de merklinks in de topbalk en de zijbalk. */}
-              <Link className="btn btn--primary" to="/">
-                Naar het overzicht
-              </Link>
-              <button type="button" className="btn" onClick={terug}>
-                Terug
-              </button>
-            </div>
+            /* Bewust niet "Naar overzicht": dat is al de toegankelijke naam van
+               de merklink in de zijbalk. De weg terug naar waar je vandaan kwam
+               staat sinds #1299 in de shell — dit scherm zette daar zijn eigen
+               knop naast en dat waren er twee. */
+            <Link className="btn btn--primary" to="/">
+              Naar het overzicht
+            </Link>
           }
         >
           Er staat niets op <code>{pathname}</code>. Misschien is de link oud of

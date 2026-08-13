@@ -254,6 +254,14 @@
   padding: 1.75rem var(--sp-8) 3.5rem;
 }
 
+/* De terugweg op desktop (#1299). Daar is de topbalk verborgen, en een
+   geïnstalleerde PWA (`display: standalone`) heeft geen browserknop om op terug
+   te vallen — dus draagt de inhoudkolom dezelfde knop. Op mobiel zit hij in de
+   topbalk en is deze verborgen; de logica erachter is dezelfde component. */
+.content__terug {
+  margin-bottom: var(--sp-4);
+}
+
 /* Zachte enter-animatie bij paginawissel (het Outlet-kind wordt vers gemount). */
 @media (prefers-reduced-motion: no-preference) {
   .content__inner > * {
@@ -319,22 +327,49 @@
     border-bottom: 1px solid var(--divider);
     min-height: var(--topbar-h);
   }
-  .topbar__brand {
+  /* Linkerkant: waar je bent (#1299). Merkteken óf terugpijl, plus de titel van
+     de pagina. `min-width: 0` zodat de titel mag inkorten in plaats van de
+     knoppen rechts weg te duwen. */
+  .topbar__plek {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+  }
+  .topbar__merk {
+    display: inline-flex;
+    flex: none;
+  }
+  .topbar__titel {
+    color: var(--ink);
+    font-size: 1.0625rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* De terugpijl staat op de plek van het merkteken en is even breed, zodat de
+     titel niet verspringt tussen een tabroute en een pagina daaronder. */
+  .topbar__terug {
     position: relative;
     display: inline-flex;
     align-items: center;
-    gap: var(--sp-2);
+    justify-content: center;
+    flex: none;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    background: none;
     color: var(--ink);
-    font-size: 1.125rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    text-decoration: none;
+    cursor: pointer;
   }
-  /* Onzichtbaar groter tapvlak rond het merk (richtlijn ~44px, #374). */
-  .topbar__brand::after {
+  /* Onzichtbaar groter tapvlak (richtlijn ~44px, #374). */
+  .topbar__terug::after {
     content: "";
     position: absolute;
-    inset: -9px 0;
+    inset: -11px;
   }
   /* Rechterkant van de topbalk: de ?-knop (#989) en de avatar. Genoeg tussen-
      ruimte dat de vergrote tapvlakken van beide elkaar niet overlappen. */
@@ -498,6 +533,11 @@
     /* Onderrand vrijhouden van de vaste onderbalk (+ home-indicator). */
     padding: var(--sp-5) var(--sp-4)
       calc(var(--tabbar-h) + var(--sp-6) + env(safe-area-inset-bottom, 0px));
+  }
+  /* Mobiel draagt de topbalk de terugweg; twee pijlen onder elkaar is er één
+     te veel (#1299). */
+  .content__terug {
+    display: none;
   }
 }
 

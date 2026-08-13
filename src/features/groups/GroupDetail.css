@@ -335,20 +335,5 @@
   margin-bottom: 1.5rem;
 }
 
-/* Terugnavigatie boven de groepskop (#946). Zelfde toon als de andere
-   secundaire ingangen: een link, geen knop — de weg omhoog concurreert niet
-   met de acties van deze pagina. */
-.terug-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-1);
-  margin-bottom: var(--sp-2);
-  min-height: 32px;
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--ink-soft);
-  text-decoration: none;
-}
-.terug-link:hover {
-  color: var(--accent);
-}
+/* De terugnavigatie boven de groepskop (#946) is met #1299 naar de shell
+   verhuisd; `.terug-link` bestaat daarom niet meer. */

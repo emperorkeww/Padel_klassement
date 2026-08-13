@@ -4,7 +4,6 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
-import { useBackTo } from "@/lib/hooks/useBackTo";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { PollSkeleton } from "@/ui/Skeleton";
 import { getGroup, getGroupMembers } from "@/features/groups/api";
@@ -164,10 +163,6 @@ export function SpeeldagPagina() {
   );
 
   usePageTitle(group.data ? `Speeldag — ${group.data.name}` : null);
-
-  // Bij een deeplink uit een pushbericht is er geen vorige pagina; dan is de
-  // agenda het vangnet, want daar hoort deze speeldag thuis (#910-patroon).
-  const terug = useBackTo("/agenda");
 
   // Alleen wijzigingen binnen déze groep. Zolang de poll nog laadt kennen we
   // de groep niet en staat er geen filter op; dat duurt één ronde en de
@@ -340,12 +335,10 @@ export function SpeeldagPagina() {
     <div>
       <header className="page-head">
         {/* De kaart eronder draagt de eigenlijke kop ("Geboekte speeldag");
-            deze regel zegt waar je bent en hoe je terugkomt. */}
+            deze regel zegt waar je bent. De terugweg zit sinds #1299 in de
+            shell: de topbalk op mobiel, boven de inhoud op desktop. */}
         <h1 className="sr-only">Speeldag</h1>
-        <div className="row-between">
-          <button className="btn btn--sm" onClick={terug}>
-            ← Terug
-          </button>
+        <div className="row-end">
           <div className="btn-row">
             {/* Banen is volledig adresseerbaar (?datum=, ?club=), maar niets in
                 de plan-flow gebruikte dat (#1213). De dag staat hier al vast en
