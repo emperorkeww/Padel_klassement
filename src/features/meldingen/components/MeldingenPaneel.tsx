@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Sheet } from "@/ui/Sheet";
 import { EmptyState } from "@/ui/EmptyState";
+import { ErrorRetry } from "@/ui/ErrorRetry";
 import { Skeleton } from "@/ui/Skeleton";
 import { aantalTekst } from "@/lib/utils/format";
 import { markeerAllesGelezen, type Melding } from "../api";
@@ -24,7 +25,7 @@ export function MeldingenPaneel({
   onClose,
   meldingen,
   laadt,
-  limiet,
+  fout,
   verzoeken = 0,
   onVeranderd,
 }: {
@@ -32,9 +33,9 @@ export function MeldingenPaneel({
   onClose: () => void;
   meldingen: Melding[];
   laadt: boolean;
-  /** Hoeveel er hoogstens in dit paneel passen; bepaalt of de voet naar de
-   *  volledige lijst wijst. */
-  limiet: number;
+  /** Een mislukte query (#1273). Zonder dit meldde het paneel bij een
+   *  netwerk- of RLS-fout vol overtuiging dat er niets was. */
+  fout?: string | null;
   /** Openstaande vriendschapsverzoeken (#1232). */
   verzoeken?: number;
   /** Na een leesmarkering: de teller in de balk moet meteen meebewegen. */
@@ -54,7 +55,12 @@ export function MeldingenPaneel({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Meldingen" className="meldingen-sheet">
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title="Meldingen"
+      className="sheet--dekkend meldingen-sheet"
+    >
       {/* Wat nog op een antwoord wacht, bovenaan en apart van de lijst (#1232).
           De meldingsrij die send-push bij een verzoek schrijft verdwijnt zodra
           je hem gelezen hebt; dit leest de toestand zelf, dus hij blijft staan
@@ -99,7 +105,12 @@ export function MeldingenPaneel({
         </div>
       )}
 
-      {laadt && meldingen.length === 0 ? (
+      {fout ? (
+        // De route deed dit al goed en het paneel niet, terwijl dit de plek is
+        // waar vrijwel iedereen kijkt (#1273). "Nog niets te melden" bij een
+        // mislukte query is niet leeg — het is een leugen.
+        <ErrorRetry melding={fout} onRetry={onVeranderd} />
+      ) : laadt && meldingen.length === 0 ? (
         <Skeleton rows={4} />
       ) : meldingen.length === 0 ? (
         // "Nog niets te melden" zou de regel hierboven tegenspreken: er wacht
@@ -118,8 +129,15 @@ export function MeldingenPaneel({
         />
       )}
 
-      {/* De voet met de wegwijzers. "Alles bekijken" alleen als er méér is dan
-          hier past — anders belooft de knop een langere lijst die niet bestaat.
+      {/* De voet met de wegwijzers, plakkend onderaan (#1273).
+
+          "Alles bekijken" hing tot nu toe aan een vol paneel: onder de twintig
+          meldingen was er geen enkele route-link naar /meldingen op het hele
+          dashboard, en bleef alleen een hyperlink midden in een zin op de
+          voorkeurenpagina over. De drempel was ook de verkeerde vraag — of de
+          volledige lijst de moeite waard is hangt af van hoeveel meldingen je
+          hébt, niet van of dit paneel toevallig vol staat. Bij nul is er niets
+          te bekijken; vanaf één wel.
 
           De voorkeuren staan er altijd bij (#1217): het moment waarop je denkt
           "hier wil ik minder van" is precies het moment waarop je naar je
@@ -128,7 +146,7 @@ export function MeldingenPaneel({
           voorkeuren zijn een verzameling en horen bij de instellingen te blijven
           wonen. */}
       <p className="meldingen__voet">
-        {meldingen.length >= limiet && (
+        {meldingen.length > 0 && (
           <Link className="btn btn--sm" to="/meldingen" onClick={onClose}>
             Alles bekijken →
           </Link>

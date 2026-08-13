@@ -6,6 +6,10 @@
   /* Smaller dan een volle sheet: dit is een lijst korte regels, geen formulier.
      Ruimer dan .sheet--compact, want de body van een melding is een hele zin. */
   max-width: 460px;
+  /* De bodem komt van .sheet--dekkend (#1273), en daarmee is de drager hier
+     net zo dekkend als de kaart op /meldingen: het tijdstempel mag zakken.
+     --ink-soft-strong op --surface-elevated haalt 5,42 licht en 11,1 donker. */
+  --melding-tijd-ink: var(--ink-soft-strong);
 }
 
 /* "Wacht op jou" (#1232): staat bovenaan het paneel, vóór de lijst, en leest
@@ -47,12 +51,24 @@
   margin-bottom: var(--sp-2);
 }
 
+/* De voet plakt onderaan (#1273). Op 430px stond hij op y=1672: veertien rijen
+   scrollen voordat je de weg naar de volledige lijst of naar je voorkeuren
+   zag, terwijl #1217 die link daar juist neerzette omdat "hier wil ik minder
+   van" bij rij twee opkomt en niet na rij veertien.
+
+   De sheet is zelf de scroller, dus sticky werkt zonder extra laag. De bottom
+   trekt de voet tot in de padding van de sheet — inclusief de safe area —
+   zodat er geen streepje vlak onder de knoppen blijft staan. Het vlak eronder
+   moet dekkend zijn, anders schuiven de rijen er zichtbaar doorheen. */
 .meldingen__voet {
+  position: sticky;
+  bottom: calc(-1 * (var(--sp-5) + env(safe-area-inset-bottom, 0px)));
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--sp-2);
   margin-top: var(--sp-3);
-  padding-top: var(--sp-2);
+  padding: var(--sp-2) 0 calc(var(--sp-5) + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--line);
+  background: var(--surface-elevated);
 }
