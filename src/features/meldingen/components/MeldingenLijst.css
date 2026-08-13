@@ -32,14 +32,32 @@
   border-top: 1px solid var(--melding-scheiding);
 }
 
+/* Grenst de lijn aan een ongelezen rij, dan doet het vlak het werk al en
+   wordt de streep eronder een tweede rand om dezelfde doos (#1273). */
+.meldingen__lijst > li + li.melding-rij--ongelezen,
+.meldingen__lijst > li.melding-rij--ongelezen + li {
+  border-top-color: transparent;
+}
+
+/* De rij draagt het vlak, de knop erin draagt de tik (#1273). Een knop in een
+   knop kan niet, dus de acties staan ernaast in plaats van erin — en dan hoort
+   het ongelezen-vlak op de rij en niet op de openknop. */
+.melding-rij {
+  display: flex;
+  align-items: center;
+  /* Volle breedte raken met de tik, tot in de marge van het vlak eromheen. */
+  margin: 0 calc(-1 * var(--sp-2));
+  width: calc(100% + var(--sp-4));
+  border-radius: var(--radius-sm);
+}
+
 .melding {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: flex-start;
   gap: var(--sp-2);
-  /* Volle breedte raken met de tik, tot in de marge van het vlak eromheen. */
   padding: var(--sp-3) var(--sp-2);
-  margin: 0 calc(-1 * var(--sp-2));
-  width: calc(100% + var(--sp-4));
   border: 0;
   border-radius: var(--radius-sm);
   background: none;
@@ -48,6 +66,48 @@
   font: inherit;
   cursor: pointer;
   transition: background 0.15s;
+}
+
+/* De acties staan er altijd, ook zonder hover: op een telefoon bestaat hover
+   niet, en dan zou de veeg het enige spoor zijn. Klein en gedempt, zodat ze de
+   melding zelf niet overstemmen. */
+.melding__knoppen {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+  padding-right: var(--sp-1);
+}
+
+.melding__knop {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink-soft-strong);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.melding__knop:hover,
+.melding__knop:focus-visible {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+
+/* Open bolletje = ongelezen maken, gevuld = gelezen maken. Dezelfde vorm als de
+   stip die vóór #1273 de ongelezen-markering wás. */
+.melding__knop-stip {
+  width: 10px;
+  height: 10px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.melding__knop-stip[data-gelezen="false"] {
+  background: currentColor;
 }
 
 .melding:hover,
@@ -110,13 +170,8 @@
 /* Ongelezen is een vlak, geen stip (#1273). Vier ongelezen meldingen tussen
    tien gelezen moeten net zo hard aankomen als de badge op de bel; 8×8 px en
    een zwaardere titel deden dat niet. */
-.melding--ongelezen {
+.melding-rij--ongelezen {
   background: var(--accent-soft);
-}
-
-.melding--ongelezen:hover,
-.melding--ongelezen:focus-visible {
-  background: var(--accent-line);
 }
 
 .melding__tekst {
@@ -131,7 +186,7 @@
   color: var(--ink);
 }
 
-.melding--ongelezen .melding__titel {
+.melding-rij--ongelezen .melding__titel {
   font-weight: 800;
 }
 
@@ -159,7 +214,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .melding {
+  .melding,
+  .melding__knop {
     transition: none;
   }
 }

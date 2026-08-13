@@ -9,7 +9,8 @@ import { EmptyState } from "@/ui/EmptyState";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { Skeleton } from "@/ui/Skeleton";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
-import { getMeldingenVenster, markeerAllesGelezen } from "./api";
+import { getMeldingenVenster } from "./api";
+import { MeldingenActies } from "./components/MeldingenActies";
 import { MeldingenLijst } from "./components/MeldingenLijst";
 import { MeldingenFilter } from "./components/MeldingenFilter";
 import { FILTER_ALLES, filterMeldingen } from "./filteren";
@@ -45,21 +46,10 @@ export function Meldingen() {
   const opWijziging = useCallback(() => herlaad(), [herlaad]);
   useRealtime("notifications", opWijziging, filter);
 
-  const [bezig, setBezig] = useState(false);
   const [filterKeuze, setFilterKeuze] = useState(FILTER_ALLES);
   const meldingen = venster.data?.meldingen ?? [];
   const ongelezen = meldingen.filter((m) => !m.read_at).length;
   const zichtbaar = filterMeldingen(meldingen, filterKeuze);
-
-  async function allesGelezen() {
-    setBezig(true);
-    try {
-      await markeerAllesGelezen();
-      herlaad();
-    } finally {
-      setBezig(false);
-    }
-  }
 
   return (
     <div className="meldingen-pagina">
@@ -70,17 +60,8 @@ export function Meldingen() {
       </p>
 
       <section className="card">
-        {ongelezen > 0 && (
-          <div className="meldingen__acties">
-            <button
-              type="button"
-              className="btn btn--sm"
-              onClick={allesGelezen}
-              disabled={bezig}
-            >
-              {bezig ? "Bezig…" : "Alles gelezen"}
-            </button>
-          </div>
+        {meldingen.length > 0 && (
+          <MeldingenActies ongelezen={ongelezen} onVeranderd={herlaad} />
         )}
 
         {venster.error ? (
