@@ -262,6 +262,33 @@ for (const [name, tokens, strict] of [
   }
 }
 
+// ---- Plafond op het meubilair (#1264) ----
+// De ladder hierboven kent alleen ondergrenzen, en die zijn met omhoog
+// schuiven altijd te halen: sinds #1255 kroop elk niveau een stap op tot de
+// app een zwarte pagina met een dikke bleke band erbovenop was. Diepte en
+// contrast zijn hier dezelfde knop — elk vlak dat zakt geeft zijn voorgronden
+// gratis ruimte — dus krijgt de ladder er een dak bij: het lichtste vlak waar
+// gewone content op staat blijft onder L* 19. Boven dat punt verliest het
+// zwart eronder zijn werk en zakken de tekstparen mee.
+// Alleen donker: op licht is "zo licht mogelijk" juist het uitgangspunt.
+const PLAFOND_MAX = 19;
+const PLAFOND = ["surface", "surface-2", "surface-elevated", "surface-hover", "surface-active", "track", "track-actief"];
+
+let plafondFailures = 0;
+console.log(`\n— Plafond: meubilair blijft onder L* ${PLAFOND_MAX} (donker) —`);
+for (const k of PLAFOND) {
+  const v = dark[k];
+  if (!v || !parseColor(v)) {
+    console.error(`  FAIL ${k} ontbreekt of is onleesbaar`);
+    plafondFailures++;
+    continue;
+  }
+  const l = lightness(v);
+  const ok = l <= PLAFOND_MAX;
+  if (!ok) plafondFailures++;
+  console.log(`  ${ok ? "ok  " : "FAIL"} ${l.toFixed(1).padStart(5)} L* ≤ ${PLAFOND_MAX}  ${k}`);
+}
+
 // ---- Richtingsregel (#1255) ----
 // Sommige tokenparen drukken een hiërarchie uit die in béíde thema's dezelfde
 // kant op moet wijzen. Dat is precies wat de ladder hierboven níet vangt: die
@@ -695,6 +722,7 @@ for (const [naam, tokens] of [
 
 if (
   darkFailures > 0 ||
+  plafondFailures > 0 ||
   richtingFailures > 0 ||
   softFailures > 0 ||
   deltaFailures > 0 ||
@@ -704,6 +732,8 @@ if (
 ) {
   if (darkFailures > 0)
     console.error(`\n${darkFailures} donkere contrastpa(a)r(en) onder de drempel.`);
+  if (plafondFailures > 0)
+    console.error(`${plafondFailures} meubilairvlak(ken) boven het lichtheidsplafond.`);
   if (richtingFailures > 0)
     console.error(`${richtingFailures} richtingspa(a)r(en) omgekeerd of te vlak.`);
   if (softFailures > 0)
