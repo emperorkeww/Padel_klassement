@@ -53,6 +53,7 @@ export function MatchesSectie({
   zonderNieuweMatch = false,
   titel,
   bron,
+  initieelZichtbaar,
 }: {
   /** "" = alle groepen. Losse matches (zonder groep) vallen daarmee buiten een
    *  gekozen groep. */
@@ -95,6 +96,10 @@ export function MatchesSectie({
    *  op die pagina nergens op sloeg, terwijl de volledige lijst al in het
    *  geheugen van dezelfde pagina stond. */
   bron?: AsyncState<Match[]>;
+  /** Hoeveel matches de historie eerst toont; de rest komt achter één knop.
+   *  Zonder waarde staat de hele lijst er (#1298). Dit gaat over renderen, niet
+   *  over ophalen: het plafond van de server heeft zijn eigen melding. */
+  initieelZichtbaar?: number;
 }) {
   const { user } = useAuth();
   const myId = user?.id ?? "";
@@ -232,6 +237,19 @@ export function MatchesSectie({
     [matches.data, plannedIds, groepId, periode, club.timezone],
   );
 
+  // De hub toont eerst een stuk van de historie (#1298): alles in één keer
+  // rendert daar 62 kaarten en 56 dagkoppen, en duwt de verwijzing naar de
+  // banen naar 9.814px. Dit is een render-grens, geen ophaal-grens — vandaar
+  // apart van `limiet` hierboven, dat over de server gaat.
+  const [alleZichtbaar, setAlleZichtbaar] = useState(false);
+  const ingekort =
+    !!initieelZichtbaar && !alleZichtbaar && recent.length > initieelZichtbaar;
+  const zichtbaar = ingekort ? recent.slice(0, initieelZichtbaar) : recent;
+  // Filteren herschikt de lijst; dan hoort de inkorting weer vanaf het begin.
+  useEffect(() => {
+    setAlleZichtbaar(false);
+  }, [groepId, periode]);
+
   return (
     <>
       <MatchFilters
@@ -285,7 +303,7 @@ export function MatchesSectie({
 
       <MatchHistory
         title={titel}
-        matches={recent}
+        matches={zichtbaar}
         teams={tmap}
         profiles={pmap}
         myId={myId}
@@ -326,10 +344,25 @@ export function MatchesSectie({
         }
       />
 
+      {/* Eerst de rest van wat er al is (#1298), pas daarna de vraag of er nóg
+          meer van de server moet komen. Nooit twee "toon meer"-knoppen onder
+          elkaar: die zouden hetzelfde beloven en iets anders doen. */}
+      {ingekort && !matches.loading && !matches.error && (
+        <div className="matches__meer">
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setAlleZichtbaar(true)}
+          >
+            Toon oudere matches ({recent.length - zichtbaar.length})
+          </button>
+        </div>
+      )}
+
       {/* Afkapping expliciet melden (#914): zonder dit leek de lijst compleet,
           terwijl alles ouder dan de limiet simpelweg niet geladen was. Ook het
           antwoord op de filter-valkuil — filteren gebeurt op wat er geladen is. */}
-      {!matches.loading && !matches.error && afgekapt && (
+      {!ingekort && !matches.loading && !matches.error && afgekapt && (
         <div className="matches__meer">
           <p className="matches__meer-note">
             Alleen de laatste {limiet} matches zijn geladen. Zoek je iets ouders
