@@ -131,6 +131,13 @@
   --ink-soft-strong: #586a60;
   --line: #e4eae4; /* haarlijn */
   --line-strong: #cfd9cf;
+  /* De scheiding in de meldingenlijst (#1273). Eigen token, want hier draagt
+     de lijn betekenis — hij is het enige wat twee gebeurtenissen uit elkaar
+     houdt — en WCAG 1.4.11 vraagt daar 3:1 voor. --line haalt op de kaart
+     1,22 in dit thema; hem globaal donkerder maken zou élke kaartrand in de
+     app verzwaren, dus staat deze los. In donker is --line al 3,16 en hoeft
+     er niets bij. */
+  --melding-scheiding: #8a968a;
 
   --accent: #0c8a5f; /* smaragd — primaire acties */
   --accent-hover: #0a744f;
@@ -578,6 +585,8 @@
   --line: #60656b;
   --line-strong: #737980;
   --divider: #2f353b;
+  /* Zie het lichte thema: hier haalt de gewone haarlijn de 3:1 al. */
+  --melding-scheiding: #60656b;
 
   /* Smaragd, gedempt t.o.v. vóór #1243 (#1fb47e) maar sinds #1255 weer een
      fractie lichter (L* 62→65): de vlakken waar hij als tekst op staat —

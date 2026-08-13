@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { formatRelatieveTijd } from "@/lib/utils/format";
 import { markeerGelezen, type Melding } from "../api";
+import { soortInfo, zonderEmoji } from "../soorten";
 import "./MeldingenLijst.css";
 
 /**
@@ -10,9 +11,11 @@ import "./MeldingenLijst.css";
  * werken — en dat is precies het soort regel dat in twee kopieën uit elkaar
  * groeit.
  *
- * Bewust geen soort-labels: de titel zegt al wat er gebeurd is, en een tweede
- * etiket met "poll" of "uitslag" ernaast voegt niets toe aan een regel van drie
- * woorden.
+ * Sinds #1273 draagt elke rij haar soort (zie ../soorten.ts): een icoon in een
+ * eigen kolom, in de accentfamilie van die gebeurtenis. Een tekstlabel ernaast
+ * blijft overbodig — dát deel van #1090 klopte — maar negen soorten die op één
+ * regel lijken klopte niet: de linkerrand liep rafelig door de emoji uit de
+ * servertitels, en vier ongelezen rijen tussen tien gelezen vielen weg.
  */
 export function MeldingenLijst({
   meldingen,
@@ -44,18 +47,34 @@ export function MeldingenLijst({
 
   return (
     <ul className="meldingen__lijst">
-      {meldingen.map((m) => (
+      {meldingen.map((m) => {
+        const { icoon: Icoon, familie, label } = soortInfo(m.soort);
+        const titel = zonderEmoji(m.title);
+        // "VAR: VAR: er wordt een punt betwist" — sommige titels noemen hun
+        // soort zelf al. Dan zegt het icoon genoeg en hoeft de voorleesregel
+        // het niet te herhalen.
+        const noemtZichzelf = titel.toLowerCase().startsWith(label.toLowerCase());
+        return (
         <li key={m.id}>
           <button
             type="button"
             className={`melding${m.read_at ? "" : " melding--ongelezen"}`}
             onClick={() => void openMelding(m)}
           >
-            {/* De stip is versiering voor wie kijkt; voor wie luistert staat
-                "ongelezen" in de tekst hieronder. */}
-            <span className="melding__stip" aria-hidden="true" />
+            {/* Het icoon is versiering voor wie kijkt; voor wie luistert staat
+                de soort in de tekst hieronder, net als "ongelezen". De vaste
+                kolom houdt de linkerrand recht, wat de servertitel ook doet. */}
+            <span
+              className={`melding__icoon melding__icoon--${familie}`}
+              aria-hidden="true"
+            >
+              <Icoon />
+            </span>
             <span className="melding__tekst">
-              <span className="melding__titel">{m.title}</span>
+              <span className="melding__titel">
+                {!noemtZichzelf && <span className="sr-only">{label}: </span>}
+                {titel}
+              </span>
               <span className="melding__body">{m.body}</span>
               <span className="melding__tijd">
                 {formatRelatieveTijd(m.created_at)}
@@ -64,7 +83,8 @@ export function MeldingenLijst({
             </span>
           </button>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }
