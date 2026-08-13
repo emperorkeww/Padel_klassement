@@ -184,6 +184,17 @@ function GroepPagina() {
     onPredictions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matches.reload, standings.reload, teams.reload, ratings.reload, histories.reload, matchHistories.reload, piet.reload, onPredictions]);
+  // De matchlijst zoals de Historie-tab hem krijgt: onze eigen, complete lijst
+  // met onze eigen reload eronder (#1298).
+  const matchesBron = useMemo(
+    () => ({
+      data: matches.data,
+      loading: matches.loading,
+      error: matches.error,
+      reload: onMatches,
+    }),
+    [matches.data, matches.loading, matches.error, onMatches],
+  );
   // Alleen reageren op wijzigingen binnen déze groep, niet op elke match
   // die ergens anders wordt gelogd.
   useRealtime("matches", onMatches, `group_id=eq.${id}`);
@@ -440,16 +451,37 @@ function GroepPagina() {
                 {journey && (
                   /* De wikkel pakt op telefoonbreedte de hele regel, de pil
                      erin houdt z'n eigen breedte (#975) — zonder wikkel rekte
-                     de pil zelf mee tot een balk over het hele scherm. */
+                     de pil zelf mee tot een balk over het hele scherm.
+
+                     De pil wijst naar de agenda zodra hij om een handeling
+                     vraagt ("stem mee", "boek de baan", "Plan een speeldag →").
+                     Dat is wat `journey.tab` al die tijd zei en niemand las
+                     (#1298): de kop beloofde met een pijl een bestemming en was
+                     een gewone <span>, terwijl de groepspagina sinds #1121
+                     helemaal geen route naar plannen meer had. Wijst de reis
+                     naar vandaag, dan is de pil een mededeling over deze dag —
+                     die blijft tekst, precies zoals hij er staat. */
                   <span className="group-head__journey-rij">
-                    <span
-                      className={`group-head__journey group-head__journey--${journey.tone}`}
-                    >
-                      {journey.icon && (
-                        <span aria-hidden="true">{journey.icon}</span>
-                      )}
-                      {journey.label}
-                    </span>
+                    {journey.tab === "agenda" ? (
+                      <Link
+                        className={`group-head__journey group-head__journey--${journey.tone}`}
+                        to="/agenda"
+                      >
+                        {journey.icon && (
+                          <span aria-hidden="true">{journey.icon}</span>
+                        )}
+                        {journey.label}
+                      </Link>
+                    ) : (
+                      <span
+                        className={`group-head__journey group-head__journey--${journey.tone}`}
+                      >
+                        {journey.icon && (
+                          <span aria-hidden="true">{journey.icon}</span>
+                        )}
+                        {journey.label}
+                      </span>
+                    )}
                   </span>
                 )}
               </p>
@@ -554,7 +586,12 @@ function GroepPagina() {
 
             De groepskeuze-rij blijft weg (vaste groep, `groepen` leeg) en de
             zwevende +Match-knop ook: loggen is binnen de groep de taak van de
-            Vandaag-tab. */}
+            Vandaag-tab.
+
+            De matchlijst komt van deze pagina (#1298): die is compleet en al
+            geladen, terwijl de sectie er anders een tweede, globale en op 100
+            afgekapte lijst naast zet. Herladen loopt via onMatches, zodat een
+            uitslag die je hier invult ook de stand en de Piet bijwerkt. */}
         {view === "matches" && (
           <MatchesSectie
             groepId={id}
@@ -564,6 +601,7 @@ function GroepPagina() {
             onWisFilters={speel.wisFilters}
             titel="Gespeelde matches"
             zonderNieuweMatch
+            bron={matchesBron}
           />
         )}
 

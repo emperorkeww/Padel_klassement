@@ -80,6 +80,20 @@
   color: var(--ink-soft);
   font-weight: 600;
 }
+/* Vraagt de reis om een handeling, dan is de pil een link naar de agenda
+   (#1298). De pilvorm blijft leidend, dus geen vaste onderstreping; bij hover
+   en toetsenbordfocus komt hij erbij zodat kleur niet het enige signaal is. */
+a.group-head__journey {
+  text-decoration: none;
+}
+a.group-head__journey:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+a.group-head__journey:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
 .group-head__acties {
   flex-shrink: 0;
 }

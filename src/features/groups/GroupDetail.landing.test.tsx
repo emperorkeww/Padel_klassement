@@ -156,6 +156,25 @@ describe("<GroupDetail /> landingstab (#674)", () => {
     expect(tabellen()).toContain("player_ratings");
   });
 
+  // #1298: de Historie-tab monteerde een sectie die zijn eigen, globale
+  // matchlijst ophaalde (getRecentMatches, afgekapt op 100) en die client-side
+  // terugfilterde naar deze groep — bovenop de complete lijst die deze pagina
+  // al in handen had. Nu voedt de pagina de sectie.
+  it("haalt de matches niet nog eens op als je de Historie opent", async () => {
+    renderPage();
+    await screen.findByRole("tablist", { name: "Groepsonderdelen" });
+    const matchQueries = () =>
+      (
+        supabase.from as unknown as { mock: { calls: unknown[][] } }
+      ).mock.calls.filter((c) => c[0] === "matches").length;
+    await waitFor(() => expect(matchQueries()).toBeGreaterThan(0));
+    const voor = matchQueries();
+
+    await userEvent.click(screen.getByRole("tab", { name: /^historie/i }));
+    await screen.findByRole("heading", { name: /gespeelde matches/i });
+    expect(matchQueries()).toBe(voor);
+  });
+
   it("landt op Vandaag zodra er vandaag wedstrijden staan", async () => {
     // Clubtijdzone (Europe/Brussels, zie stubPlaytomic), niet de kale
     // UTC-dag — anders faalt de test rond lokale middernacht net zoals de

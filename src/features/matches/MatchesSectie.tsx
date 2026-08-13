@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { useAsync } from "@/lib/hooks/useAsync";
+import { useAsync, type AsyncState } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { EmptyState } from "@/ui/EmptyState";
 import { Aankondiging } from "@/ui/Aankondiging";
@@ -24,7 +24,7 @@ import { getMyFriendships, categorize, otherId } from "@/features/friends/api";
 import { MatchHistory } from "@/features/matches/components/MatchHistory";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { NewMatchSheet, type NewMatchMode } from "@/features/matches/components/NewMatchSheet";
-import type { Profile } from "@/types";
+import type { Match, Profile } from "@/types";
 import "./Matches.css";
 
 /** Hoeveel matches per keer geladen worden; "toon oudere" telt er zoveel bij. */
@@ -52,6 +52,7 @@ export function MatchesSectie({
   verbergActie = false,
   zonderNieuweMatch = false,
   titel,
+  bron,
 }: {
   /** "" = alle groepen. Losse matches (zonder groep) vallen daarmee buiten een
    *  gekozen groep. */
@@ -82,6 +83,18 @@ export function MatchesSectie({
    *  groepspagina zet er "Gespeelde matches" boven, want daar gaat het over de
    *  geschiedenis van déze groep en niet over "recent" (#1212). */
   titel?: string;
+  /** Een al geladen matchlijst van de pagina erboven. Zonder deze prop haalt de
+   *  sectie zelf de globale recente lijst op, met een plafond en een "toon
+   *  oudere"-knop.
+   *
+   *  De groepspagina heeft zijn eigen, complete lijst al in handen
+   *  (`getGroupMatches`) en geeft die hier mee (#1298). Daarvóór haalde de
+   *  sectie op die tab een tweede keer op — globaal en afgekapt op 100 — en
+   *  filterde dat client-side terug naar de groep: een groep die een maand niet
+   *  speelde zag straks een halve historie plus een melding over een plafond dat
+   *  op die pagina nergens op sloeg, terwijl de volledige lijst al in het
+   *  geheugen van dezelfde pagina stond. */
+  bron?: AsyncState<Match[]>;
 }) {
   const { user } = useAuth();
   const myId = user?.id ?? "";
@@ -111,10 +124,17 @@ export function MatchesSectie({
   const [limiet, setLimiet] = useState(PAGINA);
   // De zwevende logknop wijkt bij vooruitscrollen (#942).
   const fabVerborgen = useVerbergBijScrollen();
-  const matches = useAsync(() => getRecentMatches(limiet), [limiet]);
+  // Krijgt de sectie een lijst mee, dan haalt hij zelf niets op: geen tweede
+  // lezer op dezelfde data, en geen plafond waar de pagina erboven er geen
+  // heeft (#1298).
+  const eigen = useAsync(() => getRecentMatches(limiet), [limiet], {
+    enabled: !bron,
+  });
+  const matches = bron ?? eigen;
   // Kreeg de server precies de limiet terug, dan zit er waarschijnlijk meer
-  // achter. Minder betekent: dit is alles.
-  const afgekapt = (matches.data?.length ?? 0) >= limiet;
+  // achter. Minder betekent: dit is alles. Bij een meegegeven lijst is er geen
+  // limiet om tegenaan te lopen.
+  const afgekapt = !bron && (matches.data?.length ?? 0) >= limiet;
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getAllProfiles, []);
   const friendships = useAsync(getMyFriendships, []);
@@ -163,7 +183,7 @@ export function MatchesSectie({
   useRealtime("matches", reloadAll);
 
   // Geplande matches waarin ik meedoe: bovenaan met inline score-invoer.
-  const plannedMine = useMemo(
+  const plannedAlle = useMemo(
     () =>
       (matches.data ?? []).filter(
         (m) =>
@@ -174,9 +194,25 @@ export function MatchesSectie({
       ),
     [matches.data, tmap, myId],
   );
+  // ...door dezelfde filters als de historie eronder (#1298). Zonder dit stonden
+  // op de Historie-tab van groep A ook de geplande matches van groep B — mét de
+  // knop "Uitslag invullen", dus je vulde vanuit de ene groep de uitslag van de
+  // andere in zonder dat iets dat verraadde.
+  const plannedMine = useMemo(
+    () =>
+      filterOpPeriode(
+        filterOpGroep(plannedAlle, groepId),
+        periode,
+        club.timezone,
+      ),
+    [plannedAlle, groepId, periode, club.timezone],
+  );
+  // Wat hierboven staat hoort niet nóg een keer in de historie. Bewust op de
+  // óngefilterde set: een geplande match die door het periodefilter valt, is
+  // geen geschiedenis die er ineens bij mag komen.
   const plannedIds = useMemo(
-    () => new Set(plannedMine.map((m) => m.id)),
-    [plannedMine],
+    () => new Set(plannedAlle.map((m) => m.id)),
+    [plannedAlle],
   );
 
   // De recente-lijst toont alles behalve mijn eigen geplande matches — die
