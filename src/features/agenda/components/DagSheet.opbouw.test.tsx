@@ -198,13 +198,15 @@ describe("<DagSheet /> — opbouw (#1308)", () => {
     expect(document.querySelectorAll(".dagsheet__acties")).toHaveLength(2);
   });
 
-  it("maakt van 'plan hier ook' een stille tekstknop", () => {
+  it("houdt 'plan hier ook' lichter dan de hoofdactie", () => {
     toon([marker()], vi.fn());
     const knop = screen.getByRole("button", {
       name: "Plan hier ook een speeldag",
     });
-    // Geen tweede knop met hetzelfde gewicht als de hoofdactie.
-    expect(knop).not.toHaveClass("btn");
+    // Dezelfde pilvorm als elke andere secundaire actie in de app (#1308),
+    // maar zonder het accent van "Open speeldag" in de voetbalk.
+    expect(knop).toHaveClass("btn", "btn--sm");
+    expect(knop).not.toHaveClass("btn--primary");
     expect(positie(".dagsheet__ookplannen")).toBeLessThan(
       positie(".dagsheet__voet"),
     );

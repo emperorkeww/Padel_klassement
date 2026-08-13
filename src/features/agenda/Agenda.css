@@ -1124,21 +1124,13 @@
 
 /* Onder de speeldagen, los van hun eigen acties: dit gaat over de dag, niet
    over één speeldag erop. Een tweede speeldag op dezelfde dag is de
-   uitzondering, geen suggestie — sinds #1308 dus een stille tekstknop en niet
-   een gestippelde knop die even breed en even zwaar is als de hoofdactie.
-   Zelfde register als `.dagsheet__meer`: streep en gewicht dragen dat het een
-   knop is, de kleur blijft van de tekst. */
+   uitzondering, geen suggestie — dus een kleine pil (#1308), zoals elke andere
+   secundaire actie in de app, en niet het gewicht van de hoofdactie in de
+   voetbalk. Onderstreepte tekst stond hier als enige in het sheet zo. */
 .dagsheet__ookplannen {
   justify-self: center;
-  padding: var(--sp-2) var(--sp-3);
+  /* Raakdoel (#374). */
   min-height: 44px;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--fs-sm);
-  color: var(--ink-soft-strong);
-  text-decoration: underline;
-  cursor: pointer;
 }
 
 /* Wie doet er mee: de telling en de gezichten staan altijd, de namen erachter

@@ -327,11 +327,18 @@ export function DagSheet({
               kiesDag stuurde 'm hierheen en hier stond geen uitweg. Twee
               groepen die los van elkaar plannen weten niet van elkaar, dus een
               bezette donderdag is juist een dag waar je naar kijkt (#1104). */}
-          {/* Een stille tekstknop sinds #1308: dit is de uitzondering (twee
-              groepen die los van elkaar dezelfde donderdag plannen), en hij
-              stond even breed en even zwaar als de hoofdactie eronder. */}
+          {/* Een kleine pil (#1308): dit is de uitzondering — twee groepen die
+              los van elkaar dezelfde donderdag plannen — dus niet het gewicht
+              van de hoofdactie in de voetbalk, maar wél de vorm die de rest van
+              de app voor zo'n actie gebruikt. Hij was eerst een gestippelde
+              knop op volle breedte en daarna een onderstreepte tekstregel, en
+              die laatste stond als enige zo in het hele sheet. */}
           {onPlan && markers.length > 0 && (
-            <button type="button" className="dagsheet__ookplannen" onClick={onPlan}>
+            <button
+              type="button"
+              className="btn btn--sm dagsheet__ookplannen"
+              onClick={onPlan}
+            >
               Plan hier ook een speeldag
             </button>
           )}
