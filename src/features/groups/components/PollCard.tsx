@@ -66,7 +66,7 @@ import { MomentKiezer } from "./MomentKiezer";
    stemmende speeldag naast elkaar toont, zouden twee kaarten met dezelfde
    kop "Speeldag-poll" niet meer uit elkaar te houden zijn. */
 const CARD_TITLE: Record<PlayPoll["status"], string> = {
-  open: "Speeldag-poll",
+  open: "Speeldag — stemmen open",
   locked: "Gekozen speeldag",
   booked: "Geboekte speeldag",
   cancelled: "Geannuleerde speeldag",
@@ -666,7 +666,7 @@ export function PollCard({
                 const ok = await confirm({
                   title:
                     poll.status === "open"
-                      ? "Poll annuleren?"
+                      ? "Speeldag annuleren?"
                       : "Speeldag annuleren?",
                   body:
                     poll.status === "open"
@@ -686,11 +686,11 @@ export function PollCard({
                     annuleerAlsBeheerder
                       ? zetPollStatus(poll.id, "cancelled")
                       : cancelPoll(poll.id),
-                  poll.status === "open" ? "Poll geannuleerd." : "Speeldag geannuleerd.",
+                  poll.status === "open" ? "Speeldag geannuleerd." : "Speeldag geannuleerd.",
                 );
               }}
             >
-              {poll.status === "open" ? "Annuleer poll" : "Annuleer speeldag"}
+              {poll.status === "open" ? "Annuleer speeldag" : "Annuleer speeldag"}
             </button>
           )}
         </div>

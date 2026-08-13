@@ -165,7 +165,7 @@ describe("<SpeeldagPagina />", () => {
     renderPagina("poll-open");
 
     expect(
-      await screen.findByRole("heading", { name: /speeldag-poll/i }),
+      await screen.findByRole("heading", { name: /speeldag — stemmen open/i }),
     ).toBeInTheDocument();
     // De groepsnaam is de context die op de groepspagina vanzelf sprak: hij
     // staat in de kop én is de weg terug naar die groep.
@@ -178,7 +178,7 @@ describe("<SpeeldagPagina />", () => {
   // dezelfde kaart, alleen niet meer achter een tab.
   it("klapt de banen-balans van een moment uit", async () => {
     renderPagina("poll-open");
-    await screen.findByRole("heading", { name: /speeldag-poll/i });
+    await screen.findByRole("heading", { name: /speeldag — stemmen open/i });
 
     await userEvent.click(
       screen.getAllByRole("button", { name: /haalbaarheid/i })[0],
@@ -218,7 +218,7 @@ describe("<SpeeldagPagina />", () => {
     // de agenda niet verder dan stemmen.
     expect(screen.getByRole("button", { name: /^kies /i })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /annuleer poll/i }),
+      screen.getByRole("button", { name: /annuleer speeldag/i }),
     ).toBeInTheDocument();
   });
 
@@ -262,7 +262,7 @@ describe("<SpeeldagPagina />", () => {
     tables.play_polls = [openPoll];
     renderPagina("poll-open");
 
-    await screen.findByRole("heading", { name: /speeldag-poll/i });
+    await screen.findByRole("heading", { name: /speeldag — stemmen open/i });
     expect(
       screen.queryByRole("link", { name: /vrije banen/i }),
     ).not.toBeInTheDocument();
@@ -310,7 +310,7 @@ describe("<SpeeldagPagina />", () => {
     // De deelnemers komen uit de poll van deze speeldag, niet uit die van
     // vandaag of uit "alle leden".
     expect(
-      await screen.findByText(/deelnemers uit de poll van deze speeldag/i),
+      await screen.findByText(/deelnemers uit de stemming van deze speeldag/i),
     ).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("tab", { name: /americano/i }));
@@ -409,7 +409,7 @@ describe("<SpeeldagPagina />", () => {
     tables.matches = [dagMatch({ played_at: "2030-01-05T19:00:00.000Z" })];
     renderPagina("poll-open");
 
-    await screen.findByRole("heading", { name: /speeldag-poll/i });
+    await screen.findByRole("heading", { name: /speeldag — stemmen open/i });
     expect(
       screen.queryByRole("heading", { name: /^wedstrijden$/i }),
     ).not.toBeInTheDocument();

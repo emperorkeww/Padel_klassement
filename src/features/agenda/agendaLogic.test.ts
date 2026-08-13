@@ -307,7 +307,7 @@ describe("labels van het dagpaneel (#1112)", () => {
   it("geeft het statuswoord voor een chip", () => {
     expect(statusChip("booked")).toBe("Geboekt");
     expect(statusChip("locked")).toBe("Vastgelegd");
-    expect(statusChip("open")).toBe("Open poll");
+    expect(statusChip("open")).toBe("Stemmen open");
     expect(statusChip("booked", true)).toBe("Gespeeld");
   });
 
@@ -847,7 +847,7 @@ describe("dagLabel", () => {
     );
     const vastgelegd = markerVoor({}, { status: "locked", locked_option_id: "opt-1" });
     expect(dagLabel("2026-08-13", vastgelegd)).toContain("speeldag vastgelegd om 20:00");
-    expect(dagLabel("2026-08-13", markerVoor({}))).toContain("speeldag open poll om 20:00");
+    expect(dagLabel("2026-08-13", markerVoor({}))).toContain("speeldag stemmen open om 20:00");
   });
 
   it("zegt bij een open poll of jij al stemde (#1104)", () => {

@@ -232,7 +232,7 @@ describe("<VandaagTab />", () => {
   it("zonder poll staan alle leden aan als vertrekpunt", async () => {
     renderTab();
     expect(
-      await screen.findByText(/geen poll voor vandaag/i),
+      await screen.findByText(/geen stemming voor vandaag/i),
     ).toBeInTheDocument();
     await waitForSelection();
   });
@@ -271,7 +271,7 @@ describe("<VandaagTab />", () => {
     }));
     renderTab();
     expect(
-      await screen.findByText(/deelnemers uit de poll van vandaag/i),
+      await screen.findByText(/deelnemers uit de stemming van vandaag/i),
     ).toBeInTheDocument();
   });
 

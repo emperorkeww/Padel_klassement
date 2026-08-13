@@ -123,7 +123,7 @@ export function SuggestionsCard({
         ],
       });
       onStarted();
-      toast.success("Poll gestart — de groep kan stemmen in de agenda.");
+      toast.success("Speeldag staat open — de groep kan stemmen in de agenda.");
     } catch (err) {
       toast.error(errorMessage(err));
     }
@@ -171,7 +171,7 @@ export function SuggestionsCard({
       <summary className="suggestions__summary">
         <h2 className="card__title">Suggesties</h2>
         {hasLivePoll && (
-          <span className="badge badge--accent">poll loopt</span>
+          <span className="badge badge--accent">stemmen lopen</span>
         )}
       </summary>
 
@@ -182,7 +182,7 @@ export function SuggestionsCard({
       {loading && <p className="empty">Opties berekenen…</p>}
       {!loading && suggestions.length === 0 && (
         <p className="empty">
-          Alle banen zitten dicht of er zijn geen geschikte match-momenten gevonden. Start zelf een poll vanuit de agenda!
+          Alle banen zitten dicht of er zijn geen geschikte match-momenten gevonden. Zet er zelf een op vanuit de agenda!
         </p>
       )}
 
@@ -200,7 +200,7 @@ export function SuggestionsCard({
                 className="btn btn--sm btn--primary"
                 onClick={() => startPoll(s)}
               >
-                Poll starten
+                Speeldag opzetten
               </button>
             </div>
           </li>

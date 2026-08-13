@@ -743,7 +743,7 @@ function Speeldag({
               hele vraag te beantwoorden. Wat hier staat komt uit het
               maandvenster — een moment daarbuiten zit in de poll zelf. */}
           <span className="dagsheet__tegel-label">
-            Andere momenten in deze poll
+            Andere momenten voor deze speeldag
           </span>
           {andere.map((m) => {
             const anderVrij = baanInfo(m).vrij;

@@ -200,7 +200,7 @@ export function PollWizard({
         next.delete(key);
       } else {
         if (next.size >= MAX_OPTIONS) {
-          toast.error(`Maximaal ${MAX_OPTIONS} momenten per poll.`);
+          toast.error(`Maximaal ${MAX_OPTIONS} momenten per speeldag.`);
           return cur;
         }
         next.set(key, { date, startTime: time, duration, courtsFree });
@@ -212,7 +212,7 @@ export function PollWizard({
   function addManual() {
     if (!manualDate || !manualTime) return;
     if (picked.size >= MAX_OPTIONS) {
-      toast.error(`Maximaal ${MAX_OPTIONS} momenten per poll.`);
+      toast.error(`Maximaal ${MAX_OPTIONS} momenten per speeldag.`);
       return;
     }
     // Binnen het datavenster is de beschikbaarheid bekend → hard afdwingen.
@@ -487,9 +487,25 @@ export function PollWizard({
             ⚠ {hint} Tik nogmaals om te bevestigen.
           </p>
         )}
-        <div className="proposal-form__actions">
+        {/* Zelfde vorm als elke andere sheet-voet in de app (#1144, #1308):
+            annuleren links, de hoofdactie rechts, allebei op volle hoogte. Dit
+            was een rij `btn--sm` met de hoofdactie vooraan — 40px hoog, terwijl
+            dezelfde app 44 aanhoudt, en in de omgekeerde volgorde. */}
+        <div className="sheet__foot">
+          {/* Annuleren is een besluit, geen omweg: het concept mag weg. Alleen
+              wegnavigeren (bv. naar /banen) laat het staan (#1271). */}
           <button
-            className="btn btn--sm btn--primary"
+            type="button"
+            className="btn"
+            onClick={() => {
+              if (storageKey) wisConcept(storageKey);
+              onClose();
+            }}
+          >
+            Annuleren
+          </button>
+          <button
+            className="btn btn--primary"
             disabled={saving || picked.size === 0}
             onClick={publish}
           >
@@ -498,18 +514,6 @@ export function PollWizard({
               : armed && hint
                 ? "Zeker? Tik nogmaals"
                 : submitLabel(picked.size)}
-          </button>
-          {/* Annuleren is een besluit, geen omweg: het concept mag weg. Alleen
-              wegnavigeren (bv. naar /banen) laat het staan (#1271). */}
-          <button
-            type="button"
-            className="btn btn--sm"
-            onClick={() => {
-              if (storageKey) wisConcept(storageKey);
-              onClose();
-            }}
-          >
-            Annuleren
           </button>
         </div>
       </div>

@@ -48,7 +48,7 @@ export function journeyFor(
   if (active?.status === "open") {
     return {
       icon: "📊",
-      label: "Poll loopt — stem mee",
+      label: "Stemmen loopt — stem mee",
       tone: "act",
       status: "open",
       tab: "agenda",

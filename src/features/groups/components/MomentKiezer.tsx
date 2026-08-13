@@ -119,7 +119,7 @@ export function MomentKiezer({
         <p className="empty">
           {voorbij.length > 0
             ? "Alle voorgestelde momenten zijn voorbij. Pas de dagen aan om er een toe te voegen."
-            : "Deze poll heeft geen momenten om uit te kiezen."}
+            : "Deze speeldag heeft geen momenten om uit te kiezen."}
         </p>
       ) : (
         <ul className="moment-kiezer">{kiesbaar.map(rij)}</ul>

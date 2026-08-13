@@ -44,7 +44,6 @@ import { MaandRaster } from "./components/MaandRaster";
 import { DagPaneel } from "./components/DagPaneel";
 import { RasterSkeleton } from "./components/RasterSkeleton";
 import { DagSheet } from "./components/DagSheet";
-import { PlanDagSheet } from "./components/PlanDagSheet";
 import { StatusGlyph } from "@/ui/StatusGlyph";
 import { AgendaAbonnement } from "./components/AgendaAbonnement";
 import { GroepFilter } from "./components/GroepFilter";
@@ -113,18 +112,17 @@ export function Agenda() {
   // Het openen van het sheet duwde een history-entry: dan sluit de terugknop
   // hem. Kwam je met een `?open=1`-link binnen, dan is er niets om op terug te
   // gaan en vervangen we de entry — anders verlaat "sluiten" de app.
-  const geduwd = useRef(false);
-  // De aangetikte lege dag; los van `open`, want het plan-sheet geeft het stokje
-  // door aan de wizard en moet die dag ondertussen vasthouden.
-  const [planDag, setPlanDag] = useState<string | null>(null);
+  // Hoeveel history-entries wíj duwden: het dag-sheet en de plan-wizard duwen
+  // er allebei een (#1308). Sluiten doet dan `navigate(-1)` — anders blijft er
+  // een stap in je geschiedenis staan die het sheet weer opent. Kwam je met een
+  // `?open=1`- of `?plan=1`-link binnen, dan staat de teller op 0 en vervangen
+  // we de entry: anders verlaat "sluiten" de app.
+  const duwDiepte = useRef(0);
   // Stond er nog een wizard open toen je de agenda verliet — de knop "Verken
   // alle vrije banen →" navigeert de app uit — dan hoort die weer open te gaan
   // mét je selectie (#1271). Het concept draagt de groep en de dag in zijn
   // sleutelnaam, dus dit is één lees-actie zonder tweede schrijver.
   const hervat = useState(() => openstaandConcept())[0];
-  const [wizardDag, setWizardDag] = useState<string | null>(
-    hervat?.initialDay ?? null,
-  );
   const [planGroep, setPlanGroep] = useState<string | null>(
     () => hervat?.groupId ?? readFlag(LAATSTE_GROEP),
   );
@@ -137,16 +135,33 @@ export function Agenda() {
   // linken of op terug te komen.
   const [aboOpen, setAboOpen] = useState(false);
 
-  // Instap vanaf Banen (#1213): "?dag=…&plan=1" opent het plan-sheet meteen op
-  // die dag. Eén keer lezen en dan de vlag wissen, zoals "?log=1" op het
-  // matchoverzicht — anders opent hij opnieuw bij elke refresh en bij het
-  // sluiten van het sheet. Een dag die geweest is valt niet te plannen; die
-  // laat gewoon de agenda zien.
+  // `?plan=1` is sinds #1308 een toestand en geen instapvlag meer: hij blijft
+  // staan zolang de wizard openstaat, en de terugknop sluit hem. Alleen een dag
+  // die geweest is valt niet te plannen — die vlag gaat stil weg, zonder een
+  // extra stap in je geschiedenis.
   useEffect(() => {
-    if (!stand.plan) return;
-    if (stand.dag >= vandaag) setPlanDag(stand.dag);
-    zet({ plan: false });
+    if (stand.plan && stand.dag < vandaag) zet({ plan: false });
   }, [stand.plan, stand.dag, vandaag, zet]);
+
+  // De teller mag niet verwezen (#1308). Ging je met de hardware-terugknop
+  // terug, dan is onze entry al weg zonder dat `sluitSheet` eraan te pas kwam;
+  // een volgende sluit-actie zou dan een stap te ver terugspringen. De URL zegt
+  // hoeveel lagen er openstaan, en verder dan dat kan de teller nooit staan.
+  useEffect(() => {
+    const lagen = (stand.open ? 1 : 0) + (stand.plan ? 1 : 0);
+    if (duwDiepte.current > lagen) duwDiepte.current = lagen;
+  }, [stand.open, stand.plan]);
+
+  // Kwam je terug van /banen met een halfvolle wizard (#1271)? Dan hoort die
+  // weer open te gaan. Eén keer, met replace: dit is dezelfde plek in je
+  // geschiedenis, geen nieuwe stap.
+  const hervatGedaan = useRef(false);
+  useEffect(() => {
+    const dag = hervat?.initialDay;
+    if (hervatGedaan.current || dag == null || stand.plan) return;
+    hervatGedaan.current = true;
+    zet({ dag, maand: maandVan(dag), plan: true });
+  }, [hervat, stand.plan, zet]);
 
   const groepen = useAsync(getMyGroups, []);
   const profielen = useAsync(getProfilesMap, []);
@@ -328,11 +343,16 @@ export function Agenda() {
   // een dag voor te stellen die al geweest is.
   const planStartDag = gekozenDag >= vandaag ? gekozenDag : vandaag;
 
-  // De groep waarvoor we plannen: de onthouden keuze, of bij één groep die ene.
+  // De groep waarvoor we plannen: de onthouden keuze, anders gewoon je eerste.
   // Een onthouden groep die je intussen verlaten hebt telt niet meer mee.
+  //
+  // Dat "anders je eerste" is nieuw (#1308). Zonder onthouden keuze en met twee
+  // groepen bleef dit null, en dan opende de wizard niet — dezelfde dode
+  // toestand als het plan-sheet ervoor, waar de hoofdknop uitgegrijsd stond tot
+  // je iets aanwees. De keuze staat nu in de kop van de wizard: je ziet voor
+  // wie je plant en zet hem daar om.
   const planGroepId =
-    lijst.find((g) => g.id === planGroep)?.id ??
-    (lijst.length === 1 ? lijst[0].id : null);
+    lijst.find((g) => g.id === planGroep)?.id ?? lijst[0]?.id ?? null;
 
   /**
    * Groepskeuze in de URL zetten én onthouden; leeg wist allebei, zodat "alles"
@@ -422,8 +442,9 @@ export function Agenda() {
       // Dag en maand in één schrijfbeurt: twee losse calls in dezelfde tick
       // overschrijven elkaar (zie agendaParams.ts). De dag blijft gemarkeerd in
       // het raster, zodat je na het sluiten ziet waar je was.
-      zet({ dag: date, maand: maandVan(date) });
-      setPlanDag(date);
+      // Eén sheet, één history-entry: de wizard staat sinds #1308 in de URL,
+      // dus de terugknop sluit hem net als het dag-sheet.
+      openPlan(date);
     } else {
       openSheet(date);
     }
@@ -434,19 +455,31 @@ export function Agenda() {
    *  verlaten. De dag schuift mee, zodat het raster onthoudt waar je was toen je
    *  het sheet weer sluit. */
   function openSheet(date: string) {
-    geduwd.current = true;
+    duwDiepte.current += 1;
     zet({ dag: date, maand: maandVan(date), open: date }, { push: true });
   }
 
-  /** Sluiten via de knop of Escape. Duwden we de entry zelf, dan is teruggaan de
-   *  eerlijke weg: anders blijft er een stap in je geschiedenis staan die het
-   *  sheet weer opent. */
+  /** De plan-wizard openen voor een dag (#1308). Zelfde afspraak als het
+   *  dag-sheet: één entry erbij, zodat terug hem sluit. Kwam je uit het
+   *  dag-sheet, dan vervangt de wizard dat sheet — twee sheets tegelijk is er
+   *  één te veel, en de entry eronder brengt je er zo weer terug. */
+  function openPlan(date: string) {
+    duwDiepte.current += 1;
+    zet(
+      { dag: date, maand: maandVan(date), open: null, plan: true },
+      { push: true },
+    );
+  }
+
+  /** Sluiten via de knop, Escape of het wegvegen. Duwden we de entry zelf, dan
+   *  is teruggaan de eerlijke weg: anders blijft er een stap in je geschiedenis
+   *  staan die het sheet weer opent. */
   function sluitSheet() {
-    if (geduwd.current) {
-      geduwd.current = false;
+    if (duwDiepte.current > 0) {
+      duwDiepte.current -= 1;
       navigate(-1);
     } else {
-      zet({ open: null });
+      zet({ open: null, plan: false });
     }
   }
 
@@ -470,7 +503,7 @@ export function Agenda() {
    *  als je het sheet weer sluit. */
   function gaNaarDag(date: string) {
     setFocusDag(date);
-    geduwd.current = true;
+    duwDiepte.current += 1;
     zet(
       { weergave: "maand", dag: date, maand: maandVan(date), open: date },
       { push: true },
@@ -630,13 +663,13 @@ export function Agenda() {
                 de lege staat verwees je terug naar het maandoverzicht. Voor een
                 tab die de Plannen-tab heeft opgeslokt (#1121) was dat de
                 belangrijkste ontbrekende knop. Hier staat hij, in beide
-                weergaven, en hij opent dezelfde keten als een tik op een lege
-                dag: plan-sheet → wizard. */}
+                weergaven, en hij opent hetzelfde als een tik op een lege dag:
+                sinds #1308 meteen de wizard, zonder tussenscherm. */}
             <button
               type="button"
               className="btn btn--sm btn--primary agenda-plan-knop"
               aria-haspopup="dialog"
-              onClick={() => setPlanDag(planStartDag)}
+              onClick={() => openPlan(planStartDag)}
             >
               + Speeldag
             </button>
@@ -746,59 +779,36 @@ export function Agenda() {
         profielen={profielen.data ?? {}}
         myId={myId}
         onGestemd={herlaad}
-        // Alleen vooruit: een dag die geweest is valt niet meer te plannen. Het
-        // detail geeft het stokje door aan dezelfde keten als een lege dag
-        // (PlanDagSheet → wizard); er komt geen tweede aanmaakflow naast.
+        // Alleen vooruit: een dag die geweest is valt niet meer te plannen.
+        // De wizard vervangt dit sheet en komt bovenop dezelfde geschiedenis,
+        // dus de terugknop brengt je hier gewoon weer terug (#1308).
         onPlan={
-          open != null && open >= vandaag
-            ? () => {
-                sluitSheet();
-                setPlanDag(open);
-              }
-            : undefined
+          open != null && open >= vandaag ? () => openPlan(open) : undefined
         }
         onClose={sluitSheet}
       />
 
-      <PlanDagSheet
-        datum={planDag}
-        groepen={lijst}
-        gekozenGroep={planGroep}
-        onGroep={kiesPlanGroep}
-        vensterEinde={addDays(vandaag, 6)}
-        onClose={() => setPlanDag(null)}
-        onDoor={() => {
-          // Het plan-sheet sluit en geeft de dag door aan de wizard; de
-          // groepskeuze blijft staan, ook als je 'm nooit aanpaste. Schrijf de
-          // groep op waarmee we straks daadwerkelijk plannen (#1270): dat wist
-          // meteen een onthouden id van een groep die je verliet, in plaats van
-          // die tot in lengte van dagen te laten staan.
-          if (planGroepId != null && planGroepId !== planGroep) {
-            kiesPlanGroep(planGroepId);
-          }
-          setWizardDag(planDag);
-          setPlanDag(null);
-        }}
-      />
-
-      {/* Dezelfde aanmaakflow als op de Plannen-tab, met die ene dag al
-          gekozen. Geen aparte "één-dag-poll" ernaast: een poll is meerdere
-          momenten en de wizard kan dat al. */}
-      {wizardDag != null && planGroepId != null && (
+      {/* De hele aanmaakflow in één sheet (#1308): groep, club en dag staan in
+          de kop, de momenten eronder. Het plan-sheet dat hier stond stelde één
+          vraag, opende met een uitgegrijsde hoofdknop en had een "Terug" die de
+          keten sloot in plaats van terug te gaan. */}
+      {stand.plan && planGroepId != null && (
         <NieuweSpeeldagSheet
           open
+          groepen={lijst}
           groupId={planGroepId}
+          onGroep={kiesPlanGroep}
           myId={myId}
           club={nieuwClub}
           onClub={setNieuwClub}
-          initialDay={wizardDag}
+          initialDay={gekozenDag}
           // Zodat de omweg naar /banen je selectie niet opeet (#1271). De
           // sleutel draagt groep en dag, want daarmee weet de agenda bij
           // terugkomst welke wizard hij moet heropenen.
-          storageKey={conceptSleutel(planGroepId, wizardDag)}
-          onClose={() => setWizardDag(null)}
+          storageKey={conceptSleutel(planGroepId, gekozenDag)}
+          onClose={sluitSheet}
           onCreated={() => {
-            setWizardDag(null);
+            sluitSheet();
             herlaad();
           }}
         />
