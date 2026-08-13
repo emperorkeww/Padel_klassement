@@ -26,14 +26,22 @@ import {
 } from "@/features/groups/pollsApi";
 import type { Profile } from "@/types";
 import {
+  markerHaalbaarheid,
   momentVoorbij,
-  statusLabel,
+  statusChip,
   tijdvak,
   volgendeStap,
   type AgendaMarker,
   type WedstrijdDag,
 } from "../agendaLogic";
 import { StatusGlyph } from "@/ui/StatusGlyph";
+import { KopieerChip } from "@/ui/KopieerChip";
+// Dezelfde cijferregel als op de speeldagpagina (#1308); het component brengt
+// zijn eigen stijl mee, zoals StemRij hieronder.
+import {
+  MomentMeta,
+  MomentMeter,
+} from "@/features/groups/components/MomentMeta";
 // De stemrij woont sinds #1196 bij de polls en brengt zijn eigen stijl mee
 // (StemRij.css + Proposals.css voor de `seg`-knoppen). Die regels hier kopiëren
 // zou ze uit het zicht van de contrast- en glascheck halen.
@@ -299,6 +307,7 @@ export function DagSheet({
                 andere={andereMomenten(m, momentenPerPoll, nu)}
                 leden={ledenPerGroep[m.groupId] ?? 0}
                 profielen={profielen}
+                myId={myId}
                 stemVan={stemVan}
                 onStem={stem}
                 baanInfo={baanInfo}
@@ -383,6 +392,32 @@ function WedstrijdRij({
   );
 }
 
+/**
+ * De vier bakken waarin een groepslid kan zitten (#1308).
+ *
+ * De marker draagt ze al uitgesplitst, met één ding dat de server nog niet
+ * weet: de tik die je zojuist gaf. `mijn` is die optimistische stem — zonder
+ * die correctie sta je nog bij "kan niet" terwijl je duim al op ✓ ligt.
+ *
+ * Jezelf laten we uit "nog niets gezegd" (#1270): die rij zegt wie je nog kunt
+ * porren, en jij staat pal onder de stemknoppen.
+ */
+function deelnameVan(
+  m: AgendaMarker,
+  mijn: PollVoteStatus | null,
+  myId: string,
+): { ja: string[]; misschien: string[]; nee: string[]; stil: string[] } {
+  const zonderMij = (ids: string[]) => ids.filter((id) => id !== myId);
+  const metMij = (ids: string[], status: PollVoteStatus) =>
+    mijn === status ? [...zonderMij(ids), myId] : zonderMij(ids);
+  return {
+    ja: metMij(m.yesVoterIds, "yes"),
+    misschien: metMij(m.maybeVoterIds, "maybe"),
+    nee: metMij(m.noVoterIds, "no"),
+    stil: zonderMij(m.nietGereageerdIds),
+  };
+}
+
 /** Hoeveel namen er staan voordat de rest achter een knop schuift. */
 const MAX_NAMEN = 4;
 
@@ -427,6 +462,7 @@ function Speeldag({
   andere,
   leden,
   profielen,
+  myId,
   stemVan,
   onStem,
   baanInfo,
@@ -439,6 +475,8 @@ function Speeldag({
   andere: AgendaMarker[];
   leden: number;
   profielen: Record<string, Profile>;
+  /** Jij, zodat je eigen (net gezette) stem in de juiste bak landt (#1308). */
+  myId: string;
   stemVan: (m: AgendaMarker) => PollVoteStatus | null;
   onStem: (m: AgendaMarker, status: PollVoteStatus) => void;
   /** Vrije banen en prijs van een moment, plus of er nog iets onderweg is. */
@@ -458,60 +496,105 @@ function Speeldag({
 }) {
   const geboekt = marker.status === "booked" && !marker.past;
   const toonBoeking = geboekt && (marker.courts || marker.accessCode);
-  const stemmers = marker.yesVoterIds;
   // Niet `marker.past`: dat bevroor toen het venster laadde, en dit sheet kan
   // over het einde van het slot heen openstaan.
   const stembaar = marker.status === "open" && !momentVoorbij(marker, nu);
   const stap = volgendeStap(marker);
   const naam = (id: string) => displayName(profielen[id]);
   const { vrij, prijs, wacht } = baanInfo(marker);
+  const deelname = deelnameVan(marker, stemVan(marker), myId);
+  // Haalbaarheid met de live baantelling erin — dezelfde afleiding als op de
+  // speeldagpagina (#1308), zodat "0 mee" er niet meer bij zwijgt dat er nog
+  // vier spelers nodig zijn.
+  const haalbaar = markerHaalbaarheid(marker, vrij);
+  // Banen zeggen alleen iets zolang er nog gestemd wordt: bij een geboekte dag
+  // is "is er nog een baan?" geen vraag meer, en "beschikbaarheid onbekend"
+  // zou daar ronduit verkeerd staan. `undefined` laat het deel weg, `null` is
+  // "we weten het niet".
+  const banenInMeta = marker.status === "open" && !marker.past;
   return (
     <article
       className={`dagsheet__speeldag${eigenVlak ? " glas glas--subtiel" : ""}`}
     >
       <header className="dagsheet__kop">
         <p className="dagsheet__tijd">{tijdvak(marker.startTime, marker.duration)}</p>
+        {/* `statusChip` en niet `statusLabel` (#1308): ditzelfde woord stond
+            als "Open poll" op de kaart en in de legenda erachter, en hier als
+            "open poll" — één badge, twee schrijfwijzen, tegelijk in beeld. */}
         <span className={`dagsheet__badge dagsheet__badge--${marker.past ? "past" : marker.status}`}>
           <StatusGlyph status={marker.status} past={marker.past} size={9} />
-          {statusLabel(marker.status, marker.past)}
+          {statusChip(marker.status, marker.past)}
         </span>
       </header>
 
+      {/* Groep, club en wat er gespeeld is zijn ingangen, geen etiketten
+          (#1308). Ze zagen eruit als aantikbare pillen en waren het niet,
+          terwijl de groepsnaam elders in de app juist wél de weg naar die
+          groep is. */}
       <p className="dagsheet__chips">
-        <span className="dagsheet__chip dagsheet__chip--groep">{marker.groupName}</span>
-        <span className="dagsheet__chip">{marker.clubName}</span>
+        <Link
+          className="dagsheet__chip dagsheet__chip--groep dagsheet__chip--link"
+          to={`/groepen/${marker.groupId}`}
+        >
+          {marker.groupName}
+        </Link>
+        <Link
+          className="dagsheet__chip dagsheet__chip--link"
+          to={`/banen?datum=${marker.date}`}
+        >
+          {marker.clubName}
+        </Link>
         {/* Wat er op deze avond gelogd is (#1221). Stond op de kaart in het
             paneel; sinds #1270 komt een tik meteen hier uit, dus hoort het hier
             ook te staan — anders zegt een gespeelde avond niets over wat er
-            gespeeld is. */}
+            gespeeld is. Zelfde bestemming als de losse wedstrijdrij hierboven. */}
         {wedstrijden > 0 && (
-          <span className="dagsheet__chip">
+          <Link
+            className="dagsheet__chip dagsheet__chip--link"
+            to={`/spelen?groep=${marker.groupId}`}
+          >
             {wedstrijden} {wedstrijden === 1 ? "wedstrijd" : "wedstrijden"}
-          </span>
+          </Link>
         )}
       </p>
 
-      {/* Wat er nog vrij is en wat het kost (#1121): precies de twee dingen
-          waar je op zit te wachten als je nog moet beslissen of je "ik kan"
-          aantikt. Ze staan alleen bij een moment waarop nog gestemd wordt.
+      {/* Wie er meedoen, wat er nog nodig is, wat er vrij is en wat het kost
+          (#1121, #1308): precies waar je op zit te wachten als je nog moet
+          beslissen of je "ik kan" aantikt. Dezelfde regel — en dus dezelfde
+          woorden — als op de speeldagpagina.
 
-          Op een eigen regel en niet tussen de chips hierboven (#1233): die
-          telling komt van Playtomic en landt dus ná het openen, en tussen groep
-          en club erbij komen liet de rij naar twee regels springen — met een
-          sheet dat onderaan verankerd staat, groeit dat recht onder je vinger
-          weg. Deze regel staat er zodra we wéten dat er iets onderweg is, houdt
-          zijn hoogte vast tot het antwoord er is, en blijft ook staan als het
-          nooit komt. `nowrap` maakt dat sluitend: hij kan niet groeien. */}
-      {wacht && (
-        <p className="dagsheet__baan">
-          {vrij != null && (
-            <span className="dagsheet__chip">
-              {vrij === 0
-                ? "geen baan meer vrij"
-                : `${vrij} ${vrij === 1 ? "baan" : "banen"} vrij`}
-            </span>
+          Op een eigen regel en niet tussen de chips hierboven (#1233): de
+          baantelling komt van Playtomic en landt dus ná het openen, en tussen
+          groep en club erbij komen liet de rij naar twee regels springen — met
+          een sheet dat onderaan verankerd staat, groeit dat recht onder je
+          vinger weg. Zolang er iets onderweg is houdt deze regel daarom ruimte
+          voor twee regels vast: hij kan groeien van "beschikbaarheid onbekend"
+          naar "3 banen vrij, 1 nodig · ± € 6 p.p.", en dat mag het sheet niet
+          voelen. */}
+      {!marker.past && (
+        <p className={`dagsheet__meta${wacht ? " dagsheet__meta--wacht" : ""}`}>
+          {/* De ring gaat over "halen we een baan met deze stemmen?" — een
+              vraag die alleen leeft zolang er nog gestemd wordt. Op een
+              geboekte dag zou hij grijs "onbekend" staan bij een baan die al
+              vastligt. */}
+          {banenInMeta && (
+            <MomentMeter state={haalbaar.state} className="dagsheet__meter" />
           )}
-          {prijs && <span className="dagsheet__chip">± {prijs} p.p.</span>}
+          <MomentMeta
+            ja={marker.yesVoterIds.length}
+            misschien={marker.maybeVoterIds.length}
+            // De drempel "ja + misschien ≥ 4" beslist of een speeldag dóórgaat
+            // (pollBeslissing.ts) — een vraag die alleen bij een open poll nog
+            // openstaat. Ná het vastleggen gaat het om bevestigde spelers voor
+            // de wedstrijden, en dát zegt `volgendeStap` twee regels lager.
+            // Allebei tonen zette twee tellingen naast elkaar die verschillend
+            // rekenen ("nog 1 speler nodig" boven "Nog 2 bevestigde spelers
+            // nodig") — precies de klacht waar dit sheet mee begon.
+            tekort={banenInMeta ? haalbaar.tekort : 0}
+            vrij={banenInMeta ? vrij : undefined}
+            banenNodig={haalbaar.banenNodig}
+            prijs={banenInMeta ? prijs : null}
+          />
         </p>
       )}
 
@@ -527,54 +610,69 @@ function Speeldag({
               <span className="dagsheet__tegel-waarde">{courtsLabel(marker.courts)}</span>
             </div>
           )}
+          {/* De code is hier een knop en geen tekst (#1308): je opent dit sheet
+              met je telefoon in je hand vóór de deur van de club, en dezelfde
+              code op de speeldagpagina kopieert al sinds #675. */}
           {marker.accessCode && (
             <div className="dagsheet__tegel">
               <span className="dagsheet__tegel-label">Toegangscode</span>
-              <span className="dagsheet__tegel-waarde dagsheet__code">
-                {marker.accessCode}
-              </span>
+              <KopieerChip
+                waarde={marker.accessCode}
+                naam="Toegangscode"
+                icoon="🔑"
+                melding="Code gekopieerd."
+              />
             </div>
           )}
         </div>
       ) : null}
 
-      {stemmers.length > 0 && (
-        <div className="dagsheet__stemmers">
-          <span className="dagsheet__tegel-label">
-            Ik kan{leden > 0 ? ` — ${stemmers.length} van ${leden}` : ` — ${stemmers.length}`}
-          </span>
+      {/* Wie doet er mee (#1308) — één blok met alle vier de antwoorden.
+          Hiervoor stonden er drie tellingen over dezelfde groep: "Ik kan — 2
+          van 6", "+4 nog niet" (leden min ja-stemmers, dus mét de twijfelaars
+          en de afmelders erin) en daaronder "Misschien" en "Nog niets gezegd"
+          met precies díe mensen bij naam. In een groep van twintig las dat als
+          "+18 nog niet" naast "Wacht op 16 leden".
+
+          Nu telt elk lid één keer, in de bak waar hij zelf voor koos. Wie nog
+          niets zei staat er alleen zolang er te stemmen valt: op een geboekte
+          dag is dat geen open vraag meer. */}
+      <div className="dagsheet__deelname">
+        <span className="dagsheet__tegel-label">
+          Wie doet er mee{leden > 0 ? ` — ${deelname.ja.length} van ${leden}` : ""}
+        </span>
+        {deelname.ja.length > 0 && (
           <p className="dagsheet__avatars">
-            {stemmers.slice(0, MAX_AVATARS).map((id) => (
+            {deelname.ja.slice(0, MAX_AVATARS).map((id) => (
               <Avatar key={id} profile={profielen[id]} size={28} short />
             ))}
             {/* Boven de zes viel de rest stilletjes weg: de telling erboven
                 zei "8 van 20" en er stonden er zes. */}
-            {stemmers.length > MAX_AVATARS && (
+            {deelname.ja.length > MAX_AVATARS && (
               <span className="dagsheet__rest">
-                +{stemmers.length - MAX_AVATARS}
-              </span>
-            )}
-            {leden > stemmers.length && (
-              <span className="dagsheet__rest">
-                +{leden - stemmers.length} nog niet
+                +{deelname.ja.length - MAX_AVATARS}
               </span>
             )}
           </p>
-        </div>
-      )}
-
-      {/* Twijfelaars en stille leden bij naam (#1121). Juist bij "nog één
-          speler nodig" is dat de vraag: wie kan ik nog porren? De agenda gaf
-          tot nu toe alleen het aantal ja-stemmers. */}
-      {marker.maybeVoterIds.length > 0 && (
-        <NamenRij label="Misschien" namen={marker.maybeVoterIds.map(naam)} />
-      )}
-      {marker.status === "open" && !marker.past && marker.nietGestemdIds.length > 0 && (
-        <NamenRij
-          label="Nog niets gezegd"
-          namen={marker.nietGestemdIds.map(naam)}
-        />
-      )}
+        )}
+        {deelname.ja.length === 0 && (
+          <p className="dagsheet__leeg">Nog niemand zei "ik kan".</p>
+        )}
+        {/* Twijfelaars, afmelders en stille leden bij naam (#1121, #1308).
+            Juist bij "nog één speler nodig" is dat de vraag: wie kan ik nog
+            porren — en wie hoef ik niet meer te vragen? */}
+        {deelname.misschien.length > 0 && (
+          <NamenRij label="Misschien" namen={deelname.misschien.map(naam)} />
+        )}
+        {deelname.nee.length > 0 && (
+          <NamenRij label="Kan niet" namen={deelname.nee.map(naam)} />
+        )}
+        {marker.status === "open" &&
+          !marker.past &&
+          deelname.stil.length > 0 && (
+            <NamenRij label="Nog niets gezegd" namen={deelname.stil.map(naam)} />
+          )}
+      </div>
 
       {stembaar && (
         <div className="dagsheet__stemmen">
@@ -593,17 +691,27 @@ function Speeldag({
               <span className="dagsheet__tegel-label">
                 Andere momenten in deze poll
               </span>
-              {andere.map((m) => (
-                <StemRij
-                  key={m.optionId}
-                  titel={`${shortDay(m.date)} · ${m.startTime}`}
-                  omschrijving={`${longDay(m.date)} ${m.startTime}`}
-                  aantal={m.yesVoterIds.length}
-                  banen={baanInfo(m).vrij}
-                  mine={stemVan(m)}
-                  onVote={(s) => onStem(m, s)}
-                />
-              ))}
+              {andere.map((m) => {
+                const anderVrij = baanInfo(m).vrij;
+                const anderHaalbaar = markerHaalbaarheid(m, anderVrij);
+                return (
+                  <StemRij
+                    key={m.optionId}
+                    titel={`${shortDay(m.date)} · ${m.startTime}`}
+                    omschrijving={`${longDay(m.date)} ${m.startTime}`}
+                    aantal={m.yesVoterIds.length}
+                    banen={anderVrij}
+                    // Dezelfde ring als op de speeldagpagina (#1308): zonder
+                    // die zei "0 mee" niets over de vier spelers die er nog bij
+                    // moeten, en stond er bij een moment zonder banendata
+                    // helemaal niets.
+                    meter={anderHaalbaar.state}
+                    tekort={anderHaalbaar.tekort}
+                    mine={stemVan(m)}
+                    onVote={(s) => onStem(m, s)}
+                  />
+                );
+              })}
             </>
           )}
         </div>

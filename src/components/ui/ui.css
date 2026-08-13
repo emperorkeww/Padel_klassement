@@ -276,6 +276,44 @@ textarea {
 .kopieerveld__rij .btn {
   flex: none;
 }
+/* Korte waarde als pil, tik = klembord (#1308). Stond als `.winner-card__code`
+   bij de speeldagkaart (#675); sinds het agenda-dag-sheet dezelfde code toont
+   staat de vorm hier. Monospace en ruim getekend, want dit lees je van je
+   scherm af terwijl je voor de deur staat. */
+.kopieer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.kopieer-chip strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--fs-md);
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+.kopieer-chip:hover {
+  border-color: var(--accent);
+}
+/* Dezelfde vorm voor iets wat niets te kopiëren heeft (de geboekte banen,
+   #802): geen cursor, geen hover-accent, gewone letters. */
+.kopieer-chip--stil {
+  cursor: default;
+}
+.kopieer-chip--stil:hover {
+  border-color: var(--line);
+}
+.kopieer-chip--stil strong {
+  font-family: inherit;
+  letter-spacing: normal;
+}
 /* Compacte filter-select in een toolbar (volle breedte op mobiel). */
 .select--filter {
   max-width: 220px;

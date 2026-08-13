@@ -129,7 +129,9 @@ describe("<StemKaart />", () => {
       "di 18 aug · 19:30",
       "do 20 aug · 20:00",
     ]);
-    expect(screen.getByText("1 kan")).toBeInTheDocument();
+    // "mee" en niet "kan" (#1308): dezelfde telling heet in het dag-sheet en op
+    // de speeldagpagina ook zo, en dit is dezelfde rij-component.
+    expect(screen.getByText("1 mee")).toBeInTheDocument();
   });
 
   it("stemt ter plekke en meldt dat aan het overzicht", async () => {
