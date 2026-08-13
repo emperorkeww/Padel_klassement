@@ -251,6 +251,31 @@ textarea {
   font-weight: 400;
   color: var(--ink-soft);
 }
+/* Waarde om door te geven (link, code) met een kopieerknop ernaast (#1298).
+   Gedeeld door de uitnodigingslink van een groep en de eenmalige geheimen in
+   het adminpaneel. */
+.kopieerveld {
+  display: grid;
+  gap: var(--sp-1);
+}
+.kopieerveld__label {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.kopieerveld__rij {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.kopieerveld__waarde {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--fs-sm);
+}
+.kopieerveld__rij .btn {
+  flex: none;
+}
 /* Compacte filter-select in een toolbar (volle breedte op mobiel). */
 .select--filter {
   max-width: 220px;

@@ -162,7 +162,7 @@ describe("<GroupDetail />", () => {
     // kop houdt de eigenaar-badge.
     expect(await screen.findByText(/^eigenaar$/i)).toBeInTheDocument();
     expect(
-      await screen.findByRole("tab", { name: "Leden, 4" }),
+      await screen.findByRole("tab", { name: "Groep, 4" }),
     ).toBeInTheDocument();
     expect(
       await screen.findByRole("heading", { name: /^ronde 2$/i }),
@@ -330,7 +330,7 @@ describe("<GroupDetail />", () => {
     await userEvent.click(screen.getByRole("tab", { name: /^stand$/i }));
     expect(await screen.findByText(/groepsklassement/i)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("tab", { name: /^leden/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^groep/i }));
     expect(await screen.findByText(/vrienden toevoegen/i)).toBeInTheDocument();
     expect(
       screen.getAllByRole("button", { name: /verwijderen/i }).length,
@@ -373,7 +373,7 @@ describe("<GroupDetail />", () => {
 
     // End springt naar de laatste tab; de teller zit in de naam.
     await userEvent.keyboard("{End}");
-    expect(screen.getByRole("tab", { name: "Leden, 4" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Groep, 4" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -389,7 +389,7 @@ describe("<GroupDetail />", () => {
     ).not.toBeInTheDocument();
     // Vier tabs over: Vandaag · Historie · Stand · Leden.
     expect(
-      screen.getAllByRole("tab", { name: /vandaag|historie|stand|leden/i }),
+      screen.getAllByRole("tab", { name: /vandaag|historie|stand|groep/i }),
     ).toHaveLength(4);
   });
 
@@ -671,7 +671,7 @@ describe("<GroupDetail />", () => {
 
       await userEvent.click(knop);
       expect(
-        screen.getByRole("tab", { name: /^leden/i }),
+        screen.getByRole("tab", { name: /^groep/i }),
       ).toHaveAttribute("aria-selected", "true");
     } finally {
       herstel();
