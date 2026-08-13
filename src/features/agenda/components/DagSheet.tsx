@@ -678,6 +678,10 @@ function Speeldag({
           optionId={marker.optionId}
           groupId={marker.groupId}
           myId={myId}
+          // De indeling begint bij de ja-stemmers (MakeTeams). Stemde je nee,
+          // misschien of niets, dan sta je er dus niet bij — en dan hoort de
+          // knop "Toch meedoen" te zijn en niet "Ik kan toch niet" (#1308).
+          standaardMee={deelname.ja.includes(myId)}
         />
       )}
 
