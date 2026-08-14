@@ -152,6 +152,111 @@ describe("Worker Playtomic-proxy", () => {
   });
 });
 
+// Clubs zoeken op naam (#391). De Worker fetcht hier bewust niet zelf: de
+// zoekpagina weert Cloudflare-egress, dus alles loopt via CLUB_SEARCH_EGRESS.
+describe("Worker clubzoeker (/api/playtomic/club-search)", () => {
+  const zoekEnv = (extra = {}) => ({
+    ...makeEnv(),
+    CLUB_SEARCH_EGRESS: "https://x.supabase.co/functions/v1/club-search",
+    CRON_SECRET: "topsecret",
+    ...extra,
+  });
+  const treffers = () =>
+    new Response(JSON.stringify({ clubs: [{ id: "a1", name: "Hangar Padel Club" }] }), {
+      status: 200,
+    });
+
+  it("stuurt de genormaliseerde zoekterm naar de egress-hop, mét geheim", async () => {
+    const upstream = vi.fn(treffers);
+    vi.stubGlobal("fetch", upstream);
+    const res = await worker.fetch(
+      req("https://app.test/api/playtomic/club-search?q=%20Hangar%20%20Padel%20"),
+      zoekEnv(),
+      ctx,
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ clubs: [{ id: "a1", name: "Hangar Padel Club" }] });
+    expect(String(upstream.mock.calls[0][0])).toBe(
+      "https://x.supabase.co/functions/v1/club-search?q=hangar%20padel",
+    );
+    expect(upstream.mock.calls[0][1]?.headers?.["x-cron-secret"]).toBe("topsecret");
+  });
+
+  it("cachet op de genormaliseerde zoekterm: 'LAGO  Beveren' is een edge-hit op 'lago beveren'", async () => {
+    const upstream = vi.fn(treffers);
+    vi.stubGlobal("fetch", upstream);
+    const env = zoekEnv();
+    const puts = [];
+    const waitCtx = { waitUntil: (p) => puts.push(p) };
+    await worker.fetch(req("https://app.test/api/playtomic/club-search?q=lago%20beveren"), env, waitCtx);
+    await Promise.all(puts);
+    const res2 = await worker.fetch(
+      req("https://app.test/api/playtomic/club-search?q=LAGO%20%20Beveren"),
+      env,
+      waitCtx,
+    );
+    expect(res2.status).toBe(200);
+    expect(upstream).toHaveBeenCalledTimes(1);
+    expect(store.has("https://playtomic.com/search?q=lago%20beveren#clubs")).toBe(true);
+  });
+
+  it("cachet een mislukte zoekopdracht niet", async () => {
+    const upstream = vi.fn(async () => new Response(JSON.stringify({ error: "uitgeschakeld" }), { status: 503 }));
+    vi.stubGlobal("fetch", upstream);
+    const env = zoekEnv();
+    const puts = [];
+    const waitCtx = { waitUntil: (p) => puts.push(p) };
+    const res = await worker.fetch(req("https://app.test/api/playtomic/club-search?q=lago"), env, waitCtx);
+    await Promise.all(puts);
+    expect(res.status).toBe(503);
+    expect(store.size).toBe(0);
+  });
+
+  it("weigert een te korte of te lange zoekterm zonder upstream-call", async () => {
+    const upstream = vi.fn();
+    vi.stubGlobal("fetch", upstream);
+    const kort = await worker.fetch(req("https://app.test/api/playtomic/club-search?q=a"), zoekEnv(), ctx);
+    const lang = await worker.fetch(
+      req(`https://app.test/api/playtomic/club-search?q=${"a".repeat(61)}`),
+      zoekEnv(),
+      ctx,
+    );
+    expect(kort.status).toBe(400);
+    expect(lang.status).toBe(400);
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
+  // Zonder egress-hop of geheim is de route onbruikbaar: rechtstreeks fetchen
+  // geeft 403 vanaf een Worker-IP (#385). Dan liever eerlijk 503 dan een lege
+  // lijst die "jouw club bestaat niet" suggereert.
+  it("geeft 503 zonder egress-hop of geheim, en fetcht niets", async () => {
+    const upstream = vi.fn();
+    vi.stubGlobal("fetch", upstream);
+    const zonderHop = await worker.fetch(
+      req("https://app.test/api/playtomic/club-search?q=lago"),
+      makeEnv(),
+      ctx,
+    );
+    const zonderGeheim = await worker.fetch(
+      req("https://app.test/api/playtomic/club-search?q=lago"),
+      zoekEnv({ CRON_SECRET: undefined }),
+      ctx,
+    );
+    expect(zonderHop.status).toBe(503);
+    expect(zonderGeheim.status).toBe(503);
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("geeft 429 als de rate-limiter blokkeert", async () => {
+    const upstream = vi.fn(treffers);
+    vi.stubGlobal("fetch", upstream);
+    const env = { ...zoekEnv(), PLAYTOMIC_RL: { limit: vi.fn(async () => ({ success: false })) } };
+    const res = await worker.fetch(req("https://app.test/api/playtomic/club-search?q=lago"), env, ctx);
+    expect(res.status).toBe(429);
+    expect(upstream).not.toHaveBeenCalled();
+  });
+});
+
 describe("Worker crashmeldingen (/api/client-error)", () => {
   const melding = (init) =>
     new Request("https://app.test/api/client-error", { method: "POST", ...init });
