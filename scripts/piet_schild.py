@@ -2,124 +2,179 @@
 """Leid de schildvorm van de Zwarte Piet-kaart af uit de referentie.
 
 De referentiekaart heeft geen vlakke bovenrand maar een ogeeboog: de hoeken
-lopen schuin omhoog naar een breed, licht gebogen kruinstuk waar de gevleugelde
-crest op rust. Dat silhouet is het meest herkenbare aan de kaart, en zolang het
-app-schild vlak bleef moest élke randgebonden laag in het artwork worden
-bijgestuurd om er niet dwars overheen te lopen.
+lopen schuin omhoog naar een spits kruinstuk waar de gouden crest op rust. Dat
+silhouet is het meest herkenbare aan de kaart, en zolang het app-schild vlak
+bleef moest élke randgebonden laag in het artwork worden bijgestuurd om er niet
+dwars overheen te lopen.
 
-Dit script drukt het `d`-attribuut af voor `#fut-schild-piet` in FutKaart.tsx.
-De bovenrand komt uit de gemeten boog van de referentie; de onderkant is
-onveranderd die van de andere schilden — de punt op 50%/100% is het anker waar
-de chemielijn in de Opstelling op mikt en blijft dus staan.
+Dit script drukt het `d`-attribuut af voor `#fut-schild-piet` in FutKaart.tsx en
+levert `schild_uv()` aan `piet-onderdelen.py`, zodat artwork en kaartclip per
+constructie dezelfde contour delen.
 
-    python3 scripts/piet_schild.py
+    python3.13 scripts/piet_schild.py
+    python3.13 scripts/piet_schild.py --overlay /tmp/piet-schild.png
+
+De overlay tekent de contour over de referentie. Dat is de enige echte controle:
+de gouden lijst van het bronbeeld moet er precies onder liggen.
 """
+
+from __future__ import annotations
+
+import sys
 
 import numpy as np
 
-# De binnenrand van de boog: per kolom de eerste perkamentrij in
-# docs/referentie_zwarte_piet.png, gemeten op de linkerhelft en
-# gespiegeld om het vlakmidden x=549,5.
-BOOG_BINNEN = [
-    (191, 238), (200, 230), (220, 226), (240, 219), (260, 209), (280, 200),
-    (300, 188), (320, 177), (340, 165), (360, 152), (380, 141), (400, 132),
-    (420, 128), (440, 126), (470, 125), (500, 124), (549, 124),
-]
-# Dikte van de referentielijst, gemeten op de rechte zijkanten: perkament op
-# x=191, donkere buitenrand op x=152.
-LIJST = 39.0
-# De kaartbox in referentiepixels. Links/rechts de buitenrand van de lijst; de
-# hoogte volgt uit de vaste kaartverhouding, niet uit de referentie, want de
-# onderkant van het schild blijft die van de app.
-KAART_X0, KAART_X1 = 152.0, 936.0
+# ── Gemeten op docs/referentie_zwarte_piet.png (1086 × 1448) ────────────────
+#
+# De rechte zijkanten zijn het betrouwbaarste ijkpunt: tussen y=300 en y=760
+# ligt daar een ononderbroken gouden rail. Een goudmasker (R>95, R−B>28,
+# luma>75) geeft daar per rij twee runs — de binnenrail op x≈910–915 en de
+# buitenrail op x≈924–930, links gespiegeld op x≈148–152 en x≈165–170. De
+# buitenrand van de lijst is dus x=146 en x=931.
+KAART_X0, KAART_X1 = 146.0, 931.0
 KAART_B = KAART_X1 - KAART_X0
 KAART_H = KAART_B * 139.0 / 100.0
+AS = (KAART_X0 + KAART_X1) / 2.0
 
-# De onderkant. Anders dan bij de andere schilden géén punt op (0.5, 1) maar de
-# brede, ruim afgeronde onderrand van de referentie.
+# De buitenrand van de ogeeboog, linkerhelft. Deze punten zijn níet puur
+# automatisch bepaald: een goudmasker vindt hierboven net zo goed de kettingen,
+# de crest en de veren, en die liggen precies op de boog. De reeks is daarom met
+# de hand gelegd en met `--overlay` op de referentie nageregeld tot hij overal
+# net bínnen de gouden band valt — binnen, want de lijst komt uit het artwork en
+# moet de kaartrand kunnen overlappen. De kruin zelf gaat schuil achter de crest
+# met het Piet-silhouet en volgt uit het doortrekken van de flanken.
+BOOG_LINKS = [
+    (146, 302),
+    (170, 284),
+    (200, 265),
+    (240, 239),
+    (280, 216),
+    (320, 197),
+    (360, 180),
+    (400, 166),
+    (440, 153),
+    (480, 143),
+    (520, 137),
+    (538, 135),
+]
+KRUIN = 133.0
+
+# Vanaf welke hoogte de zijkanten recht naar beneden lopen: de boog is bij de
+# schouder al bijna verticaal.
+ZIJKANT_V = 0.60
+
+# De onderkant. Anders dan bij het oude Piet-schild (een brede vlakke rand)
+# loopt deze weer naar een punt op (0.5, 1) — het anker waar de chemielijn in de
+# Opstelling op mikt. Dat kan hier ook: in de nieuwe referentie convergeert het
+# paneel zelf naar een brede punt onder de badge-rij, waar de gevleugelde
+# medaille overheen ligt.
 #
-# Dat is geen cosmetische keuze. Onder de kaart hangt in de referentie één
-# doorlopend bouwsel — kettingen die langs de zijkanten naar beneden lopen, een
-# lint, een medaille — en dat houdt elkaar vast omdát alles op één brede
-# onderrand aankomt. Op een punt is er geen rand om op aan te komen: de
-# kettingen hangen dan naast een kaart die er niet meer is en de rozet zweeft
-# eronder. Elke correctie daarvoor (kettingen naar binnen trekken, de groep
-# omhoog schuiven, een schaduw onder het gat) bestreed het symptoom.
-#
-# De hoekstraal is 0,17 × kaartbreedte: ruim genoeg om als de zachte hoek van de
-# referentie te lezen, en smal genoeg dat het rechte stuk (u 0,17–0,83) de rozet
-# draagt, die van 0,19 tot 0,83 loopt.
-HOEK_U = 0.17
-HOEK_V = HOEK_U * 100.0 / 139.0
-# Bolling van de hoek; 0,45 geeft een ronde kwartcirkel zonder zichtbare knik.
-K = 0.45
+# De punt is bewust breed en laat: het paneel blijft vol tot v≈0.80, want daar
+# staan het statblok (v 0.81–0.87) en de badge-rij (v 0.90–0.98) nog in. Een
+# taper vanaf 0.60, zoals de gedeelde schilden hebben, snijdt die twee aan.
+ONDER_V = 0.80
 ONDER = (
-    f"L 1 {1 - HOEK_V:.4f} "
-    f"C 1 {1 - HOEK_V * K:.4f} {1 - HOEK_U * K:.4f} 1 {1 - HOEK_U:.4f} 1 "
-    f"L {HOEK_U:.4f} 1 "
-    f"C {HOEK_U * K:.4f} 1 0 {1 - HOEK_V * K:.4f} 0 {1 - HOEK_V:.4f}"
+    f"L 1 {ONDER_V} "
+    "C 1 0.9180 0.9450 0.9610 0.8600 0.9820 "
+    "C 0.7300 0.9970 0.6000 1 0.5000 1 "
+    "C 0.4000 1 0.2700 0.9970 0.1400 0.9820 "
+    "C 0.0550 0.9610 0 0.9180 0 " + f"{ONDER_V}"
 )
-# Vanaf welke hoogte de zijkanten recht naar beneden lopen.
-ZIJKANT = 0.60
 
 
-def buitenboog():
-    """De binnenboog naar buiten verschoven over de lijstdikte."""
-    pts = BOOG_BINNEN + [(1099 - x, y) for x, y in reversed(BOOG_BINNEN[:-1])]
-    xs = np.array([p[0] for p in pts], float)
-    ys = np.array([p[1] for p in pts], float)
-    # Normaal uit de lokale helling; de boog is een functie y(x), dus de naar
-    # buiten wijzende normaal is (-y', -1) genormaliseerd.
-    dy = np.gradient(ys, xs)
-    n = np.hypot(dy, 1.0)
-    return xs - LIJST * dy / n, ys - LIJST / n
+def _boog_punten() -> list[tuple[float, float]]:
+    """De volle boog in referentiepixels, gespiegeld om de as."""
+    links = list(BOOG_LINKS)
+    rechts = [(2 * AS - x, y) for x, y in reversed(links[:-1])]
+    return links + rechts
 
 
-def schild_uv():
+def schild_uv() -> tuple[list[tuple[float, float]], float]:
     """Het schild als (u, v)-punten in kaartbox-fracties, plus de kruin.
 
-    piet-master.py importeert dit: het artwork moet op exact hetzelfde schild
-    worden geregistreerd als de kaart zelf, anders loopt de rand van het
-    bronbeeld weer naast de rand van de kaart.
+    `piet-onderdelen.py` importeert dit: het artwork moet op exact hetzelfde
+    schild worden geregistreerd als de kaart zelf, anders loopt de gouden lijst
+    van het bronbeeld naast de rand van de kaart.
     """
-    bx, by = buitenboog()
-    kruin = float(by.min())
-    # y=0 van de kaartbox ligt op de kruin van de buitenboog.
-    u = (bx - KAART_X0) / KAART_B
-    v = (by - kruin) / KAART_H
-
-    # De boog wordt aan beide kanten doorgetrokken tot de zijrand (u=0 en u=1),
-    # zodat hij daar op de rechte zijkant aansluit.
-    def verleng(u0, v0, u1, v1, doel):
-        h = (doel - u0) / (u1 - u0)
-        return v0 + (v1 - v0) * h
-
-    # De schouder: de boog loopt daar bijna verticaal, dus doortrekken tot de
-    # zijrand geeft een steile maar reële hoek. Links en rechts worden daarna
-    # gespiegeld — de referentie is symmetrisch, de meting niet helemaal, en een
-    # kaart met een scheve kruin leest onmiddellijk als een fout.
-    v_schouder = verleng(u[0], v[0], u[1], v[1], 0.0)
-
-    half = [(0.0, v_schouder)] + [(a, b) for a, b in zip(u, v) if a <= 0.5]
-    punten = half + [(1.0 - a, b) for a, b in reversed(half)]
-    return punten, kruin
+    punten = _boog_punten()
+    u = (np.array([p[0] for p in punten], float) - KAART_X0) / KAART_B
+    v = (np.array([p[1] for p in punten], float) - KRUIN) / KAART_H
+    return list(zip(u.tolist(), v.tolist())), KRUIN
 
 
-def main():
-    punten, kruin = schild_uv()
-    boog = " ".join(f"L {p[0]:.4f} {p[1]:.4f}" for p in punten[1:])
-    d = (
+def _onder_beziers() -> list[tuple]:
+    """De onderkant als vier kubische segmenten in (u, v)."""
+    return [
+        ((1.0, ONDER_V), (1.0, 0.918), (0.945, 0.961), (0.86, 0.982)),
+        ((0.86, 0.982), (0.73, 0.997), (0.60, 1.0), (0.50, 1.0)),
+        ((0.50, 1.0), (0.40, 1.0), (0.27, 0.997), (0.14, 0.982)),
+        ((0.14, 0.982), (0.055, 0.961), (0.0, 0.918), (0.0, ONDER_V)),
+    ]
+
+
+def schild_pixels() -> list[tuple[float, float]]:
+    """Het volledige schild als polygoon in referentiepixels.
+
+    `piet-onderdelen.py` gebruikt dit om het artwork op exact dezelfde contour
+    te scheiden als de kaartclip. Eén bron, dus geen tweede set getallen die uit
+    de pas kan lopen.
+    """
+    punten, _ = schild_uv()
+    uv = list(punten) + [(1.0, ZIJKANT_V)]
+    for p0, p1, p2, p3 in _onder_beziers():
+        for i in range(1, 21):
+            t = i / 20
+            m = 1 - t
+            uv.append(
+                (
+                    m**3 * p0[0] + 3 * m * m * t * p1[0] + 3 * m * t * t * p2[0] + t**3 * p3[0],
+                    m**3 * p0[1] + 3 * m * m * t * p1[1] + 3 * m * t * t * p2[1] + t**3 * p3[1],
+                )
+            )
+    return [(KAART_X0 + u * KAART_B, KRUIN + v * KAART_H) for u, v in uv]
+
+
+def schildpad() -> str:
+    """Het `d`-attribuut voor #fut-schild-piet (objectBoundingBox)."""
+    punten, _ = schild_uv()
+    boog = " ".join(f"L {u:.4f} {v:.4f}" for u, v in punten[1:])
+    return (
         f"M {punten[0][0]:.4f} {punten[0][1]:.4f} "
         f"{boog} "
-        f"L 1 {ZIJKANT} "
+        f"L 1 {ZIJKANT_V} "
         f"{ONDER} "
-        f"Z"
+        "Z"
     )
-    print(f"kruin op referentie-y {kruin:.1f}; schouders op v={punten[0][1]:.4f}")
-    print(f"kaartbox: x[{KAART_X0:.0f}, {KAART_X1:.0f}] y[{kruin:.1f}, "
-          f"{kruin + KAART_H:.1f}]")
+
+
+def overlay(doel: str) -> None:
+    """Teken de contour over de referentie — de visuele controle op de meting."""
+    from PIL import Image, ImageDraw
+
+    ref = "docs/referentie_zwarte_piet.png"
+    im = Image.open(ref).convert("RGB")
+    tekenaar = ImageDraw.Draw(im)
+
+    def naar_pixels(u: float, v: float) -> tuple[float, float]:
+        return KAART_X0 + u * KAART_B, KRUIN + v * KAART_H
+
+    pad = schild_pixels()
+    tekenaar.line(pad + [pad[0]], fill=(255, 0, 255), width=3)
+    im.save(doel)
+    print(f"overlay -> {doel}")
+
+
+def main() -> None:
+    if "--overlay" in sys.argv:
+        overlay(sys.argv[sys.argv.index("--overlay") + 1])
+        return
+    print(
+        f"kaartbox: x[{KAART_X0:.0f}, {KAART_X1:.0f}] "
+        f"y[{KRUIN:.0f}, {KRUIN + KAART_H:.0f}]  "
+        f"breedte {KAART_B:.0f} hoogte {KAART_H:.0f}"
+    )
     print()
-    print(d)
+    print(schildpad())
 
 
 if __name__ == "__main__":
