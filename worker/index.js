@@ -40,6 +40,15 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // Slugs zijn de facto onveranderlijk; ruim (een week) edge-cachen.
 const SLUG_STORE_SECONDS = 604_800;
 
+// Clubs zoeken op naam (#391). Ook een niet-proxy-route: het antwoord is de
+// geparste trefferlijst van de egress-functie, niet een Playtomic-respons.
+const ZOEK_PAD = `${PREFIX}/club-search`;
+const ZOEK_MIN_LENGTE = 2;
+const ZOEK_MAX_LENGTE = 60;
+// Clubs komen er zelden bij en verhuizen nog minder vaak; zes uur cachen
+// scheelt Playtomic-verkeer zonder dat iemand een verouderde lijst merkt.
+const ZOEK_STORE_SECONDS = 21_600;
+
 // Stale-while-revalidate: tot FRESH_MS oud wordt een antwoord direct
 // geserveerd; daarna nog steeds direct (geen wachttijd voor de bezoeker),
 // maar met een verversing op de achtergrond. Na STORE_SECONDS verdwijnt het
@@ -82,13 +91,13 @@ async function resolveClubSlug(uuid) {
 
 // Vorm waarin een upstream-antwoord de edge-cache in gaat: lange TTL voor de
 // cache zelf, met een tijdstempel om "vers" van "verouderd" te onderscheiden.
-async function storedResponse(upstream) {
+async function storedResponse(upstream, storeSeconds = STORE_SECONDS) {
   const body = await upstream.text();
   return new Response(body, {
     status: upstream.status,
     headers: {
       "content-type": "application/json; charset=utf-8",
-      "cache-control": `public, max-age=${STORE_SECONDS}`,
+      "cache-control": `public, max-age=${storeSeconds}`,
       "x-fetched-at": String(Date.now()),
     },
   });
@@ -159,6 +168,70 @@ async function handleClubSlug(rawUuid, request, env, ctx) {
   const res = new Response(stored.body, stored);
   res.headers.set("cache-control", "no-store");
   return res;
+}
+
+// GET /api/playtomic/club-search?q=… → { "clubs": [...] } (#391).
+//
+// Playtomic heeft geen zoek-API meer; de egress-functie club-search leest de
+// zoekpagina en geeft de geparste trefferlijst terug. De Worker doet hier wat
+// hij bij de andere routes ook doet — normaliseren, cachen, rate-limiten — maar
+// fetcht bewust niet zelf: de zoekpagina hangt achter dezelfde WAF die
+// Cloudflare-egress weert (#385, #392).
+async function handleClubSearch(url, request, env, ctx) {
+  // Normaliseren vóór de cache-sleutel: "LAGO  Beveren" en "lago beveren"
+  // zijn dezelfde zoekopdracht en horen dezelfde cache-rij te delen.
+  const q = (url.searchParams.get("q") ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+  if (q.length < ZOEK_MIN_LENGTE || q.length > ZOEK_MAX_LENGTE) {
+    return new Response(JSON.stringify({ error: "bad query" }), {
+      status: 400,
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
+
+  // Zonder egress-hop of geheim kán deze route niet werken: rechtstreeks
+  // fetchen vanaf een Worker-IP geeft 403 (#385). Dan liever een eerlijke 503
+  // dan een lege trefferlijst die "jouw club bestaat niet" suggereert.
+  if (!env.CLUB_SEARCH_EGRESS || !env.CRON_SECRET) {
+    return new Response(JSON.stringify({ error: "zoeken niet beschikbaar" }), {
+      status: 503,
+      headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+    });
+  }
+
+  const cache = caches.default;
+  // Sleutel op de canonieke zoekpagina-URL, niet op de egress-URL: verhuist de
+  // hop ooit, dan blijft de cache geldig (zelfde keuze als bij availability).
+  const cacheKey = new Request(`${UPSTREAM}/search?q=${encodeURIComponent(q)}#clubs`);
+  const hit = await cache.match(cacheKey);
+  if (hit) return clientResponse(hit);
+
+  const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+  const { success } = await env.PLAYTOMIC_RL.limit({ key: ip });
+  if (!success) {
+    return new Response("Too Many Requests", {
+      status: 429,
+      headers: { "retry-after": "10" },
+    });
+  }
+
+  let upstream;
+  try {
+    upstream = await fetchUpstream(
+      `${env.CLUB_SEARCH_EGRESS}?q=${encodeURIComponent(q)}`,
+      env.CRON_SECRET,
+    );
+  } catch {
+    return new Response(JSON.stringify({ error: "upstream unreachable" }), {
+      status: 502,
+      headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+    });
+  }
+
+  const stored = await storedResponse(upstream, ZOEK_STORE_SECONDS);
+  // Alleen geslaagde zoekopdrachten cachen; een 503 van de kill switch of een
+  // 502 hoort niet zes uur te blijven plakken.
+  if (upstream.ok) ctx.waitUntil(cache.put(cacheKey, stored.clone()));
+  return clientResponse(stored);
 }
 
 // Neemt een crashmelding van de browser aan (#733) en bewaart hem (#1049).
@@ -236,6 +309,12 @@ export default {
       // JSON is ({slug}) en de bron een ander host (playtomic.io) is.
       if (url.pathname.startsWith(SLUG_PREFIX)) {
         return handleClubSlug(url.pathname.slice(SLUG_PREFIX.length), request, env, ctx);
+      }
+
+      // Clubs zoeken op naam (#391): eigen route, want het antwoord komt van de
+      // egress-functie en niet van een Playtomic-endpoint uit de allowlist.
+      if (url.pathname === ZOEK_PAD) {
+        return handleClubSearch(url, request, env, ctx);
       }
 
       const rest = url.pathname.slice(PREFIX.length);

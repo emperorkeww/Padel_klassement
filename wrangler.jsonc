@@ -19,6 +19,10 @@
   // wél doorheen. De URL is publiek (zelfde project als de frontend-API).
   "vars": {
     "PLAYTOMIC_EGRESS": "https://fuxjxorbbebbxxgsnyon.supabase.co/functions/v1/playtomic-availability",
+    // Zelfde omweg voor het zoeken naar clubs (#391): playtomic.com/search
+    // hangt achter dezelfde WAF. De functie geeft de geparste trefferlijst
+    // terug, dus de Worker cachet JSON en geen 80 kB Next-payload.
+    "CLUB_SEARCH_EGRESS": "https://fuxjxorbbebbxxgsnyon.supabase.co/functions/v1/club-search",
     // Waar crashmeldingen heen gaan om bewaard te worden (#1049). De Worker
     // stuurt ze door met x-cron-secret; de function schrijft ze met de
     // service-role in public.client_errors. Bewust niet de service-role key

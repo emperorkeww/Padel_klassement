@@ -424,6 +424,11 @@ verify_jwt = false
 [functions.club-page]
 verify_jwt = false
 
+# Clubs zoeken op naam (#391): beveiligt zich met CRON_SECRET in de handler,
+# dus geen JWT-gate ervoor — de Worker roept hem aan, niet de browser.
+[functions.club-search]
+verify_jwt = false
+
 [functions.generate-dictator-avatar]
 verify_jwt = false
 

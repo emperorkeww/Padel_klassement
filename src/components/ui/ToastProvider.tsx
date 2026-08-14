@@ -2,7 +2,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -30,11 +32,27 @@ let counter = 0;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  // De lopende verdwijntimers, per toast. Een toast die weggeklikt wordt neemt
+  // zijn timer mee, en bij unmount gaan ze allemaal weg: anders vuurt er nog
+  // een setState in een provider die er niet meer is.
+  const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
 
-  const remove = useCallback(
-    (id: number) => setToasts((t) => t.filter((x) => x.id !== id)),
-    [],
-  );
+  const remove = useCallback((id: number) => {
+    const timer = timers.current.get(id);
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      timers.current.delete(id);
+    }
+    setToasts((t) => t.filter((x) => x.id !== id));
+  }, []);
+
+  useEffect(() => {
+    const lopend = timers.current;
+    return () => {
+      lopend.forEach(clearTimeout);
+      lopend.clear();
+    };
+  }, []);
 
   const push = useCallback(
     (type: ToastType, text: string, onClick?: () => void) => {
@@ -43,7 +61,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       // Fouten blijven staan tot ze weggeklikt worden (assertief aangekondigd);
       // succes/info verdwijnen vanzelf. Een tikbare toast blijft wat langer
       // staan zodat de actie niet gemist wordt.
-      if (type !== "error") setTimeout(() => remove(id), onClick ? 8000 : 4000);
+      if (type !== "error") {
+        timers.current.set(
+          id,
+          setTimeout(() => remove(id), onClick ? 8000 : 4000),
+        );
+      }
     },
     [remove],
   );
