@@ -21,6 +21,7 @@ import { isAan } from "../_shared/instellingen.ts";
 import {
   belgischeClubs,
   parseClubs,
+  relevanteClubs,
   ZOEK_HEADERS,
   ZOEK_MAX_LENGTE,
   ZOEK_MIN_LENGTE,
@@ -83,7 +84,10 @@ Deno.serve(async (req) => {
         headers: JSON_HEADERS,
       });
     }
-    const clubs = belgischeClubs(parseClubs(await upstream.text()), MAX_TREFFERS);
+    const clubs = belgischeClubs(
+      relevanteClubs(parseClubs(await upstream.text()), vraag),
+      MAX_TREFFERS,
+    );
     return new Response(JSON.stringify({ clubs }), { headers: JSON_HEADERS });
   } catch {
     return new Response(JSON.stringify({ error: "upstream unreachable" }), {

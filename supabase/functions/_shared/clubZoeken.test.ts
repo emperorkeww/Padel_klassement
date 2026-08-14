@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   belgischeClubs,
   parseClubs,
+  relevanteClubs,
   zoekterm,
   zoekUrl,
 } from "./clubZoeken.ts";
@@ -133,5 +134,40 @@ describe("belgischeClubs", () => {
       "club-1",
       "club-2",
     ]);
+  });
+});
+
+describe("relevanteClubs", () => {
+  const clubs = parseClubs(PAYLOAD);
+
+  // De landhint sleept clubs mee die alleen op "belgium" matchten; die horen
+  // niet in een lijst van tien.
+  it("houdt alleen de clubs over die op elk woord matchen", () => {
+    expect(relevanteClubs(clubs, "lago beveren").map((c) => c.slug)).toEqual([
+      "lago-club-padel-beveren",
+    ]);
+  });
+
+  it("matcht ook op het adres", () => {
+    expect(relevanteClubs(clubs, "vesten").map((c) => c.slug)).toEqual([
+      "hangar-padel-club",
+    ]);
+    expect(relevanteClubs(clubs, "9120").map((c) => c.slug)).toEqual([
+      "lago-club-padel-beveren",
+      "hangar-padel-club",
+    ]);
+  });
+
+  it("negeert het land en te korte woorden", () => {
+    expect(relevanteClubs(clubs, "lago belgium").map((c) => c.slug)).toEqual([
+      "lago-club-padel-beveren",
+    ]);
+  });
+
+  // Liever de lijst van Playtomic dan een leeg scherm: hij vond ze om een
+  // reden die wij niet zien (oude naam, deelgemeente).
+  it("valt terug op alles als het filter niets overhoudt", () => {
+    expect(relevanteClubs(clubs, "zzzz")).toEqual(clubs);
+    expect(relevanteClubs(clubs, "be")).toEqual(clubs);
   });
 });

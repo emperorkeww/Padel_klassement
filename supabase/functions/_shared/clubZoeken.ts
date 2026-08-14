@@ -192,3 +192,36 @@ export function belgischeClubs(
 ): PlaytomicClub[] {
   return clubs.filter((c) => c.countryCode === "BE").slice(0, limiet);
 }
+
+/** Woorden waarop we matchen: de landhint zelf zegt niets over een club. */
+function zoekwoorden(vraag: string): string[] {
+  return vraag
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((w) => w.length >= 3 && !LAND_AL_GENOEMD.test(w));
+}
+
+/**
+ * Houdt de clubs over die echt op de vraag slaan.
+ *
+ * De landhint is een grof instrument: "hangar belgium" levert de gezochte club
+ * bovenaan en daarna nog een stuk of negen Belgische clubs die alleen op het
+ * woord "belgium" matchten. Die horen niet in een lijst van tien.
+ *
+ * Elk woord van drie tekens of langer moet terugkomen in de naam of het adres.
+ * Levert dat niets op, dan geven we de ongefilterde lijst terug: Playtomic vond
+ * ze om een reden die wij niet zien (een oude naam, een deelgemeente), en een
+ * lege lijst is dan het slechtste antwoord.
+ */
+export function relevanteClubs(
+  clubs: PlaytomicClub[],
+  vraag: string,
+): PlaytomicClub[] {
+  const woorden = zoekwoorden(vraag);
+  if (woorden.length === 0) return clubs;
+  const raak = clubs.filter((c) => {
+    const hooiberg = `${c.name} ${c.street} ${c.postalCode}`.toLowerCase();
+    return woorden.every((w) => hooiberg.includes(w));
+  });
+  return raak.length > 0 ? raak : clubs;
+}

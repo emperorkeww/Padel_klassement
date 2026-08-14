@@ -7,6 +7,7 @@ import react from "@vitejs/plugin-react";
 import {
   belgischeClubs,
   parseClubs,
+  relevanteClubs,
   ZOEK_HEADERS,
   ZOEK_MAX_LENGTE,
   ZOEK_MIN_LENGTE,
@@ -109,7 +110,9 @@ function playtomicClubZoeken(): Plugin {
           const upstream = await fetch(zoekUrl(vraag), { headers: ZOEK_HEADERS });
           if (!upstream.ok) return json(upstream.status, { error: "upstream" });
           return json(200, {
-            clubs: belgischeClubs(parseClubs(await upstream.text())),
+            clubs: belgischeClubs(
+              relevanteClubs(parseClubs(await upstream.text()), vraag),
+            ),
           });
         } catch {
           return json(502, { error: "upstream unreachable" });
