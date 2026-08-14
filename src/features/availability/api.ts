@@ -29,14 +29,16 @@ import {
   toMinutes,
 } from "@/lib/utils/time";
 import { DEFAULT_CLUB, getClub, isPlaytomicClub, type Club } from "./club";
+import { BASE, getJson, PlaytomicUnavailableError } from "./playtomicFetch";
+// De fout hoort bij het leespad hieronder; hem hier herexporteren houdt de
+// bestaande imports uit "./api" heel na de verhuizing naar playtomicFetch.
+export { PlaytomicUnavailableError } from "./playtomicFetch";
 import { KNOWN_COURTS } from "./knownCourts";
 import {
   getSnapshot,
   getSnapshots,
   type AvailabilitySnapshot,
 } from "./snapshotApi";
-
-const BASE = "/api/playtomic";
 
 /**
  * Deep-link naar de Playtomic-clubpagina, voorgevuld op de gekozen dag.
@@ -141,63 +143,6 @@ export type RawAvailability = {
 
 // Een slot als UTC-moment: de datum uit de respons-entry + start_time + duur.
 type SlotMoment = { date: string; time: string; duration: number; price: string };
-
-/**
- * Playtomic is onbereikbaar of weigert ons (WAF, storing, offline). De UI
- * degradeert hierop naar de reserveerlink (#405) en het leespad mag een
- * verouderde snapshot als vangnet serveren.
- */
-export class PlaytomicUnavailableError extends Error {
-  readonly status?: number;
-
-  constructor(message: string, status?: number) {
-    super(message);
-    this.name = "PlaytomicUnavailableError";
-    this.status = status;
-  }
-}
-
-async function getJson<T>(path: string, foutmelding: string): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(`${BASE}${path}`, { headers: { Accept: "application/json" } });
-  } catch {
-    // Netwerkfout / offline: fetch verwerpt zonder respons.
-    throw new PlaytomicUnavailableError(
-      "Geen verbinding met Playtomic — controleer je internet.",
-    );
-  }
-  if (res.ok) return res.json() as Promise<T>;
-  // Statusbewuste, begrijpelijke melding i.p.v. een kale statuscode.
-  if (res.status === 429) {
-    throw new PlaytomicUnavailableError(
-      "Even te veel verzoeken naar Playtomic — probeer zo opnieuw.",
-      res.status,
-    );
-  }
-  if (res.status === 403) {
-    throw new PlaytomicUnavailableError(
-      `${foutmelding}: Playtomic blokkeert onze aanvraag momenteel — probeer het later opnieuw.`,
-      res.status,
-    );
-  }
-  if (res.status === 404) {
-    throw new PlaytomicUnavailableError(
-      `${foutmelding}: niet (meer) gevonden op Playtomic.`,
-      res.status,
-    );
-  }
-  if (res.status >= 500) {
-    throw new PlaytomicUnavailableError(
-      `${foutmelding}: Playtomic heeft een storing — probeer het later opnieuw.`,
-      res.status,
-    );
-  }
-  throw new PlaytomicUnavailableError(
-    `${foutmelding}: onverwachte fout van Playtomic.`,
-    res.status,
-  );
-}
 
 /** Rauwe beschikbaarheid van één dag, live bij Playtomic opgehaald. */
 function fetchDayRaw(date: string, tenantId: string): Promise<RawAvailability[]> {
