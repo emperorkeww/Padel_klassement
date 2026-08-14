@@ -176,6 +176,75 @@ describe("<DagSheet /> — opbouw (#1308)", () => {
     ).not.toHaveAttribute("open");
   });
 
+  /* ---- De indeling wint zodra de speeldag vastligt (#1308) ---- */
+
+  const PLOEG = Object.fromEntries(
+    [
+      ["p2", "Bob Boers"],
+      ["p3", "Carol Claes"],
+      ["p4", "Dave De Vos"],
+    ].map(([id, naam]) => [
+      id,
+      { id, username: id, full_name: naam, avatar_url: null, created_at: "2026-01-01T00:00:00Z" },
+    ]),
+  ) as unknown as Record<string, Profile>;
+
+  function toonPloeg(m: AgendaMarker) {
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <DagSheet
+            datum="2026-08-13"
+            markers={[m]}
+            momentenPerPoll={{}}
+            ledenPerGroep={{ g1: 8 }}
+            profielen={PLOEG}
+            myId="me"
+            onGestemd={vi.fn()}
+            onClose={vi.fn()}
+          />
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+  }
+
+  it("telt wie de organisator erbij zette mee in de indeling", async () => {
+    // De indeling is de ja-lijst mét de correcties uit play_poll_presence —
+    // dezelfde regel als waarmee de teams gemaakt worden. Wie erbij gezet was
+    // stond nergens in dit sheet, terwijl de regel eronder hem "Je staat in de
+    // indeling" beloofde.
+    presence.getAanwezigheid.mockResolvedValue({ p4: true });
+    toonPloeg(
+      marker({ status: "booked", yesVoterIds: ["p2"], noVoterIds: ["p4"] }),
+    );
+
+    expect(
+      await screen.findByText("Bob Boers, Dave De Vos"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Doet mee")).toBeInTheDocument();
+    // En niet dubbel: zijn nee-stem telt niet meer mee nu hij is toegevoegd.
+    expect(screen.queryByText("Kan niet")).not.toBeInTheDocument();
+  });
+
+  it("haalt wie eruit gehaald is uit de indeling", async () => {
+    presence.getAanwezigheid.mockResolvedValue({ p3: false });
+    toonPloeg(
+      marker({ status: "booked", yesVoterIds: ["p2", "p3"] }),
+    );
+
+    expect(await screen.findByText("Bob Boers")).toBeInTheDocument();
+    expect(screen.getByText("Kan niet")).toBeInTheDocument();
+    expect(screen.getByText("Carol Claes")).toBeInTheDocument();
+    expect(screen.getByText("Wie doet er mee — 1 van 8")).toBeInTheDocument();
+  });
+
+  it("noemt de rij 'Ik kan' zolang er nog gestemd wordt", () => {
+    // Dan bestaat er nog geen indeling om van af te wijken.
+    toonPloeg(marker({ yesVoterIds: ["p2"] }));
+    expect(screen.getByText("Ik kan")).toBeInTheDocument();
+    expect(presence.getAanwezigheid).not.toHaveBeenCalled();
+  });
+
   it("zet de acties in een plakkende voetbalk, primair rechts", () => {
     toon([marker({ status: "booked", courts: "3 & 4" })]);
     const voet = document.querySelector(".dagsheet__voet");
