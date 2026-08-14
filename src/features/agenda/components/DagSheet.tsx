@@ -5,6 +5,9 @@ import { Avatar } from "@/ui/Avatar";
 import { EmptyState } from "@/ui/EmptyState";
 import { useToast } from "@/ui/ToastProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
+import { getAanwezigheid } from "@/features/groups/aanwezigheidApi";
+import type { AanwezigKeuzes } from "@/features/groups/aanwezigOpslag";
 import { errorMessage } from "@/lib/utils/errors";
 import { addDays, dateInZone } from "@/lib/utils/time";
 import {
@@ -154,6 +157,43 @@ export function DagSheet({
     }
     return [...uniek.values()];
   }, [datum, markers, momentenPerPoll]);
+
+  /**
+   * De indeling van een vastgelegde speeldag (#1308).
+   *
+   * "Wie doet er mee" stond op de stemmen alleen, maar de indeling waarmee
+   * MakeTeams werkt is de ja-lijst mét de handmatige correcties uit
+   * `play_poll_presence` eroverheen. Wie de organisator erbij zette stond dus
+   * nergens in dit sheet, terwijl de regel eronder hem "Je staat in de
+   * indeling" beloofde — twee bronnen van waarheid in hetzelfde blok. Alleen
+   * voor een vastgelegde dag: bij een open stemming bestaat er nog geen
+   * indeling om af te wijken.
+   */
+  const indelingIds = markers
+    .filter((m) => m.status !== "open")
+    .map((m) => m.optionId);
+  const indelingSleutel = indelingIds.join(",");
+  const indeling = useAsync<Record<string, AanwezigKeuzes>>(
+    async () => {
+      const uit: Record<string, AanwezigKeuzes> = {};
+      await Promise.all(
+        indelingIds.map(async (id) => {
+          try {
+            uit[id] = await getAanwezigheid(id);
+          } catch {
+            // Zonder antwoord blijft de stemming de bron — precies wat het
+            // sheet hiervoor altijd al deed.
+          }
+        }),
+      );
+      return uit;
+    },
+    [indelingSleutel],
+    { enabled: indelingIds.length > 0 },
+  );
+  // Zet een tweede organisator iemand in of uit de indeling, dan hoort dit
+  // sheet dat te volgen: het staat vaak open terwijl de teams gemaakt worden.
+  useRealtime("play_poll_presence", indeling.reload);
 
   const baanSleutel = teLaden.map((m) => `${m.clubId}|${m.date}`).join(",");
   const banen = useAsync<Record<string, DayAvailability>>(
@@ -316,6 +356,7 @@ export function DagSheet({
                 stemVan={stemVan}
                 onStem={stem}
                 baanInfo={baanInfo}
+                keuzes={indeling.data?.[m.optionId] ?? {}}
                 wedstrijden={wedstrijdenPerPoll[m.pollId] ?? 0}
                 nu={nu}
                 eigenVlak={markers.length > 1}
@@ -431,15 +472,34 @@ function deelnameVan(
   m: AgendaMarker,
   mijn: PollVoteStatus | null,
   myId: string,
+  /** Handmatige correcties op de indeling (#1308). Leeg bij een open stemming:
+   *  dan is er nog geen indeling om van af te wijken. */
+  keuzes: AanwezigKeuzes = {},
 ): { ja: string[]; misschien: string[]; nee: string[]; stil: string[] } {
   const zonderMij = (ids: string[]) => ids.filter((id) => id !== myId);
   const metMij = (ids: string[], status: PollVoteStatus) =>
     mijn === status ? [...zonderMij(ids), myId] : zonderMij(ids);
+  const ja = metMij(m.yesVoterIds, "yes");
+  const misschien = metMij(m.maybeVoterIds, "maybe");
+  const nee = metMij(m.noVoterIds, "no");
+  const stil = zonderMij(m.nietGereageerdIds);
+
+  // De indeling is de ja-lijst met de correcties eroverheen — dezelfde regel
+  // als `pasKeuzesToe` waarmee de teams gemaakt worden. Wie erbij gezet is
+  // verhuist naar voren en verdwijnt uit de bak van zijn stem: elk lid staat
+  // één keer, en de lijst zegt hetzelfde als de indeling.
+  const erbij = Object.keys(keuzes).filter((id) => keuzes[id] === true);
+  const eruit = new Set(Object.keys(keuzes).filter((id) => keuzes[id] === false));
+  const doetMee = [...ja.filter((id) => !eruit.has(id)), ...erbij.filter((id) => !ja.includes(id))];
+  const meeSet = new Set(doetMee);
+  const rest = (ids: string[]) => ids.filter((id) => !meeSet.has(id));
   return {
-    ja: metMij(m.yesVoterIds, "yes"),
-    misschien: metMij(m.maybeVoterIds, "maybe"),
-    nee: metMij(m.noVoterIds, "no"),
-    stil: zonderMij(m.nietGereageerdIds),
+    ja: doetMee,
+    misschien: rest(misschien),
+    // Wie de organisator eruit haalde hoort bij "kan niet": dat is wat er van
+    // hem geldt, ook als hij ooit ja stemde.
+    nee: [...rest(nee), ...ja.filter((id) => eruit.has(id))],
+    stil: rest(stil),
   };
 }
 
@@ -491,6 +551,7 @@ function Speeldag({
   stemVan,
   onStem,
   baanInfo,
+  keuzes,
   wedstrijden,
   nu,
   eigenVlak,
@@ -510,6 +571,9 @@ function Speeldag({
     prijs: string | null;
     wacht: boolean;
   };
+  /** Handmatige correcties op de indeling (#1308): wie de organisator erbij
+   *  zette of eruit haalde. Leeg zolang er nog gestemd wordt. */
+  keuzes: AanwezigKeuzes;
   /** Hoeveel er op deze speeldag gespeeld is (#1221) — zelfde teller als op de
    *  kaart in het paneel. */
   wedstrijden: number;
@@ -527,7 +591,7 @@ function Speeldag({
   const stap = volgendeStap(marker);
   const naam = (id: string) => displayName(profielen[id]);
   const { vrij, prijs, wacht } = baanInfo(marker);
-  const deelname = deelnameVan(marker, stemVan(marker), myId);
+  const deelname = deelnameVan(marker, stemVan(marker), myId, keuzes);
   const [namenOpen, setNamenOpen] = useState(marker.status !== "open");
   // Haalbaarheid met de live baantelling erin — dezelfde afleiding als op de
   // speeldagpagina (#1308), zodat "0 mee" er niet meer bij zwijgt dat er nog
@@ -741,7 +805,13 @@ function Speeldag({
             mee, wie kan ik nog porren — en wie hoef ik niet meer te vragen? */}
         <div className="dagsheet__namen">
           {deelname.ja.length > 0 && (
-            <NamenRij label="Ik kan" namen={deelname.ja.map(naam)} />
+            <NamenRij
+              // Zolang er gestemd wordt is dit wie "ik kan" zei; ligt de
+              // speeldag vast, dan is het de indeling — inclusief wie de
+              // organisator erbij zette (#1308).
+              label={marker.status === "open" ? "Ik kan" : "Doet mee"}
+              namen={deelname.ja.map(naam)}
+            />
           )}
           {deelname.misschien.length > 0 && (
             <NamenRij label="Misschien" namen={deelname.misschien.map(naam)} />
