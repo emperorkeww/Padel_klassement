@@ -103,6 +103,14 @@ export const EDGE_FUNCTIES: readonly EdgeFunctie[] = [
     rol: "Clubpagina ophalen buiten de Cloudflare-egress om (#385)",
   },
   {
+    naam: "club-search",
+    verifyJwt: false,
+    cronGeheim: true,
+    vereist: ["CRON_SECRET"],
+    optioneel: [],
+    rol: "Clubs zoeken op naam buiten de Cloudflare-egress om (#391)",
+  },
+  {
     naam: "generate-dictator-avatar",
     verifyJwt: false,
     cronGeheim: true,

@@ -4,6 +4,14 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
+import {
+  belgischeClubs,
+  parseClubs,
+  ZOEK_HEADERS,
+  ZOEK_MAX_LENGTE,
+  ZOEK_MIN_LENGTE,
+  zoekUrl,
+} from "./supabase/functions/_shared/clubZoeken.ts";
 
 const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
@@ -72,9 +80,53 @@ function playtomicClubSlug(): Plugin {
   };
 }
 
+// Dev-tegenhanger van de club-search-route in de Worker (worker/index.js) en de
+// edge function club-search: leest de Playtomic-zoekpagina en geeft de geparste
+// trefferlijst terug. In productie kán dit niet rechtstreeks (de WAF weert
+// datacenter-IP's, #385/#392), maar een dev-machine zit op een residentieel IP
+// — daarom hier geen egress-hop en geen gedeeld geheim. De parser is wél
+// dezelfde, zodat dev en productie niet uit elkaar lopen.
+function playtomicClubZoeken(): Plugin {
+  return {
+    name: "playtomic-club-search",
+    configureServer(server) {
+      server.middlewares.use("/api/playtomic/club-search", async (req, res) => {
+        const json = (status: number, body: unknown) => {
+          res.statusCode = status;
+          res.setHeader("content-type", "application/json; charset=utf-8");
+          res.end(JSON.stringify(body));
+        };
+        const vraag = (
+          new URL(req.url ?? "", "http://dev.local").searchParams.get("q") ?? ""
+        ).trim();
+        if (
+          vraag.length < ZOEK_MIN_LENGTE ||
+          vraag.length > ZOEK_MAX_LENGTE
+        ) {
+          return json(400, { error: "bad query" });
+        }
+        try {
+          const upstream = await fetch(zoekUrl(vraag), { headers: ZOEK_HEADERS });
+          if (!upstream.ok) return json(upstream.status, { error: "upstream" });
+          return json(200, {
+            clubs: belgischeClubs(parseClubs(await upstream.text())),
+          });
+        } catch {
+          return json(502, { error: "upstream unreachable" });
+        }
+      });
+    },
+  };
+}
+
 // https://vite.dev + https://vitest.dev
 export default defineConfig({
-  plugins: [playtomicClubSlug(), react(), serviceWorkerVersion()],
+  plugins: [
+    playtomicClubSlug(),
+    playtomicClubZoeken(),
+    react(),
+    serviceWorkerVersion(),
+  ],
   // Build-aanduiding voor de foutrapportage (#733): zonder dit weet je bij een
   // melding niet wélke versie crashte. In CI is GITHUB_SHA gezet, lokaal niet.
   define: {
