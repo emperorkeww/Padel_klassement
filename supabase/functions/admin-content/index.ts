@@ -70,6 +70,12 @@ type Body = {
   status?: unknown;
   played_at?: unknown;
   naam?: unknown;
+  // Bezetting wijzigen (#1327).
+  from_player?: unknown;
+  to_player?: unknown;
+  match_b?: unknown;
+  player_a?: unknown;
+  player_b?: unknown;
 };
 
 function tekst(waarde: unknown): string | null {
@@ -89,6 +95,19 @@ const MATCH_STATUSSEN = ["scheduled", "in_progress", "completed", "cancelled"];
 
 function uitslag(a: unknown, b: unknown): string {
   return `${a ?? "?"}-${b ?? "?"}`;
+}
+
+/** "alice & bob vs carol & dave" — de opstelling zoals het logboek hem toont.
+ *  Bij een bezettingswijziging is dit het enige dat de ingreep terugvindbaar
+ *  maakt: de team-id's zeggen niets en de oude teamrij blijft ongemoeid. */
+function opstelling(match: {
+  team_a_spelers: string[] | null;
+  team_b_spelers: string[] | null;
+}): string {
+  return [
+    (match.team_a_spelers ?? []).join(" & "),
+    (match.team_b_spelers ?? []).join(" & "),
+  ].join(" vs ");
 }
 
 Deno.serve(async (req) => {
@@ -325,6 +344,90 @@ async function voerMutatieUit(
       });
     }
 
+    // Bezetting wijzigen (#1327). De beheerder heeft de kring van
+    // `_mag_bezetting_wijzigen` niet — hij zit per definitie niet in de groep —
+    // en gaat daarom langs de service-role-only `admin_*`-varianten. Die slaan
+    // ook `_can_add_player` over: hij vult namens anderen in.
+    case "replace_match_player": {
+      const matchId = tekst(body.match_id);
+      const vanSpeler = tekst(body.from_player);
+      const naarSpeler = tekst(body.to_player);
+      if (!matchId) return json({ error: "match_id vereist" }, 400);
+      if (!vanSpeler || !naarSpeler) {
+        return json({ error: "from_player en to_player vereist" }, 400);
+      }
+
+      const voor = await haalMatch(matchId);
+      if (!voor) return json({ error: "Match niet gevonden" }, 404);
+
+      const { error } = await admin.rpc("admin_vervang_match_speler", {
+        p_match_id: matchId,
+        p_from_player: vanSpeler,
+        p_to_player: naarSpeler,
+      });
+      if (error) return json({ error: error.message }, 400);
+
+      // Ná de ingreep opnieuw ophalen: de namen zijn het enige dat het logboek
+      // begrijpelijk houdt, en die staan pas na de RPC vast.
+      const na = await haalMatch(matchId);
+      return await sluitAf(actie, actorId, { ok: true }, {
+        target_type: "match",
+        target_id: matchId,
+        payload: {
+          groep: voor.groep_naam,
+          status: voor.status,
+          opstelling_voor: opstelling(voor),
+          opstelling_na: na ? opstelling(na) : null,
+        },
+      });
+    }
+
+    case "swap_match_players": {
+      const matchA = tekst(body.match_id);
+      const matchB = tekst(body.match_b);
+      const spelerA = tekst(body.player_a);
+      const spelerB = tekst(body.player_b);
+      if (!matchA || !matchB) {
+        return json({ error: "match_id en match_b vereist" }, 400);
+      }
+      if (!spelerA || !spelerB) {
+        return json({ error: "player_a en player_b vereist" }, 400);
+      }
+
+      const voorA = await haalMatch(matchA);
+      if (!voorA) return json({ error: "Match niet gevonden" }, 404);
+      // Zelfde match aan beide kanten is "van team wisselen" en volkomen
+      // geldig; dan is er maar één rij om vóór en ná vast te leggen.
+      const voorB = matchB === matchA ? voorA : await haalMatch(matchB);
+      if (!voorB) return json({ error: "Match niet gevonden" }, 404);
+
+      const { error } = await admin.rpc("admin_ruil_match_spelers", {
+        p_match_a: matchA,
+        p_speler_a: spelerA,
+        p_match_b: matchB,
+        p_speler_b: spelerB,
+      });
+      if (error) return json({ error: error.message }, 400);
+
+      const naA = await haalMatch(matchA);
+      const naB = matchB === matchA ? naA : await haalMatch(matchB);
+      return await sluitAf(actie, actorId, { ok: true }, {
+        target_type: "match",
+        target_id: matchA,
+        payload: {
+          groep: voorA.groep_naam,
+          status: voorA.status,
+          opstelling_voor: opstelling(voorA),
+          opstelling_na: naA ? opstelling(naA) : null,
+          ...(matchB === matchA ? {} : {
+            andere_match: matchB,
+            andere_opstelling_voor: opstelling(voorB),
+            andere_opstelling_na: naB ? opstelling(naB) : null,
+          }),
+        },
+      });
+    }
+
     case "delete_match": {
       const matchId = tekst(body.match_id);
       if (!matchId) return json({ error: "match_id vereist" }, 400);
@@ -340,10 +443,7 @@ async function voerMutatieUit(
           groep: match.groep_naam,
           status: match.status,
           uitslag: uitslag(match.score_a, match.score_b),
-          spelers: [
-            (match.team_a_spelers ?? []).join(" & "),
-            (match.team_b_spelers ?? []).join(" & "),
-          ].join(" vs "),
+          spelers: opstelling(match),
         },
       };
       const vooraf = await schrijfAudit(actie, actorId, rij);

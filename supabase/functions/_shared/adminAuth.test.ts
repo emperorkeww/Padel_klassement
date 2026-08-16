@@ -204,8 +204,10 @@ describe("MUTERENDE_INHOUD_ACTIES", () => {
         "delete_poll",
         "move_match",
         "remove_group_member",
+        "replace_match_player",
         "set_group_owner",
         "set_poll_status",
+        "swap_match_players",
         "update_match_score",
       ].sort(),
     );

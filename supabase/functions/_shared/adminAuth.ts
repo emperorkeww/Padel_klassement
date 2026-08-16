@@ -79,6 +79,8 @@ export const ADMIN_INHOUD_ACTIES = [
   // Muterend vanaf hier.
   "update_match_score",
   "move_match",
+  "replace_match_player",
+  "swap_match_players",
   "delete_match",
   "set_poll_status",
   "delete_poll",
@@ -94,6 +96,8 @@ export type AdminInhoudActie = (typeof ADMIN_INHOUD_ACTIES)[number];
 export const MUTERENDE_INHOUD_ACTIES: readonly AdminInhoudActie[] = [
   "update_match_score",
   "move_match",
+  "replace_match_player",
+  "swap_match_players",
   "delete_match",
   "set_poll_status",
   "delete_poll",

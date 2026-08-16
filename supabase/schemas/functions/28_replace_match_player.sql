@@ -1,7 +1,19 @@
--- Per match een gast vervangen (#681, deel 2). Eén gastprofiel wordt in de
--- praktijk soms voor verschillende personen hergebruikt ("Gast 1"), en soms
--- blijkt achteraf dat de gast eigenlijk een speler mét account was. Dan wil je
--- per match kunnen corrigeren wie er écht speelde.
+-- Per match één speler vervangen (#681 deel 2, verruimd in #1327).
+--
+-- Oorspronkelijk alleen voor gasten: één gastprofiel wordt in de praktijk soms
+-- voor verschillende personen hergebruikt ("Gast 1"), en soms blijkt achteraf
+-- dat de gast eigenlijk een speler mét account was. Sinds #1327 vervangt deze
+-- functie iedereen — ook een echt account — omdat een ronde die al klaarstaat
+-- anders alleen te repareren viel door hem te slopen: was er niets aan de hand
+-- met de indeling behalve dat er iemand afzegde, dan moest elke match los weg
+-- en kwam de nieuwe ronde onderaan het rijtje terug (#1271 §2.7/§2.8).
+--
+-- Wie mag dat, staat niet meer hier maar in `_mag_bezetting_wijzigen`
+-- (46_match_bezetting.sql), gedeeld met `ruil_match_spelers`. Kort: op een
+-- gepláánde match mag de hele kring die erbij betrokken is (spelers,
+-- groepsleden, aanmaker, groepseigenaar), op een afgeronde alleen de aanmaker
+-- en de groepseigenaar — daar herschrijf je immers de Elo-geschiedenis van vier
+-- mensen, en dat is wat anders dan een afspraak verzetten.
 --
 -- Anders dan claim_guest_player (27_guest_claims.sql) muteert dit de team-rij
 -- NIET: teams worden gedeeld tussen matches, dus een team ter plekke omhangen
@@ -9,11 +21,11 @@
 -- team van het nieuwe paar (_ensure_team). De statement-level triggers op
 -- public.matches herberekenen daarna alle afgeleide data — ratings, pias,
 -- Zwarte Piet, rangstand, dictator-termijnen — precies één keer.
---
--- Bewust niet beperkt tot afgeronde matches: dezelfde correctie is op een
--- geplande match even zinnig. De UI biedt 'm bij een afgeronde match aan, waar
--- de ronde-generator geen uitweg meer is.
-create or replace function public.replace_match_player(
+
+-- De mutatie zelf, zonder poort. Gedeeld door de publieke RPC hieronder (die de
+-- kring afdwingt) en `admin_vervang_match_speler` (46_match_bezetting.sql), die
+-- namens de beheerder werkt en zijn spoor in admin_audit_log achterlaat.
+create or replace function public._vervang_uitvoeren(
   p_match_id uuid,
   p_from_player uuid,
   p_to_player uuid
@@ -24,16 +36,12 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_uid uuid := (select auth.uid());
   m record;
   v_old_team uuid;
-  v_kant text;      -- 'a' of 'b': in welk team van de match zat de gast
+  v_kant text;      -- 'a' of 'b': in welk team van de match zat de speler
   v_partner uuid;   -- de medespeler die blijft staan (null bij singles)
   v_new_team uuid;
 begin
-  if v_uid is null then
-    raise exception 'Niet ingelogd';
-  end if;
   if p_from_player = p_to_player then
     return;
   end if;
@@ -47,28 +55,8 @@ begin
     raise exception 'Match niet gevonden';
   end if;
 
-  -- Zelfde kring als delete_match: de aanmaker of de eigenaar van de groep.
-  if m.created_by is distinct from v_uid
-     and not (m.group_id is not null and public.is_group_owner(m.group_id, v_uid)) then
-    raise exception 'Alleen de aanmaker of de groepseigenaar kan een gast vervangen';
-  end if;
-
-  -- Alleen gasten zijn vervangbaar: de historie van een echt account herschrijf
-  -- je niet buiten die persoon om — daarvoor is het koppelverzoek (#681 deel 1).
-  if not exists (
-    select 1 from public.profiles where id = p_from_player and is_guest
-  ) then
-    raise exception 'Alleen een gastspeler kan vervangen worden';
-  end if;
-
   if not exists (select 1 from public.profiles where id = p_to_player) then
     raise exception 'Speler niet gevonden';
-  end if;
-
-  -- Dezelfde toegangscheck als bij het loggen van een match: jezelf, een
-  -- vriend, je eigen gast of een groepsgenoot.
-  if not public._can_add_player(v_uid, p_to_player, m.group_id) then
-    raise exception 'Je kunt alleen jezelf, een vriend, je eigen gast of een groepsgenoot invullen';
   end if;
 
   select case when t.id = m.team_a_id then 'a' else 'b' end,
@@ -79,7 +67,7 @@ begin
    where t.id in (m.team_a_id, m.team_b_id)
      and (t.player1_id = p_from_player or t.player2_id = p_from_player);
   if not found then
-    raise exception 'Die gast speelde niet in deze match';
+    raise exception 'Die speler speelde niet in deze match';
   end if;
 
   -- Staat de vervanger al in de match, dan wordt die onzinnig: dezelfde speler
@@ -116,7 +104,51 @@ begin
   -- De afrondingstrigger scoorde tijdens de UPDATE hierboven nog met de oude
   -- tip-verwijzing, waardoor een juiste tip op 'mis' zou blijven staan. Nu de
   -- tips kloppen opnieuw laten beoordelen (zelfde reden als in de merge).
+  -- Op een geplande match is dit een no-op: `_grade_completed_match` eist
+  -- status = 'completed'.
   perform public._grade_completed_match(p_match_id);
+end;
+$$;
+
+revoke execute on function public._vervang_uitvoeren(uuid, uuid, uuid) from public;
+
+create or replace function public.replace_match_player(
+  p_match_id uuid,
+  p_from_player uuid,
+  p_to_player uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_status public.match_status;
+  v_group uuid;
+begin
+  if v_uid is null then
+    raise exception 'Niet ingelogd';
+  end if;
+
+  select status, group_id into v_status, v_group
+    from public.matches where id = p_match_id;
+  if not found then
+    raise exception 'Match niet gevonden';
+  end if;
+
+  if not public._mag_bezetting_wijzigen(v_uid, p_match_id) then
+    raise exception '%', public._bezetting_weigering(v_status);
+  end if;
+
+  -- Dezelfde toegangscheck als bij het loggen van een match: jezelf, een
+  -- vriend, je eigen gast of een groepsgenoot. De beheerdersingang slaat deze
+  -- bewust over — die vult namens iemand anders in.
+  if not public._can_add_player(v_uid, p_to_player, v_group) then
+    raise exception 'Je kunt alleen jezelf, een vriend, je eigen gast of een groepsgenoot invullen';
+  end if;
+
+  perform public._vervang_uitvoeren(p_match_id, p_from_player, p_to_player);
 end;
 $$;
 
