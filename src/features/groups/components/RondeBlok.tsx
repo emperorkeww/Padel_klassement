@@ -191,6 +191,10 @@ export function RondeBlok({
                 perspectiveId={myId}
                 history={matches}
                 intensiteit={intensiteit}
+                // De andere banen van deze ronde (#1327): daarmee kan "Spelers
+                // wijzigen" twee spelers van baan laten ruilen in plaats van
+                // alleen iemand te vervangen.
+                rondeMatches={list}
                 onSaved={onMatches}
               />
             ),
