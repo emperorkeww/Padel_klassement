@@ -4,9 +4,11 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
 
-// Zelfde match als MatchDetail.guestSwap.test.tsx, maar bekeken door p3: wél
-// groepslid en zelfs deelnemer, maar niet de aanmaker en niet de eigenaar. De
-// RPC zou dit weigeren, dus de UI hoort de sectie niet te tonen.
+// Een gespéélde wedstrijd, bekeken door p3: groepslid én deelnemer, maar niet
+// de aanmaker en niet de eigenaar. Precies de kijker waar de asymmetrie van
+// #1327 over gaat — op een geplande wedstrijd mag hij de bezetting wijzigen
+// (MatchDetail.bezettingGepland.test.tsx), hier niet: dan herschrijft hij de
+// Elo-geschiedenis van vier mensen.
 vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("@/test/supabaseMock");
   const { TABLES, PROFILES, MATCH_DONE } = await import("@/test/fixtures");
@@ -29,8 +31,8 @@ vi.mock("@/lib/supabase/client", async () => {
 import userEvent from "@testing-library/user-event";
 import MatchDetail from "./MatchDetail";
 
-describe("<MatchDetail /> — gast vervangen is niet voor iedereen (#681)", () => {
-  it("verbergt de sectie voor een deelnemer die de match niet aanmaakte", async () => {
+describe("<MatchDetail /> — bezetting van een gespeelde wedstrijd (#1327)", () => {
+  it("verbergt de actie voor een deelnemer die de match niet aanmaakte", async () => {
     render(
       <MemoryRouter initialEntries={["/matches/m-done"]}>
         <AuthProvider>
@@ -42,17 +44,23 @@ describe("<MatchDetail /> — gast vervangen is niet voor iedereen (#681)", () =
         </AuthProvider>
       </MemoryRouter>,
     );
-    // Wacht tot de pagina echt geladen is voor we de afwezigheid vaststellen.
     expect(await screen.findByText(/afgerond/i)).toBeInTheDocument();
-    // De actie staat sinds #1144 in het ⋯-menu. Deze kijker mag hem niet, dus
-    // hij zit er niet in — en als er verder niets te beheren valt, verschijnt
-    // het menu zelf ook niet.
-    const menu = screen.queryByRole("button", { name: /meer acties/i });
-    if (menu) {
-      await userEvent.click(menu);
-      expect(
-        screen.queryByRole("button", { name: /gast vervangen/i }),
-      ).toBeNull();
-    }
+    await userEvent.click(
+      await screen.findByRole("button", { name: /meer acties/i }),
+    );
+    // "Netrollers" hangt aan dezelfde bron als de bezetting — beide rechten
+    // komen uit de teams, en die laden ná de match zelf. Eerst daarop wachten,
+    // want anders stelt de assertie eronder alleen vast dat de pagina nog
+    // bezig was.
+    expect(
+      await screen.findByRole(
+        "button",
+        { name: /netrollers/i },
+        { timeout: 3000 },
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /spelers wijzigen/i }),
+    ).toBeNull();
   });
 });

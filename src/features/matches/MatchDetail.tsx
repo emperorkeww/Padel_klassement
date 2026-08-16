@@ -23,14 +23,14 @@ import {
 } from "@/features/matches/components/MatchManagementSheet";
 import { ScoreSheet } from "@/features/matches/components/ScoreSheet";
 import { GroupLinkSection } from "@/features/matches/components/GroupLinkSection";
-import { GuestSwapSection } from "@/features/matches/components/GuestSwapSection";
+import { BezettingPaneel } from "@/features/matches/components/BezettingPaneel";
 import { NetTouchesSection } from "@/features/matches/components/NetTouchesSection";
 import { TotoSection } from "@/features/matches/components/TotoSection";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
 import { JokerBlock } from "@/features/matches/components/JokerBlock";
 import { TraktatieBlock } from "@/features/matches/components/TraktatieBlock";
 import { VarBlock } from "@/features/matches/components/VarBlock";
-import { getGroup } from "@/features/groups/api";
+import { getGroup, getMyGroups } from "@/features/groups/api";
 import { getProfilesByIds, displayName } from "@/features/profiles/api";
 import { formatDate } from "@/lib/utils/format";
 import { Skeleton } from "@/ui/Skeleton";
@@ -141,6 +141,13 @@ export function MatchDetail() {
     () => (groupId ? getGroup(groupId) : Promise.resolve(null)),
     [groupId],
   );
+  // Lidmaatschap van die groep (#1327): alleen de bezetting hangt eraan, en
+  // `getGroup` levert het niet mee. getMyGroups is gecacht en app-breed
+  // gedeeld, dus dit is meestal al binnen tegen de tijd dat je hier komt.
+  const myGroups = useAsync(
+    () => (groupId ? getMyGroups() : Promise.resolve([])),
+    [groupId],
+  );
   // De Troon (#545): wie is de zittende dictator? Wordt doorgegeven aan Lineup
   // voor consistente tier-weergave (dictator-special alleen voor de troonhouder).
   const dictator = useAsync(getHuidigeDictator, []);
@@ -234,22 +241,23 @@ export function MatchDetail() {
     !!user && !!group.data && group.data.created_by === user.id;
   // Wie wat mag, in één keer (#1144) — zie matchState.ts voor de regels en hun
   // spiegel in de RLS-policies.
+  const lidVanGroep =
+    !!user &&
+    (myGroups.data ?? []).some(
+      (g) => g.id === m.group_id && g.member_ids.includes(user.id),
+    );
   const rechten = matchRechten({
     match: m,
     teams: tmap,
     myId: user?.id ?? null,
     isGroupOwner: beheertGroep,
+    isGroupMember: lidVanGroep,
     isAppAdmin,
   });
   // Verloor de kijker deze match? → de smoesjesmachine mag verschijnen.
   const iLost = !!user && outcomeFor(m, tmap, user.id) === "L";
   // De aanmaker en de groepseigenaar kunnen de score corrigeren.
   const canEdit = done && rechten.magCorrigeren;
-  // Gasten in deze match (#681). Alleen als er één is heeft de vervang-sectie
-  // zin — zo betaalt een gewone match niet voor de extra queries daarin.
-  const gastenInMatch = [teamA, teamB]
-    .flatMap((t) => playersOf(t))
-    .filter((pid) => pmap[pid]?.is_guest);
 
   // Wie voerde deze uitslag in? (#915) Die persoon en de groepsbeheerder (#978)
   // kunnen hem corrigeren; zonder dat te zeggen leest het ontbreken van de knop
@@ -296,21 +304,27 @@ export function MatchDetail() {
       ),
     });
   }
-  // Dezelfde kring die replace_match_player afdwingt — en die GuestSwapSection
-  // zelf ook hanteert: aanmaker of groepseigenaar. Zonder deze poort stond er
-  // een actie die een leeg paneel opent.
-  if (done && user && gastenInMatch.length > 0 && rechten.magCorrigeren) {
+  // Wie er speelde rechtzetten (#1327). Dit vervangt "Gast vervangen": een gast
+  // omzetten naar de speler die er écht stond ís de smalle variant hiervan, en
+  // twee menu-ingangen voor dezelfde ingreep is precies wat #1144 opruimde.
+  //
+  // Eigen poort, ruimer dan `magCorrigeren`: op een gepláánde match mag ook wie
+  // meespeelt of in de groep zit. De detailpagina kent de andere banen van de
+  // ronde niet, dus hier blijven vervangen en van team wisselen over.
+  if (user && rechten.magBezetting) {
     beheerActies.push({
-      sleutel: "gast",
-      label: "Gast vervangen",
-      hint: "Speelde er iemand anders onder deze gastnaam?",
+      sleutel: "spelers",
+      label: "Spelers wijzigen",
+      hint: done
+        ? "Zet recht wie er speelde; de ratings worden herberekend."
+        : "Vervang iemand of laat twee spelers van team wisselen.",
       inhoud: (
-        <GuestSwapSection
+        <BezettingPaneel
           match={m}
-          guestIds={gastenInMatch}
-          matchPlayerIds={playerIds}
+          teams={tmap}
           profiles={pmap}
           myId={user.id}
+          alsBeheerder={rechten.bezettingAlsBeheerder}
           onSaved={() => match.reload()}
         />
       ),
