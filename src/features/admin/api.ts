@@ -286,6 +286,41 @@ export async function verplaatsMatch(
   verversNaMutatie();
 }
 
+/** Vervangt als beheerder één speler in een match (#1327). Anders dan
+ *  `replaceMatchPlayer()` uit features/matches vraagt dit geen lidmaatschap van
+ *  de groep — de beheerder zit er per definitie niet in — en legt het de
+ *  opstelling vóór en ná vast in het logboek. */
+export async function vervangSpelerAlsBeheerder(params: {
+  matchId: string;
+  vanSpeler: string;
+  naarSpeler: string;
+}): Promise<void> {
+  await roepInhoud<{ ok: true }>("replace_match_player", {
+    match_id: params.matchId,
+    from_player: params.vanSpeler,
+    to_player: params.naarSpeler,
+  });
+  verversNaMutatie();
+}
+
+/** Ruilt als beheerder twee spelers van plek (#1327). Dezelfde match aan beide
+ *  kanten betekent "van team wisselen"; twee matches betekent "ruilen tussen
+ *  twee banen". */
+export async function ruilSpelersAlsBeheerder(params: {
+  matchA: string;
+  spelerA: string;
+  matchB: string;
+  spelerB: string;
+}): Promise<void> {
+  await roepInhoud<{ ok: true }>("swap_match_players", {
+    match_id: params.matchA,
+    player_a: params.spelerA,
+    match_b: params.matchB,
+    player_b: params.spelerB,
+  });
+  verversNaMutatie();
+}
+
 /** Verwijdert een match als beheerder — anders dan `deleteMatch()` uit
  *  features/matches ook een afgeronde. De ratings worden door de triggers
  *  herberekend. */

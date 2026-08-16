@@ -29,7 +29,9 @@ const GEEN: MatchRechten = {
   magInvullen: false,
   magCorrigeren: false,
   magBeheren: false,
+  magBezetting: false,
   alsBeheerder: false,
+  bezettingAlsBeheerder: false,
 };
 
 describe("matchFase", () => {
@@ -145,7 +147,9 @@ describe("matchRechten", () => {
       magInvullen: false,
       magCorrigeren: false,
       magBeheren: false,
+      magBezetting: false,
       alsBeheerder: false,
+      bezettingAlsBeheerder: false,
     });
   });
 
@@ -153,6 +157,104 @@ describe("matchRechten", () => {
     const r = matchRechten({ match: gepland, teams: tmap, myId: null });
     expect(r.magInvullen).toBe(false);
     expect(r.magCorrigeren).toBe(false);
+  });
+
+  // Wie er in de match staat (#1327). De kring is breder dan bij elk ander
+  // recht, en hij hangt aan de status — dat is precies wat hier fout kan gaan.
+  describe("bezetting wijzigen (#1327)", () => {
+    it("laat de deelnemer de bezetting van een geplande match wijzigen", () => {
+      // p2 speelt mee maar maakte de match niet aan. Bij `magCorrigeren` is dat
+      // te weinig; hier niet — hij verplaatst een afspraak, geen geschiedenis.
+      const r = matchRechten({ match: gepland, teams: tmap, myId: "p2" });
+      expect(r.magBezetting).toBe(true);
+      expect(r.magBeheren).toBe(false);
+    });
+
+    it("laat een groepsgenoot die niet meespeelt het ook wijzigen", () => {
+      const r = matchRechten({
+        match: gepland,
+        teams: tmap,
+        myId: "p9",
+        isGroupMember: true,
+      });
+      expect(r.isDeelnemer).toBe(false);
+      expect(r.magBezetting).toBe(true);
+    });
+
+    it("houdt een buitenstaander buiten de deur", () => {
+      expect(
+        matchRechten({ match: gepland, teams: tmap, myId: "p9" }).magBezetting,
+      ).toBe(false);
+    });
+
+    it("negeert het lidmaatschap bij een match zonder groep", () => {
+      // Een losse partij heeft geen groepsleden; de kring blijft dan bij de
+      // deelnemers en de aanmaker.
+      const los = { ...gepland, group_id: null } as Match;
+      expect(
+        matchRechten({
+          match: los,
+          teams: tmap,
+          myId: "p9",
+          isGroupMember: true,
+        }).magBezetting,
+      ).toBe(false);
+    });
+
+    it("sluit de brede kring zodra de match gespeeld is", () => {
+      // Dezelfde twee mensen als hierboven, alleen is er nu een uitslag: dan
+      // herschrijf je de Elo-geschiedenis van vier spelers.
+      expect(
+        matchRechten({ match: gespeeld, teams: tmap, myId: "p2" }).magBezetting,
+      ).toBe(false);
+      expect(
+        matchRechten({
+          match: gespeeld,
+          teams: tmap,
+          myId: "p9",
+          isGroupMember: true,
+        }).magBezetting,
+      ).toBe(false);
+    });
+
+    it("laat de aanmaker en de groepseigenaar ook een gespeelde match herbezetten", () => {
+      expect(
+        matchRechten({ match: gespeeld, teams: tmap, myId: "p1" }).magBezetting,
+      ).toBe(true);
+      expect(
+        matchRechten({
+          match: gespeeld,
+          teams: tmap,
+          myId: "p9",
+          isGroupOwner: true,
+        }).magBezetting,
+      ).toBe(true);
+    });
+
+    it("markeert de beheerdaad apart van `alsBeheerder`", () => {
+      // De deelnemer mag op eigen titel, dus hoeft niet door het logboek —
+      // terwijl `alsBeheerder` (dat op `magBeheren` slaat) hier wél waar is.
+      const deelnemer = matchRechten({
+        match: gepland,
+        teams: tmap,
+        myId: "p2",
+        isAppAdmin: true,
+      });
+      expect(deelnemer.magBezetting).toBe(true);
+      expect(deelnemer.bezettingAlsBeheerder).toBe(false);
+      expect(deelnemer.alsBeheerder).toBe(true);
+
+      // Een buitenstaander-beheerder heeft geen eigen recht en schrijft dus wél
+      // via de edge function.
+      const vreemde = matchRechten({
+        match: gepland,
+        teams: tmap,
+        myId: "p9",
+        isAppAdmin: true,
+      });
+      expect(vreemde.magBezetting).toBe(true);
+      expect(vreemde.bezettingAlsBeheerder).toBe(true);
+    });
   });
 
   // De beheerder van de app (#1159). Zijn rechten staan bewust niet in de

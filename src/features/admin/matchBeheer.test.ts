@@ -8,6 +8,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const matchesApi = vi.hoisted(() => ({
   deleteMatch: vi.fn(async () => {}),
+  replaceMatchPlayer:
+    vi.fn<(m: string, van: string, naar: string) => Promise<void>>(async () => {}),
+  ruilMatchSpelers:
+    vi.fn<(a: string, sa: string, b: string, sb: string) => Promise<void>>(
+      async () => {},
+    ),
   setMatchResult: vi.fn(async () => {}),
   updateMatchScore: vi.fn(async () => {}),
   updatePlannedMatchTime: vi.fn(async () => {}),
@@ -28,6 +34,10 @@ vi.mock("@/features/matches/outbox", () => outbox);
 const adminApi = vi.hoisted(() => ({
   corrigeerUitslag:
     vi.fn<(payload: Record<string, unknown>) => Promise<void>>(async () => {}),
+  ruilSpelersAlsBeheerder:
+    vi.fn<(payload: Record<string, unknown>) => Promise<void>>(async () => {}),
+  vervangSpelerAlsBeheerder:
+    vi.fn<(payload: Record<string, unknown>) => Promise<void>>(async () => {}),
   verplaatsMatch:
     vi.fn<(id: string, playedAt: string | null) => Promise<void>>(async () => {}),
   verwijderMatchAlsBeheerder: vi.fn<(id: string) => Promise<void>>(async () => {}),
@@ -37,10 +47,12 @@ vi.mock("@/features/matches/api", () => matchesApi);
 vi.mock("./api", () => adminApi);
 
 import {
+  ruilSpelers,
   slaCorrectieOp,
   verwijderMatchSlim,
   verzetTijdstip,
   vulUitslagIn,
+  wisselSpeler,
 } from "./matchBeheer";
 
 const CORRECTIE = {
@@ -128,5 +140,54 @@ describe("matchBeheer (#1159)", () => {
     expect(outbox.saveMatchResult).toHaveBeenCalledWith(
       expect.objectContaining({ playedAt: "2026-08-12T18:00:00Z" }),
     );
+  });
+  // De bezetting (#1327). Zelfde tweesprong, maar met een eigen vlag: bij
+  // `magBezetting` is de eigen-recht-basis breder, dus een deelnemer die
+  // toevallig ook beheerder is hoort níet door het logboek.
+  describe("bezetting wijzigen (#1327)", () => {
+    const WISSEL = { matchId: "m1", vanSpeler: "p2", naarSpeler: "p9" };
+    const RUIL = { matchA: "m1", spelerA: "p2", matchB: "m2", spelerB: "p5" };
+
+    it("vervangt rechtstreeks wanneer de kijker op eigen titel mag", () => {
+      wisselSpeler(WISSEL, false);
+      expect(matchesApi.replaceMatchPlayer).toHaveBeenCalledWith("m1", "p2", "p9");
+      expect(adminApi.vervangSpelerAlsBeheerder).not.toHaveBeenCalled();
+    });
+
+    it("vervangt via de edge function wanneer het recht enkel uit de beheerdersrol komt", () => {
+      wisselSpeler(WISSEL, true);
+      expect(adminApi.vervangSpelerAlsBeheerder).toHaveBeenCalledWith(WISSEL);
+      expect(matchesApi.replaceMatchPlayer).not.toHaveBeenCalled();
+    });
+
+    it("ruilt rechtstreeks wanneer de kijker op eigen titel mag", () => {
+      ruilSpelers(RUIL, false);
+      expect(matchesApi.ruilMatchSpelers).toHaveBeenCalledWith(
+        "m1",
+        "p2",
+        "m2",
+        "p5",
+      );
+      expect(adminApi.ruilSpelersAlsBeheerder).not.toHaveBeenCalled();
+    });
+
+    it("ruilt via de edge function als beheerder", () => {
+      ruilSpelers(RUIL, true);
+      expect(adminApi.ruilSpelersAlsBeheerder).toHaveBeenCalledWith(RUIL);
+      expect(matchesApi.ruilMatchSpelers).not.toHaveBeenCalled();
+    });
+
+    it("houdt dezelfde match aan beide kanten heel — dat is van team wisselen", () => {
+      // Geen speciale behandeling: de RPC leest p_match_a = p_match_b als
+      // "wissel van team". Zou de laag hier stiekem één match doorgeven, dan
+      // verdwijnt de tweede speler uit de aanroep.
+      ruilSpelers({ matchA: "m1", spelerA: "p2", matchB: "m1", spelerB: "p3" }, false);
+      expect(matchesApi.ruilMatchSpelers).toHaveBeenCalledWith(
+        "m1",
+        "p2",
+        "m1",
+        "p3",
+      );
+    });
   });
 });
