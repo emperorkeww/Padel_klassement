@@ -57,6 +57,7 @@ import {
 } from "@/features/matches/components/TotoTegel";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
 import { MatchCalendarButton } from "@/features/matches/components/MatchCalendarButton";
+import { BezettingPaneel } from "@/features/matches/components/BezettingPaneel";
 import { MatchManagementSheet } from "@/features/matches/components/MatchManagementSheet";
 import { TeamSide } from "@/features/matches/components/TeamSide";
 import { MatchProbability } from "@/features/matches/components/MatchProbability";
@@ -115,6 +116,7 @@ export function PlannedMatchCard({
   perspectiveId,
   history,
   intensiteit = "gemeen",
+  rondeMatches,
   onSaved,
   onDeleted,
 }: {
@@ -129,6 +131,10 @@ export function PlannedMatchCard({
   /** Eerdere matches waaruit de onderlinge rivaliteit wordt afgeleid; zonder
    *  deze prop toont de kaart geen head-to-head-balans. */
   history?: Match[];
+  /** De andere wedstrijden van dezelfde ronde (#1327). Alleen de speeldag kent
+   *  die context; zonder deze prop biedt "Spelers wijzigen" geen ruil met een
+   *  andere baan aan, en blijven vervangen en van team wisselen over. */
+  rondeMatches?: Match[];
   onSaved?: () => void;
   /** Aangeroepen nadat de match echt verwijderd is (bv. terugnavigeren op de
    *  detailpagina). Zonder deze prop valt het terug op onSaved. */
@@ -275,6 +281,14 @@ export function PlannedMatchCard({
     (myGroups.data ?? []).some(
       (g) => g.id === m.group_id && g.created_by === myId,
     );
+  // Lidmaatschap van de groep telt alleen voor de bezetting (#1327). Zelfde
+  // (gecachte) lijst, dus het kost geen extra vraag. Wel `member_ids` en niet
+  // "staat erin": getMyGroups is RLS-gefilterd, niet tot je eigen groepen.
+  const isGroupMember =
+    !!myId &&
+    (myGroups.data ?? []).some(
+      (g) => g.id === m.group_id && g.member_ids.includes(myId),
+    );
   // Lef op de kaartkop (#981): vóór de aftrap alleen je éígen inzet — een
   // 🎲-pil die je vertelt waar je dagtegoed staat zonder de kaart te openen.
   // Vanaf de aftrap onthult dezelfde pil voor iedereen wie er lef had; de
@@ -345,6 +359,7 @@ export function PlannedMatchCard({
     myId,
     perspectiveId,
     isGroupOwner,
+    isGroupMember,
     isAppAdmin,
   });
   const canManage = rechten.magBeheren;
@@ -824,7 +839,7 @@ export function PlannedMatchCard({
           {whereLine && <span className="planned-card__where">{whereLine}</span>}
         </div>
         <MatchCalendarButton match={m} teams={teams} profiles={profiles} />
-        {canManage && (
+        {(canManage || rechten.magBezetting) && (
           <button
             type="button"
             className="iconbtn"
@@ -959,6 +974,32 @@ export function PlannedMatchCard({
         open={manageOpen}
         onClose={() => setManageOpen(false)}
         acties={[
+          // Eigen poort, ruimer dan `canManage`: wie meespeelt of in de groep
+          // zit mag de opstelling van een geplande wedstrijd rechtzetten.
+          ...(rechten.magBezetting
+            ? [
+                {
+                  sleutel: "spelers",
+                  label: "Spelers wijzigen",
+                  hint:
+                    m.status === "completed"
+                      ? "Zet recht wie er speelde; de ratings worden herberekend."
+                      : "Vervang iemand, wissel van team of ruil met een andere baan.",
+                  inhoud: (
+                    <BezettingPaneel
+                      match={m}
+                      teams={teams}
+                      profiles={profiles}
+                      myId={myId ?? ""}
+                      alsBeheerder={rechten.bezettingAlsBeheerder}
+                      buurmatches={rondeMatches}
+                      onSaved={() => onSaved?.()}
+                      onKlaar={() => setManageOpen(false)}
+                    />
+                  ),
+                },
+              ]
+            : []),
           {
             sleutel: "tijd",
             label: "Tijd wijzigen",
