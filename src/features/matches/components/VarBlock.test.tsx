@@ -148,6 +148,13 @@ describe("<VarBlock /> met een lopende zaak", () => {
       },
     ];
     toon();
+    // Twee ronden, twee wachtmomenten (#1053). De stemmen hangen aan een
+    // tweede query die pas start als de zaak binnen is: `getAppealVotes` krijgt
+    // zijn appeal-id uit `getMatchAppeals`. Wie meteen op de naam wacht, laat
+    // één timeout van 4s beide ronden dekken — en dat is precies de test die op
+    // een belaste CI-runner omviel, terwijl hij lokaal 7ms duurt. Eerst de
+    // zaak, dan de stem: elke ronde zijn eigen marge.
+    await screen.findByText(/betwist één punt/i);
     expect(await screen.findByText("Alice Anders")).toBeInTheDocument();
     expect(screen.getByText("Klopt")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Klopt" })).toBeNull();
