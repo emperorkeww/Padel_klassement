@@ -6,7 +6,7 @@
 -- match voor u5 mee — inclusief rating — en houdt de toto zijn punten.
 begin;
 
-select plan(22);
+select plan(23);
 
 ------------------------------------------------------------------------
 -- Fixtures. u1 = groepseigenaar én aanmaker van de match, u2 = partner van
@@ -100,17 +100,27 @@ set local request.jwt.claims = '{"sub":"b6810000-0000-0000-0000-000000000009","r
 select throws_ok(
   $$ select public.replace_match_player('b6810000-0000-0000-0000-0000000000c1',
        'b6810000-0000-0000-0000-0000000000a1','b6810000-0000-0000-0000-000000000005') $$,
-  'P0001', 'Alleen de aanmaker of de groepseigenaar kan een gast vervangen',
+  'P0001', 'Een afgeronde wedstrijd herbezet alleen de aanmaker of de groepseigenaar',
   'een buitenstaander kan de match niet herschrijven');
 
--- Ook een gewone deelnemer niet: dit is een structurele wijziging, geen
--- scorecorrectie.
+-- Ook een gewone deelnemer niet. Sinds #1327 mag de brede kring (spelers,
+-- groepsleden) de bezetting van een gepláánde match wijzigen, maar deze match
+-- is gespeeld: dan herschrijf je de Elo-geschiedenis van vier mensen, en dat
+-- blijft bij de aanmaker en de groepseigenaar.
 set local request.jwt.claims = '{"sub":"b6810000-0000-0000-0000-000000000002","role":"authenticated"}';
 select throws_ok(
   $$ select public.replace_match_player('b6810000-0000-0000-0000-0000000000c1',
        'b6810000-0000-0000-0000-0000000000a1','b6810000-0000-0000-0000-000000000005') $$,
-  'P0001', 'Alleen de aanmaker of de groepseigenaar kan een gast vervangen',
+  'P0001', 'Een afgeronde wedstrijd herbezet alleen de aanmaker of de groepseigenaar',
   'een medespeler mag de opstelling niet herschrijven');
+
+-- En een groepsgenoot die er zelf niet in stond evenmin.
+set local request.jwt.claims = '{"sub":"b6810000-0000-0000-0000-000000000005","role":"authenticated"}';
+select throws_ok(
+  $$ select public.replace_match_player('b6810000-0000-0000-0000-0000000000c1',
+       'b6810000-0000-0000-0000-0000000000a1','b6810000-0000-0000-0000-000000000005') $$,
+  'P0001', 'Een afgeronde wedstrijd herbezet alleen de aanmaker of de groepseigenaar',
+  'een groepsgenoot ook niet — die kring geldt alleen voor geplande wedstrijden');
 
 set local request.jwt.claims = '{"sub":"b6810000-0000-0000-0000-000000000001","role":"authenticated"}';
 select throws_ok(
@@ -118,11 +128,13 @@ select throws_ok(
        'b6810000-0000-0000-0000-0000000000a1','b6810000-0000-0000-0000-000000000005') $$,
   'P0001', 'Match niet gevonden', 'onbestaande match geeft een nette fout');
 
+-- Vervangen kan sinds #1327 ook een echt account betreffen, maar alleen wie
+-- écht meespeelde: een naam die er niet in staat levert een nette fout op.
 select throws_ok(
   $$ select public.replace_match_player('b6810000-0000-0000-0000-0000000000c1',
-       'b6810000-0000-0000-0000-000000000002','b6810000-0000-0000-0000-000000000005') $$,
-  'P0001', 'Alleen een gastspeler kan vervangen worden',
-  'een echt account vervang je niet buiten die persoon om');
+       'b6810000-0000-0000-0000-000000000005','b6810000-0000-0000-0000-000000000001') $$,
+  'P0001', 'Die speler speelde niet in deze match',
+  'wie niet meespeelde kun je ook niet vervangen');
 
 select throws_ok(
   $$ select public.replace_match_player('b6810000-0000-0000-0000-0000000000c1',
