@@ -489,11 +489,16 @@ export async function setMatchGroup(
   invalidateMatchData();
 }
 
-/** Vervangt in één match een gastdeelnemer door de speler die er écht stond
- *  (#681). Voor het geval één gastprofiel voor meerdere personen gebruikt is.
- *  De RPC eist dat je de match aanmaakte of de groep bezit, dat de vervangen
- *  speler een gast is, en dat de vervanger nog niet meespeelt. De ratings
- *  worden serverzijdig herberekend. */
+/** Vervangt in één match een deelnemer door iemand anders — de invaller voor
+ *  wie afzegde, of de speler die écht achter een hergebruikt gastprofiel zat
+ *  (#681, verruimd in #1327).
+ *
+ *  De RPC bewaakt de kring: bij een gepláánde match mogen de spelers, de
+ *  groepsleden, de aanmaker en de groepseigenaar; bij een afgeronde alleen de
+ *  aanmaker en de groepseigenaar. De vervanger moet iemand zijn die je ook bij
+ *  een nieuwe match had mogen invullen (jezelf, een vriend, je eigen gast of
+ *  een groepsgenoot) en mag nog niet meespelen. De ratings worden serverzijdig
+ *  herberekend. */
 export async function replaceMatchPlayer(
   matchId: string,
   fromPlayerId: string,
@@ -503,6 +508,30 @@ export async function replaceMatchPlayer(
     p_match_id: matchId,
     p_from_player: fromPlayerId,
     p_to_player: toPlayerId,
+  });
+  if (error) throw error;
+  invalidateMatchData();
+}
+
+/** Ruilt twee spelers van plek (#1327). Twee gedaantes van één beweging:
+ *
+ *  * dezelfde match aan beide kanten → de twee wisselen van team;
+ *  * twee matches van dezelfde ronde → de twee wisselen van baan.
+ *
+ *  Dezelfde kring als `replaceMatchPlayer`, per match getoetst. Beide matches
+ *  moeten in dezelfde groep hangen, en niemand mag na de ruil twee keer in
+ *  dezelfde wedstrijd staan. */
+export async function ruilMatchSpelers(
+  matchA: string,
+  spelerA: string,
+  matchB: string,
+  spelerB: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("ruil_match_spelers", {
+    p_match_a: matchA,
+    p_speler_a: spelerA,
+    p_match_b: matchB,
+    p_speler_b: spelerB,
   });
   if (error) throw error;
   invalidateMatchData();
