@@ -20,6 +20,7 @@ import {
   createGuestPlayer,
   deleteMatch,
   replaceMatchPlayer,
+  ruilMatchSpelers,
 } from "./api";
 import type { Match } from "@/types";
 
@@ -446,6 +447,43 @@ describe("replaceMatchPlayer", () => {
     enqueue({ error: new Error("Die speler staat al in deze match") });
     await expect(replaceMatchPlayer("m1", "g1", "p2")).rejects.toThrow(
       "Die speler staat al in deze match",
+    );
+  });
+});
+
+// --- ruilMatchSpelers --------------------------------------------------------
+
+describe("ruilMatchSpelers (#1327)", () => {
+  it("roept ruil_match_spelers met beide matches en beide spelers", async () => {
+    enqueue({ error: null });
+    await ruilMatchSpelers("m1", "p2", "m2", "p5");
+    expect(calls).toContainEqual({
+      method: "rpc",
+      name: "ruil_match_spelers",
+      args: [
+        { p_match_a: "m1", p_speler_a: "p2", p_match_b: "m2", p_speler_b: "p5" },
+      ],
+    });
+  });
+
+  it("stuurt dezelfde match twee keer door bij van team wisselen", async () => {
+    // De RPC leest p_match_a = p_match_b als "wissel van team"; dat mag hier
+    // niet stilletjes tot een enkele match worden samengeknepen.
+    enqueue({ error: null });
+    await ruilMatchSpelers("m1", "p2", "m1", "p3");
+    expect(calls).toContainEqual({
+      method: "rpc",
+      name: "ruil_match_spelers",
+      args: [
+        { p_match_a: "m1", p_speler_a: "p2", p_match_b: "m1", p_speler_b: "p3" },
+      ],
+    });
+  });
+
+  it("gooit de weigering van de RPC door", async () => {
+    enqueue({ error: new Error("Die speler staat al in de andere wedstrijd") });
+    await expect(ruilMatchSpelers("m1", "p2", "m2", "p2")).rejects.toThrow(
+      "Die speler staat al in de andere wedstrijd",
     );
   });
 });

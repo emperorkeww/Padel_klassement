@@ -1,5 +1,7 @@
 import {
   deleteMatch,
+  replaceMatchPlayer,
+  ruilMatchSpelers,
   updateMatchScore,
   updatePlannedMatchTime,
   type SetScore,
@@ -7,6 +9,8 @@ import {
 import { saveMatchResult } from "@/features/matches/outbox";
 import {
   corrigeerUitslag,
+  ruilSpelersAlsBeheerder,
+  vervangSpelerAlsBeheerder,
   verplaatsMatch,
   verwijderMatchAlsBeheerder,
 } from "./api";
@@ -99,4 +103,39 @@ export function verwijderMatchSlim(
   return alsBeheerder
     ? verwijderMatchAlsBeheerder(matchId)
     : deleteMatch(matchId);
+}
+
+/**
+ * Eén speler in een match vervangen (#1327).
+ *
+ * Let op de vlag: hier is dat `bezettingAlsBeheerder` en niet `alsBeheerder`.
+ * De eigen-recht-basis is bij de bezetting breder — een deelnemer aan een
+ * geplande match mag dit op eigen titel — en `alsBeheerder` zou hem dus
+ * onnodig door het logboek sturen. Zie `matchRechten()` in matchState.ts.
+ */
+export function wisselSpeler(
+  params: { matchId: string; vanSpeler: string; naarSpeler: string },
+  alsBeheerder: boolean,
+): Promise<void> {
+  if (!alsBeheerder) {
+    return replaceMatchPlayer(params.matchId, params.vanSpeler, params.naarSpeler);
+  }
+  return vervangSpelerAlsBeheerder(params);
+}
+
+/** Twee spelers van plek ruilen (#1327). Dezelfde match aan beide kanten is
+ *  "van team wisselen", twee matches is "ruilen tussen twee banen". */
+export function ruilSpelers(
+  params: { matchA: string; spelerA: string; matchB: string; spelerB: string },
+  alsBeheerder: boolean,
+): Promise<void> {
+  if (!alsBeheerder) {
+    return ruilMatchSpelers(
+      params.matchA,
+      params.spelerA,
+      params.matchB,
+      params.spelerB,
+    );
+  }
+  return ruilSpelersAlsBeheerder(params);
 }

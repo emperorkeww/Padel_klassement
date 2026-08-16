@@ -77,6 +77,18 @@ export interface MatchRechten {
   /** Mag het tijdstip verzetten en de match verwijderen. */
   magBeheren: boolean;
   /**
+   * Mag wijzigen wie er in deze match staat: vervangen, van team wisselen,
+   * ruilen met een andere baan (#1327). Spiegel van
+   * `_mag_bezetting_wijzigen` (supabase/schemas/functions/46_match_bezetting.sql).
+   *
+   * Bewust een eigen recht en geen tak van `magBeheren`: op een gepláánde
+   * match mag de hele kring die erbij betrokken is — de spelers zelf en de
+   * leden van de groep — omdat je dan een afspraak verplaatst. Zodra de match
+   * gespeeld is herschrijf je de Elo-geschiedenis van vier mensen, en dan
+   * blijft het bij dezelfde kring als `magCorrigeren`.
+   */
+  magBezetting: boolean;
+  /**
    * Komt dit recht *alleen* uit de beheerdersrol (#1159)? Dan loopt het
    * schrijfpad via `admin-content` in plaats van rechtstreeks over RLS, en
    * hoort de UI te tonen dat je als beheerder ingrijpt.
@@ -86,6 +98,13 @@ export interface MatchRechten {
    * beheerder te loggen.
    */
   alsBeheerder: boolean;
+  /**
+   * Hetzelfde onderscheid, maar voor `magBezetting` (#1327). Een eigen vlag,
+   * want de eigen-recht-basis is daar breder: een deelnemer aan een geplande
+   * match mag de bezetting wijzigen zonder beheerder te zijn, terwijl
+   * `alsBeheerder` hem daar wél als beheerder zou laten schrijven.
+   */
+  bezettingAlsBeheerder: boolean;
 }
 
 export function matchRechten(opts: {
@@ -110,6 +129,11 @@ export function matchRechten(opts: {
   isGroupOwner?: boolean;
   /** Is de kijker beheerder van de app (#1159)? */
   isAppAdmin?: boolean;
+  /**
+   * Is de kijker lid van de groep waarin deze match hangt (#1327)? Alleen de
+   * bezetting hangt hieraan; alle andere rechten stoppen bij de eigenaar.
+   */
+  isGroupMember?: boolean;
 }): MatchRechten {
   const { match: m, teams, myId, perspectiveId = null } = opts;
   const isGroupOwner = opts.isGroupOwner ?? false;
@@ -126,6 +150,21 @@ export function matchRechten(opts: {
     (!!perspectiveId && m.created_by === perspectiveId) || isGroupOwner;
   const eigenCorrectie = !!myId && (benIkAanmaker || isGroupOwner);
 
+  // De bezetting (#1327). Op een gepláánde match mag de brede kring: je
+  // verplaatst een afspraak, en wie op de baan staat weet het beste wie er komt
+  // opdagen. Zodra hij gespeeld is valt die kring weg — dan is het dezelfde als
+  // bij een scorecorrectie.
+  //
+  // Hangt aan `myId` en niet aan `perspectiveId`: dit is een schrijfactie van
+  // de ingelogde gebruiker, net als `magCorrigeren`.
+  const isAfgerond = m.status === "completed";
+  const isGroepslid = m.group_id != null && (opts.isGroupMember ?? false);
+  const eigenBezetting =
+    !!myId &&
+    (isAfgerond
+      ? benIkAanmaker || isGroupOwner
+      : benIkAanmaker || isGroupOwner || isDeelnemer || isGroepslid);
+
   // Een beheerder zonder sessie bestaat niet, maar de check is gratis en houdt
   // de regel "alles hangt aan myId" overeind.
   const beheerder = !!myId && isAppAdmin;
@@ -136,7 +175,9 @@ export function matchRechten(opts: {
       (!!myId && (benIkAanmaker || isGroupOwner || isDeelnemer)) || beheerder,
     magCorrigeren: eigenCorrectie || beheerder,
     magBeheren: eigenBeheer || beheerder,
+    magBezetting: eigenBezetting || beheerder,
     alsBeheerder: beheerder && !eigenCorrectie && !eigenBeheer,
+    bezettingAlsBeheerder: beheerder && !eigenBezetting,
   };
 }
 
