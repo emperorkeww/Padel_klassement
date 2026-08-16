@@ -2713,6 +2713,10 @@ export type Database = {
         Args: { p_claimant: string; p_match: string }
         Returns: string[]
       }
+      _bezetting_weigering: {
+        Args: { p_status: Database["public"]["Enums"]["match_status"] }
+        Returns: string
+      }
       _bounty_deltas: {
         Args: { p_match: string }
         Returns: {
@@ -2762,10 +2766,23 @@ export type Database = {
         Args: { p_match: string; p_uid: string }
         Returns: boolean
       }
+      _mag_bezetting_wijzigen: {
+        Args: { p_match_id: string; p_uid: string }
+        Returns: boolean
+      }
       _mag_speeldag_beheren: { Args: { p_option_id: string }; Returns: boolean }
       _player_joker: {
         Args: { p_match: string; p_player: string }
         Returns: Database["public"]["Enums"]["joker_type"]
+      }
+      _ruil_uitvoeren: {
+        Args: {
+          p_match_a: string
+          p_match_b: string
+          p_speler_a: string
+          p_speler_b: string
+        }
+        Returns: undefined
       }
       _stake_factor: {
         Args: { p_has_winner: boolean; p_match: string; p_player: string }
@@ -2774,6 +2791,10 @@ export type Database = {
       _troost_delta: {
         Args: { p_delta: number; p_match: string; p_player: string }
         Returns: number
+      }
+      _vervang_uitvoeren: {
+        Args: { p_from_player: string; p_match_id: string; p_to_player: string }
+        Returns: undefined
       }
       admin_app_settings: {
         Args: never
@@ -2915,6 +2936,15 @@ export type Database = {
           vastgelegd_op: string
         }[]
       }
+      admin_ruil_match_spelers: {
+        Args: {
+          p_match_a: string
+          p_match_b: string
+          p_speler_a: string
+          p_speler_b: string
+        }
+        Returns: undefined
+      }
       admin_set_group_owner: {
         Args: { p_group: string; p_uid: string }
         Returns: {
@@ -2945,6 +2975,10 @@ export type Database = {
           owner_id: string
           username: string
         }[]
+      }
+      admin_vervang_match_speler: {
+        Args: { p_from_player: string; p_match_id: string; p_to_player: string }
+        Returns: undefined
       }
       admin_zet_app_setting: {
         Args: {
@@ -3164,6 +3198,15 @@ export type Database = {
       }
       revoke_calendar_feeds: { Args: never; Returns: undefined }
       rotate_calendar_feed: { Args: never; Returns: string }
+      ruil_match_spelers: {
+        Args: {
+          p_match_a: string
+          p_match_b: string
+          p_speler_a: string
+          p_speler_b: string
+        }
+        Returns: undefined
+      }
       season_player_standings: {
         Args: { p_end: string; p_start: string }
         Returns: {
