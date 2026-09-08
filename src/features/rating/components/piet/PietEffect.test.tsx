@@ -4,7 +4,11 @@ import { FutKaart } from "@/features/rating/components/FutKaart";
 import { tierFor } from "@/features/rating/tiers";
 
 describe("Piet-mastereffect", () => {
-  it("gebruikt één bron voor achter, binnen en voor", () => {
+  it("deelt het register maar houdt lijst en voorgrond fysiek apart", () => {
+    // #834: achter en binnen dragen de gouden lijst met alles wat eromheen
+    // hangt, voor uitsluitend de voorwerpen die die lijst kruisen. Zolang dat
+    // twee bestanden zijn, kan geen runtime-masker alsnog lijstpixels over de
+    // staf, het cadeau of de kettingen leggen.
     const { container } = render(
       <FutKaart tier={tierFor(1050)} editie="piet" voor={<span>Alice</span>} />,
     );
@@ -20,8 +24,10 @@ describe("Piet-mastereffect", () => {
       "voor",
     ]);
     expect(bronnen).toHaveLength(3);
-    expect(new Set(bronnen).size).toBe(1);
+    expect(new Set(bronnen).size).toBe(2);
     expect(bronnen[0]).toContain("piet-master");
+    expect(bronnen[1]).toBe(bronnen[0]);
+    expect(bronnen[2]).toContain("piet-front");
   });
 
   it("monteert de binneninstantie in het echte kaartvlak", () => {

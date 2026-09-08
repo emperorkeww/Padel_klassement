@@ -34,6 +34,8 @@ const SCHANDPAAL_CSS = lees("../../features/standings/components/Schandpaal.css"
 // Sinds #771 staat de kaart-CSS van het dashboard in zijn eigen bestand naast de
 // component, niet meer in de stylesheet van de hele pagina.
 const HERO_CSS = lees("../../features/dashboard/components/DashboardHero.css");
+// De Piet houdt zijn eigen registratie- en vlakregels bij het artwork (#834).
+const PIET_CSS = lees("../../features/rating/components/piet/PietEffect.css");
 
 // De negen divisieregisters, als [naam, css]-paren voor de cascadetest.
 const DIVISIE_CSS: ReadonlyArray<readonly [string, string]> = [
@@ -250,7 +252,7 @@ describe("kaartSkin", () => {
     expect(pias.kleuren.stralen).toBe(false);
     expect(pias.kleuren.textuur).toBe("confetti");
     expect(piet.kleuren.stralen).toBe(false);
-    expect(piet.kleuren.textuur).toBe("speelkaart");
+    expect(piet.kleuren.textuur).toBe("ruit");
     // En geen radiale topgloed: die hebben ze in de CSS niet.
     expect(pias.kleuren.glow).toBe("rgba(255, 255, 255, 0)");
     // Mat materiaal (#705): ook geen witte specular-baan. De pias draagt een
@@ -371,10 +373,17 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       if (editie === "pias") {
         expect(kleuren.snijkant).toBe(token(blok, "--kaart-snijkant"));
       } else {
-        // De Piet heeft geen aparte snijkant-laag: zijn bone liner ís de
-        // witte kern van het kaartkarton.
+        // De Piet heeft geen aparte snijkant-laag: zijn liner is de donkere
+        // binnenband waar de gouden lijst uit het artwork op landt. De waarde
+        // komt uit de CSS-regel zelf, niet uit een letterlijke kleur hier —
+        // anders drift de canvasroute stil weg zodra het register verschuift.
         expect(kleuren.snijkant).toBeUndefined();
-        expect(kleuren.liner).toBe("#efe7d2");
+        const linerRegel = /\.fut-kaart--piet \.fut-kaart__liner\s*\{[^}]*\}/.exec(
+          FUT_CSS,
+        )?.[0];
+        expect(kleuren.liner).toBe(
+          /background:\s*(#[0-9a-f]{3,8});/.exec(linerRegel ?? "")?.[1],
+        );
       }
     },
   );
@@ -420,21 +429,42 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       // #834 een zwaardere goud-magenta lijst — maar CSS en canvas moeten wél
       // dezelfde fracties van de kaartbreedte gebruiken, anders wijkt de
       // deel-poster van de kaart af.
-      const cssDiktes = (
-        [
+      // De Piet heeft sinds #834 helemaal geen eigen lijst meer: die komt uit
+      // zijn artwork, en de kaart zet frame, liner en keyline op nul (zie
+      // PietEffect.css). Canvas en CSS moeten dat allebei doen — anders tekent
+      // de poster een gouden keyline náást de gouden lijst van de referentie.
+      if (naam === "piet") {
+        expect(kleuren.randDiktes, "Piet: canvas tekent nog een lijst").toEqual([
+          0, 0, 0,
+        ]);
+        const nul = /\.fut-kaart--piet \.fut-kaart__zijde--voor\s*\{[^}]*\}/.exec(
+          PIET_CSS,
+        )?.[0];
+        expect(nul, "Piet: de nul-randdiktes ontbreken").toBeDefined();
+        for (const eigenschap of [
           "--kaart-frame-dikte",
           "--kaart-liner-dikte",
           "--kaart-keyline-dikte",
-        ] as const
-      ).map((eigenschap) => {
-        const waarde = token(blok, eigenschap) ?? "";
-        const fractie = /\*\s*([\d.]+)\)/.exec(waarde);
-        expect(fractie, `${naam}: geen kw-fractie in ${eigenschap}`).not.toBeNull();
-        return Number(fractie![1]);
-      });
-      expect(kleuren.randDiktes, `${naam}: zware lijst ontbreekt`).toEqual(
-        cssDiktes,
-      );
+        ]) {
+          expect(nul).toContain(`${eigenschap}: 0px`);
+        }
+      } else {
+        const cssDiktes = (
+          [
+            "--kaart-frame-dikte",
+            "--kaart-liner-dikte",
+            "--kaart-keyline-dikte",
+          ] as const
+        ).map((eigenschap) => {
+          const waarde = token(blok, eigenschap) ?? "";
+          const fractie = /\*\s*([\d.]+)\)/.exec(waarde);
+          expect(fractie, `${naam}: geen kw-fractie in ${eigenschap}`).not.toBeNull();
+          return Number(fractie![1]);
+        });
+        expect(kleuren.randDiktes, `${naam}: zware lijst ontbreekt`).toEqual(
+          cssDiktes,
+        );
+      }
       expect(skin.naamplaat, `${naam}: naamplaatverloop ontbreekt`).toHaveLength(5);
 
       const [blur, gloed] = kleuren.randGloed!;
@@ -515,10 +545,17 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       if (editie === "pias") {
         expect(kleuren.snijkant).toBe(token(blok, "--kaart-snijkant"));
       } else {
-        // De Piet heeft geen aparte snijkant-laag: zijn bone liner ís de
-        // witte kern van het kaartkarton.
+        // De Piet heeft geen aparte snijkant-laag: zijn liner is de donkere
+        // binnenband waar de gouden lijst uit het artwork op landt. De waarde
+        // komt uit de CSS-regel zelf, niet uit een letterlijke kleur hier —
+        // anders drift de canvasroute stil weg zodra het register verschuift.
         expect(kleuren.snijkant).toBeUndefined();
-        expect(kleuren.liner).toBe("#efe7d2");
+        const linerRegel = /\.fut-kaart--piet \.fut-kaart__liner\s*\{[^}]*\}/.exec(
+          FUT_CSS,
+        )?.[0];
+        expect(kleuren.liner).toBe(
+          /background:\s*(#[0-9a-f]{3,8});/.exec(linerRegel ?? "")?.[1],
+        );
       }
     },
   );
@@ -981,34 +1018,37 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       Number(token(blok, "--motief-pos")!.replace("%", "")) / 100,
     );
 
-    // Echo en binnenlijnen: dezelfde fracties, spreidingen en kleuren als de
-    // CSS-vars.
-    const echo = /--kaart-echo:([^;]+);/.exec(blok)?.[1] ?? "";
-    const [dx, dy, kleur] = kleuren.echo![0];
-    expect(echo).toContain(`* ${dx})`);
-    expect(echo).toContain(`* ${dy})`);
-    expect(echo.replace(/\s+/g, " ")).toContain(kleur);
-    const binnenlijn = /--kaart-binnenlijn:([^;]+);/.exec(blok)?.[1] ?? "";
-    for (const [spreiding, lijnKleur] of kleuren.binnenlijn!)
-      expect(binnenlijn.replace(/\s+/g, " ")).toContain(
-        `inset 0 0 0 ${spreiding}px ${lijnKleur}`,
-      );
+    // Echo en binnenlijnen: allebei weg sinds #834, in beide lezers. De
+    // gelaagde rand van #710 hoorde bij een kaart die zijn lijst zelf tekende;
+    // deze krijgt hem uit het artwork, en een uitstekende onderplaat of een
+    // haarlijn ernaast leest als een tweede, dunnere lijst. Blijft er één van
+    // de twee staan, dan komt die dubbeling stilletjes terug.
+    expect(blok).not.toContain("--kaart-echo:");
+    expect(blok).not.toContain("--kaart-binnenlijn:");
+    expect(kleuren.echo).toBeUndefined();
+    expect(kleuren.binnenlijn).toBeUndefined();
 
-    // Papierraster (fijn linnen + grover raster) en vignette in het vlak: de
-    // canvas-spiegel zit in drawSpeelkaart, dus als de CSS-lagen verdwijnen
-    // moet dat hier opvallen.
-    const vlak = /\.fut-kaart--piet \.fut-kaart__vlak\s*\{[^}]*\}/.exec(FUT_CSS)?.[0];
-    expect(vlak).toContain("radial-gradient");
-    expect(vlak?.match(/transparent 1px 3px/g)).toHaveLength(2);
-    expect(vlak?.match(/transparent 1px 6px/g)).toHaveLength(2);
-
-    // En het klaverteken op de naamplaat (de poster tekent hetzelfde teken in
-    // profielPoster.drawKaart).
-    const naam = /\.fut-kaart--piet \.fut-kaart__naam::after\s*\{[^}]*\}/.exec(
-      FUT_CSS,
+    // De gewatteerde ruit en het vignet in het vlak: sinds #834 een tegel uit
+    // de referentie, en de CSS-regel staat bij het artwork (PietEffect.css).
+    // De canvas-spiegel zit in drawRuit; verdwijnt de tegel of de radiale
+    // verdonkering, dan lopen DOM en poster uit elkaar.
+    const vlak = /\.fut-kaart--piet \.fut-kaart__vlak\s*\{[^}]*\}/.exec(
+      PIET_CSS,
     )?.[0];
-    expect(naam, "Piet mist het klaverteken naast de naam").toBeDefined();
-    expect(naam).toContain("%E2%99%A3");
+    expect(vlak, "Piet mist de vlakregel in PietEffect.css").toBeDefined();
+    expect(vlak).toContain("radial-gradient");
+    expect(vlak).toContain("piet-vlak.webp");
+    // De tegelmaat is één periode van de ruit, als fractie van de kaartbreedte
+    // — dezelfde 0,1312 die drawRuit als lijnperiode gebruikt.
+    expect(vlak).toContain("0.1312");
+    expect(CANVAS_TS).toContain("fw * 0.1312");
+
+    // En de schedelflankering naast de divisieregel ("💀 SCHAND MIDDEL 💀"),
+    // alleen op de maten waar de kaart groot genoeg is.
+    const schedels =
+      /\.fut-kaart--piet \.fut-kaart__divisie::after\s*\{[^}]*\}/.exec(FUT_CSS)?.[0];
+    expect(schedels, "Piet mist de schedelflankering").toBeDefined();
+    expect(schedels).toContain("💀");
   });
 
   it("de ornamentcascade: editie boven tier boven divisie (#710)", () => {

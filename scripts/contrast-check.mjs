@@ -707,7 +707,7 @@ const ISLANDS = [
   ],
   [
     ".hero--piet",
-    "Schande-token (speelkaart)",
+    "Schande-token (zwart-goud schandbord)",
     [
       ["kaart-ink", "kaart-lo", 4.5, "inkt op de donkerste kaartstop"],
       ["kaart-ink-soft", "kaart-lo", 4.5, "zachte inkt op de donkerste stop"],

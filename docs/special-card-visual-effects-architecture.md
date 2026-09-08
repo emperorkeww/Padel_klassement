@@ -989,238 +989,189 @@ vlak) en `bigdaddy-v6-vlak-en-lijst.png` (zwaardere goud-magenta lijst).
 
 **Piet**
 
-De Piet-editie gebruikt `PietEffect.tsx` en `PietEffect.css` met één
-`piet-master.webp`. Waar de andere edities een apart gegenereerd of geprompt
-artwork hebben, is deze master **de referentie zelf**, vrijgesteld: hij wordt
-gereproduceerd uit [`referentie_zwarte_piet.png`](referentie_zwarte_piet.png)
-door `../../scripts/piet-master.py`. Zie
-[`ASSET_SPEC.md`](../../src/features/rating/components/piet/ASSET_SPEC.md) voor het
-volledige assetcontract.
+De Piet-editie gebruikt `PietEffect.tsx` en `PietEffect.css`, en is sinds #834
+voor de tweede keer herbouwd — nu naar een zwart-gouden referentie: een
+gewatteerd donker paneel in een dubbele gouden lijst, met kettingen, kolen, een
+sterrenzak, een cadeau, een staf met strik, veren, rook en goudstof eromheen.
+Waar de andere edities een apart gegenereerd of geprompt artwork hebben, is het
+artwork hier **de referentie zelf**, vrijgesteld: het wordt gereproduceerd uit
+[`referentie_zwarte_piet.png`](referentie_zwarte_piet.png) door
+[`../../scripts/piet-onderdelen.py`](../../scripts/piet-onderdelen.py). Zie
+[`ASSET_SPEC.md`](../../src/features/rating/components/piet/ASSET_SPEC.md) voor
+het volledige assetcontract.
 
 Dat is een andere strategie dan bij Big Daddy, waar het script objecten uit een
 onderdelenblad terugzet op gemeten posities. Hier hoeft niets teruggezet te
-worden: de referentie is al een gerenderde kaart, dus rook, goudstof,
-speelkaarten, veren, geschenken, kettingen, crest en rozet staan er al in
+worden: de referentie is al een gerenderde kaart, dus alles staat er al in
 precies de juiste onderlinge verhouding. Het werk zit in het scheiden van
 artwork en kaart.
 
-### Twee extractieregimes
+### Eén extractieregime in plaats van twee
 
-De referentie is één ondoorzichtige PNG. Om er alfa uit te halen splitst het
-script het beeld op het kaartvlak van de referentie (een polygoon met de
-gemeten ogeeboog als bovenrand):
+De vorige, perkamentkleurige referentie had een licht kaartvlak, en dat dwong
+twee regimes af: additief over zwart buiten het vlak, over een gefit
+perkamentveld erbinnen. De nieuwe referentie staat overal op zwart — ook het
+kaartvlak is bijna zwart — dus één luminantiekey volstaat:
 
-- **buiten het vlak** ligt het artwork op zwart, dus `P = a·C`. Alfa komt uit de
-  luminantie met een pedestal die de ruisvloer wegknipt, plus een
-  detailgebaseerde *solid*-boost zodat massieve objecten (kettingschakels,
-  geschenken, speelkaarten) dekkend worden en rook en goudstof halftransparant
-  blijven. Let op bij het vervlakken van kleur in gebieden met lage alfa: dat moet
-  op de **voorgemultipliceerde** kleur gebeuren. Een gewone blur trekt de
-  perkamentkleur van volledig transparante buurpixels naar binnen, en dan krijgt
-  elke rooklob een witte gloed zodra hij op het kaartvlak ligt;
-- **binnen het vlak** ligt het artwork op perkament, dus
-  `P = a·C + (1−a)·BG`. `BG` is een kleinste-kwadratenfit van orde 3 over de
-  echte perkamentpixels. Een lokaal filter werkt hier niet: onder de grote
-  rating en het statblok vindt het geen perkament en valt het te donker uit, wat
-  na un-premultiply roestbruine vlekken oplevert.
+    a = clip((luma − 8,5) / 52) ^ 0,68        P = a · C
 
-Alleen door dat tweede regime komen de binnenrook en de **stadssilhouet** mee.
-Die silhouet vervangt het vectorwatermerk: `FutKaart.tsx` zet `motief` voor
-`editie === "piet"` op `null`, want twee watermerken over elkaar leest als
-vervuiling. `PIET_WATERMERK` blijft de bron voor de canvas-/posterroute.
+De pedestal van 8,5 knipt de ruisvloer weg. Zonder die drempel houdt bijna elke
+pixel wat alfa over en wordt het goudstof een gelijkmatige waas in plaats van de
+trossen met lege gaten ertussen die de referentie heeft.
 
-### Registratie volgt uit de uitsnede
+Daarbovenop komt een silhouetselectie: massieve voorwerpen (kettingen, kolen,
+staf, cadeau) hebben veel lokaal contrast, rook heeft dat niet. Zonder die boost
+blijven de donkere flanken van een schakel half doorzichtig en kijk je dwars
+door de ketting heen. Dezelfde `detail`-drempel als bij de pias, met dezelfde
+morfologie eroverheen.
 
-Het canvas is 1086 × 1448 — het coördinatenstelsel van de referentie. De
-kaartbox van de app ligt daarin op x[152, 936] en y[155, 1245]. De drie
-CSS-waarden zijn dus een rekenuitkomst, geen smaakinstelling:
+### Kaartclip en artwork uit één meting
 
-```css
---piet-master-left: -19.39%;   /* -152 / 784  */
---piet-master-top: -14.22%;    /* -155 / 1090 */
---piet-master-width: 138.52%;  /* 1086 / 784  */
---piet-master-scale: 1;
---piet-master-rotate: 0deg;
-```
+Dit is de kern van de herbouw, en het laat de hele machinerie van de vorige
+versie vervallen. `../../scripts/piet_schild.py` meet de contour van de gouden
+lijst in de referentie en levert die aan twee afnemers: het `d`-attribuut van
+`#fut-schild-piet` in `FutKaart.tsx`, én `piet-onderdelen.py`. Kaartrand en
+artworkrand vallen daardoor per constructie samen.
 
-### Geen binnenmasker meer
+De vorige versie moest de frameband van de referentie juist wégsnijden en
+opnieuw opbouwen op het afstandsveld van het app-schild, plus de kettingen
+horizontaal meetrekken met de schuine onderrand, omdat referentie en schild
+verschillende vormen hadden. Dat is nu allemaal weg: één contour, geen
+correcties.
 
-`piet-inside-mask.svg` bestaat niet langer. Het script laat de zones waar de
-kaart zelf tekent — rating, divisiecijfer, vormemoji, naam, tier, editieregel en
-de avatarfoto van de referentie — leeg in de master. Daarbij zijn *twee* sets
-zones nodig: die van de referentie (die tekst zit in het bronbeeld ingebakken en
-zou anders als spookkopie naast de echte tekst staan) én die van de kaart zelf,
-die zijn rating en naam lager plaatst. De master is daardoor van zichzelf
-content-veilig en de inside-laag kan het echte `clip-path: var(--schild)`
-gebruiken — precies wat §6.3 aanbeveelt.
+De boogpunten zijn níet puur automatisch bepaald, en dat is een les op zich. Een
+goudmasker vindt boven de kaart net zo goed de kettingen, de crest en de veren,
+en die liggen precies óp de boog; segmentatie op helderheid, gladheid of
+vlekvulling liep telkens leeg of over. De reeks is daarom met de hand gelegd en
+met `piet_schild.py --overlay` op de referentie nageregeld tot hij overal net
+bínnen de gouden band valt. Binnen, want de lijst komt uit het artwork en moet
+de kaartrand kunnen overlappen.
 
-### Vormverschil tussen referentie en app-schild
+**Let op de Opstelling en de poster.** De onderkant loopt weer naar een punt op
+(0.5, 1) — het anker waar de chemielijn in `Lineup.css` op mikt — maar laat en
+breed: het paneel blijft vol tot 80% hoogte, want daar staan het statblok en de
+badge-rij van de referentie nog in. De canvasroute kent geen editie-specifieke
+schildvorm en zet de Piet in het gedeelde `notch`-schild; zie §14.
 
-Dit is het punt waar het meeste werk zat, en de belangrijkste les van deze
-editie. De referentiekaart heeft een ogeeboog als bovenrand en een **vlakke
-onderrand**; het app-schild (`#fut-schild-notch`) heeft een vlakke bovenrand en
-loopt vanaf 60% hoogte **naar een punt**. Dat punt op 50%/100% is structureel —
-het is het anker van de chemielijn in de Opstelling — dus het schild wijkt niet.
+### Het kaartvlak gaat er in één snede uit
 
-Alles in de referentie dat de kaartrand markeert, loopt daardoor rechtdoor waar
-de kaart schuin naar binnen gaat: de frameband, en de kettingen die langs die
-rand hangen. **Meeërven kan niet.** Wat de rand van de kaart raakt, moet vanuit
-het afstandsveld van het écht gebruikte schild worden opgezet:
+Alles meer dan een lijstbreedte (44 referentiepixels) binnen het schild verdwijnt
+uit het artwork. Daarmee zijn rating, portret, kroon, naam, spreuk, statblok en
+badge-rij van de referentie in één keer weg, en is de master per constructie
+content-veilig — geen dozijn killzones meer, en geen spookkopie naast de échte
+tekst. Het manifest meet het ook: `restVlak` van de master hoort 0 te zijn.
 
-- de **frameband** van de referentie gaat eruit, behalve waar een compleet
-  ornament hem kruist — daar zou wegsnijden de kettingen, geschenken, crest of
-  rozet doormidden knippen;
-- de **randlijst** wordt opnieuw getekend op `distance_transform_edt` van het
-  app-schild, met het volledige profiel dat gemeten is langs de rechte zijkanten
-  van de referentie: bijna-zwarte moulure, warme goudband, donkere keyline tegen
-  het perkament. Dat het hele profiel erin kan, is nieuw. Eerder ging alleen het
-  binnenste stuk mee, omdat de bone liner van de kaart anders als felle witte
-  streep tussen twee donkere balken kwam te liggen — en precies díe lichte
-  scheiding tussen ring en kaart maakte dat de randornamenten er los tegenaan
-  geplakt leken. Liner en keyline zijn voor deze editie daarom zelf donker
-  (`#16140e` en `#241f16`), zodat ze de moulure uit het artwork voortzetten in
-  plaats van hem te doorsnijden;
-- de **onderrand is verbreed**. Dit was de laatste en grootste correctie die
-  verdween. Onder de kaart hangt in de referentie één doorlopend bouwsel —
-  kettingen langs de zijkanten, een lint, een medaille — en dat houdt elkaar vast
-  omdát alles op één brede onderrand aankomt. Op een punt is er niets om op aan
-  te komen: de kettingen hangen dan naast een kaart die er onder de 60% niet meer
-  is, en de rozet zweeft eronder. Daar is lang tegenaan gewerkt (kettingen naar
-  binnen schuiven met de taps mee, de groep omhoog liften, een schaduw onder het
-  gat), maar dat bestreed het symptoom. `#fut-schild-piet` heeft daarom als enige
-  schild géén punt op (0.5, 1) maar de brede, afgeronde onderrand van de
-  referentie, met een hoekstraal van 0,17 × kaartbreedte — smal genoeg dat het
-  rechte stuk de rozet draagt, ruim genoeg om als de zachte hoek van de
-  referentie te lezen. Daarmee vervalt de kettingschuif volledig;
-- een **rookschaduw** langs de onderste helft van het silhouet, ook vanuit dat
-  afstandsveld. Zonder die schaduw valt het gebied tussen de vlakke onderrand van
-  de referentie en de punt van de kaart op als een rechthoekig donker plaatje:
-  het is transparant, terwijl er net buiten wél rook staat. Een vulling die op
-  het vlak van de *referentie* is begrensd geeft juist rechte randen op x=191 en
-  y≈980 — de vorm van de bron, niet die van de kaart. De schaduw blijft licht
-  (alfa 0,4): zwaarder vult hij de gaten tussen de kettingschakels en gaat de
-  ketting als één donkere massa lezen.
+Wat het vlak dan nog draagt komt uit een tegel: `piet-vlak.webp` is exact één
+periode van de watteernaad (103 × 94 px, gemeten met autocorrelatie op een
+schone strook), met een radiale verdonkering eroverheen. De canvasroute spiegelt
+dat in `drawRuit` met dezelfde periode als lijnenraster — een foto-tegel kan de
+poster niet herhalen, twee gekruiste diagonalen wel.
 
-**Let op de Opstelling en de poster.** De chemielijn in `Lineup.css` mikt op het
-midden-onder van de kaart*box* (`bottom` plus een halve kaartbreedte), niet op
-het schildpad, dus die blijft kloppen met een vlakke onderrand. De canvas-/
-posterroute kiest zijn schildvorm echter op *tier*, niet op editie
-(`schildVorm()` in `futKaartCanvas.ts`), en tekent voor deze kaart dus nog het
-notch-schild. Vorm-pariteit tussen DOM en poster is voor Piet daarmee open.
+Twee blokken vallen búiten het vlak en gaan apart weg: de chipstrip ónder de
+kaart (de app zet daar zijn eigen vormchips) en de badge-rij, die zo laag in het
+paneel staat dat hij binnen een lijstbreedte van de onderrand valt.
 
-De ogeeboog zit inmiddels wél in het schild zelf (`#fut-schild-piet`, afgeleid
-door `scripts/piet_schild.py`). Een tussenversie probeerde hem in het artwork te
-leggen — de boog dekkend, met een breed frontmask vóór het rechte frame — maar
-dan sluit het artwork zichtbaar niet aan op de kaartrand, en dat is precies wat
-een breakout kapot maakt.
+### Atmosfeer achter, voorwerpen voor
 
-### De rookkraag om de avatar
+De splitsing tussen `piet-master.webp` (achter- en binnenlaag) en
+`piet-front.webp` (voorlaag) volgt de diepte van de referentie zelf: de master
+draagt de gouden lijst, de rook en het goudstof, de voorlaag de voorwerpen die
+de lijst kruisen. Twee dingen die daaruit volgden en die voor elke volgende
+kaart gelden die zo wordt gesneden:
 
-De dikke zwarte rookkraag om de profielfoto is een van de sterkste kenmerken van
-de referentie. Eén op één overnemen kan niet: de avatar van de kaart staat lager
-en is kleiner (kaartrelatief 0,747 / 0,327 met r 0,178 tegenover 0,742 / 0,239 met
-r 0,227), en in de referentie rákt die foto de rechterrand van de kaart — daar
-zit dus helemaal geen kraag, terwijl de kleinere avatar van de kaart aan alle
-kanten ruimte heeft.
+- **de lijst hoort in de master, niet in de voorlaag.** Hij is net zo massief
+  als de voorwerpen, dus band × silhouet pakt hem anders gewoon mee — en dan
+  wordt het frame vóór de kaartinhoud getekend en loopt de boog dwars door de
+  rating. In de master landt hij via de binnenlaag juist ónder de tekst. Dit was
+  letterlijk zichtbaar in de eerste run: de boog sneed de bovenkant van "1050"
+  af.
+- **waar een voorwerp de lijst kruist, gaat dat stukje voorwerp mee de master
+  in.** Master en voorlaag delen één registratie, dus de ketting loopt zichtbaar
+  door; alleen die paar pixels liggen een laag dieper, en daar ligt niets
+  bovenop behalve de lijst waar ze toch al overheen gingen.
 
-De kraag wordt daarom in **poolcoördinaten** opgebouwd: één schone boog dichte
-rook uit de referentie (158°–237°, links tot linksboven langs de ring) wordt met
-een driehoeksgolf over de volle 360° om de avatar gelegd. Rook heeft geen
-oriëntatie, dus de gespiegelde herhaling is onzichtbaar, en de golf is continu
-bij ±180° én bij zijn omkeerpunten — geen naad. De binnenrand valt exact samen
-met de buitenrand van de avatarring, de buitenrand golft in drie lobben, en de
-sterkte loopt met de hoek mee (zwaar links en boven, dunner rechts).
+Er is geen frontmask meer. `piet-front-mask.svg` is vervallen: de fysiek
+gescheiden voorgrondbron ís het masker — hetzelfde contract als de Glazenwasser.
+Blijft er een `mask: url(...)` naar een verwijderd bestand staan, dan is de héle
+voorlaag onzichtbaar; ook dat gebeurde tijdens de herbouw, en het leest als "de
+laag rendert niet" in plaats van als "het masker is leeg".
 
-Twee dingen die eerder níet werkten:
+### De kaart geeft zijn eigen lijst op
 
-- een **gelijkvormige warp** van de hele omgeving rond de referentiefoto. Die
-  gaf losse concentrische bogen met perkament ertussen en kopieerde de vleugels
-  van de crest mee;
-- een **generieke detailpoort** (`solid`) om die objecten tegen te houden. Die
-  dooft ook de rooklobben zelf, en dan blijft er precies boven de avatar niets
-  over. Twee expliciete uitsluitzones zijn scherper.
+De laatste en beslissende correctie zat niet in het artwork maar in de kaart
+eronder, en ze geldt voor élke volgende kaart die zijn lijst uit een referentie
+haalt. De gedeelde kaart bouwt zijn rand als vier geneste vlakken (`zijde` ›
+`liner` › `keyline` › `vlak`), elk met een eigen padding én elk met
+`clip-path: var(--schild)` op zíjn eigen doos. Op 450px kaartbreedte is dat samen
+~7,9px, dus het schild van het vlak is een paar procent kleiner dan dat van de
+kaart. Artwork is geregistreerd op de kaartdoos; de gouden lijst werd binnen de
+kaart dus precies die paar procent te vroeg afgesneden, en in de strook die
+overbleef schilderde de kaart zijn eigen liner met een keyline erop. Resultaat:
+een tweede, dunnere lijst náást de echte — "het artwork sluit niet aan".
 
-Verder geldt: de killzone voor de referentiefoto moet exact op de buitenrand van
-zijn gouden ring liggen (gemeten: 744/426, r 191). Eén pixel ruimer en de rook
-die de ring raakt sneuvelt mee — dan staat er een ring rook op afstand van de
-foto, met perkament ertussen.
+`.fut-kaart--piet .fut-kaart__zijde--voor` zet frame, liner en keyline daarom op
+nul. Dan vallen de vier dozen samen en landt de lijst uit het artwork exact op de
+kaartrand. `--kaart-echo` en `--kaart-binnenlijn` zijn om dezelfde reden van deze
+editie verdwenen. Alleen de vóórkant: de achterkant draagt geen artwork.
 
-Dat alles is bewerking in de asset, niet in CSS. De drie lagen blijven één bron
-met één register; §5 blijft dus gelden.
+Twee dingen die daarbij horen:
 
-### Kaartvlak en glans
+- **de lijst moet dekkend zijn waar hij op het vlak ligt.** Op de 0,85 die de
+  zwartkey gaf scheen de ruit erdoorheen en las hij als sluier in plaats van als
+  metaal. Binnen het schild gaat de alfa in de lijstring op een steilere key;
+- **de inhoud schuift naar binnen.** `padding: 21% 11,5% 16%` in plaats van de
+  gedeelde `12% 9% 24%`, want de crest hangt over het paneel, de ogeeboog duikt
+  aan de flanken het vlak in, en de voorgrondband van het artwork reikt tot 9,9%
+  van de kaartbreedte naar binnen — op de gedeelde 9% viel de eerste letter van
+  de naam achter de kolen. De referentie doet hetzelfde: daar loopt de inhoud van
+  u 0,13 tot 0,90.
 
-Het perkament van de referentie is warmer en donkerder dan de skin van de kaart.
-Dat verschil is bewust niet weggewerkt: `.hero--piet` spiegelt dezelfde
-`--kaart-hi/mid/lo` (bewaakt door `futKaartCanvas.test.ts`, #644) en op een
-donkerder onderstop haalt het lakrood `#8e2117` van die hero nog maar 3,8:1 —
-onder AA. De correctie zit daarom aan de assetkant: `a_in` in het script is
-versterkt (`ROOK_L` op 10 en een factor 1,62), zodat rook en stadssilhouet ook op
-het lichtere vlak van de kaart als roet lezen in plaats van als grijze waas.
+### De poster deelt het silhouet via het kleurregister
 
-De standaardglans liep als glasachtige diagonaal precies over de rookkolom
-rechtsboven en maakte die melkig. Hij staat op `--glans-kracht: 0.16` zonder
-radiale puls — schande glimt niet (#705).
+`schildVorm()` kent alleen tiers, geen edities, dus de poster zette de Piet in het
+gedeelde `notch`-schild terwijl het artwork op de ogeeboog geregistreerd is.
+`FutKaartKleuren.vorm` lost dat op zonder één posteraanroep te wijzigen: een
+register mag de doorgegeven vorm overschrijven, en `drawKaartSchild` geeft die
+voorrang. Langs dezelfde weg lopen `randDiktes: [0, 0, 0]` en `vlakInzet` — de
+canvas-spiegels van de nul-randdiktes en de ruimere padding hierboven.
 
-De Piet-specifieke avatarstijl in `PietEffect.css` vervangt de generieke lichte
-ring door drie materiaalbanden: fijn goud, donker metaal en antiek goud.
+### Avatarregister
 
-### Avatarregister: de content volgt hier het artwork
+De avatar staat absoluut, in hetzelfde coördinatenstelsel als het artwork: alle
+maten zijn fracties van `--fut-kw`. In de gedeelde kaart staat hij in een gridcel
+van `.fut-kaart__boven`, dus een drie- of viercijferige rating schuift hem al op.
 
-Bij de andere edities staat de avatar in de gridcel van `.fut-kaart__boven` en
-volgt zijn plek dus uit de breedte van het eloblok en de padding van het vlak. Bij
-Piet kan dat niet: de rookkraag in het artwork is om één specifieke cirkel
-opgebouwd. De avatar staat daarom absoluut, in hetzelfde stelsel als het artwork —
-alle maten fracties van `--fut-kw`, met dezelfde `--piet-master-inset` eraf omdat
-`.fut-kaart__vlak` het containing block is:
+De waarden zijn gemeten: de lichte portretschijf van de referentie heeft
+middelpunt 712/434 en straal 142 (de gouden ring eromheen tot 173), wat op de
+kaartbox neerkomt op middelpunt 0,721 / 0,384 met een schijf van 0,362 ×
+kaartbreedte. `--fut-avatar` staat daarbij vast in plaats van per
+containerbreedte te wisselen (0,34 onder 132px, 0,44 boven 168px), zodat de
+compositie op élke kaartmaat gelijk is.
 
-```css
-.fut-kaart.fut-kaart--piet {
-  --fut-avatar: 0.356;        /* diameter, kaartrelatief */
-  --piet-avatar-rechts: 0.0747;
-  --piet-avatar-boven: 0.2762;
-}
-```
-
-Drie dingen die dat oplost, en één die het vastlegt:
-
-- de cirkel schuift niet meer mee met een drie- of viercijferige rating;
-- `--fut-avatar` staat vast in plaats van per containerbreedte te wisselen
-  (0,34 onder 132px, 0,44 boven 168px), dus de compositie is op élke kaartmaat
-  gelijk — nagemeten op 281, 310 en 450px kaartbreedte;
-- het `clip-path` van het vlak clipt de cirkel, dus hij kan nooit buiten het
-  schild zweven;
-- maar diameter en middelpunt zijn nu een assetcontract. Verplaatsen vraagt een
-  nieuwe run van `../../scripts/piet-master.py` met een andere `AV_APP`.
+Anders dan bij de vorige versie is dat géén assetcontract meer. Toen zat er een
+rookkraag in het kaartvlak die exact om die cirkel was opgebouwd, en verplaatsen
+vroeg een nieuwe run van het masterscript. Dat vlak is nu leeg; verplaatsen kost
+alleen nog afstand tot de referentie.
 
 ### Laagvolgorde
 
-De stapel is, van achter naar voren: pagina-achtergrond, achterlaag (goudstof,
-rook, kettingen), kaartzijde met frame (`z-index: 2`), kaartinhoud in het vlak
-(binnenlaag op `z-index: -1` eronder, dan rating, avatar en tekst) en tot slot de
-voorlaag (`z-index: 3`) met crest, zijgroepen en de onderste rozet.
+De stapel is, van achter naar voren: pagina-achtergrond, achterlaag (master:
+rook, goudstof, lijst), kaartzijde met frame (`z-index: 2`), kaartinhoud in het
+vlak (binnenlaag op `z-index: -1` eronder, dan rating, avatar en tekst) en tot
+slot de voorlaag (`z-index: 3`) met crest, medaille, staf, cadeau, zak, kolen en
+kettingen.
 
-Twee keuzes daarin zijn niet willekeurig:
-
-- de **kettingen zitten niet in het frontmask**. Ze horen achter het kaartframe
-  en alleen vóór de zwarte achtergrond; uit de voorlaag zouden ze over het frame
-  en over de rozet heen lopen. Ze komen dus uitsluitend uit de achterlaag, waar
-  het kaartsilhouet ze afsnijdt — daardoor lijken ze ook halverwege de zijkanten
-  te beginnen, zoals in de referentie;
-- het frontmask heeft een **zwarte avatarschijf** met één witte lob eruit
-  gesneden, rechtsonder. Dat is geen detail maar het verschil tussen "een ronde
-  avatar op de kaart" en "een portret in de compositie": achter de foto ligt de
-  rook uit de binnenlaag, en vóór de rand lopen de veren en de speelkaarten van
-  de rechtergroep er net overheen — precies zoals in de referentie. Alles ervóór
-  of alles eráchter leest allebei fout. Het gezicht blijft vrij; de lob raakt
-  alleen de buitenste band.
+De drie CSS-randlagen van de kaart (`__zijde`, `__liner`, `__keyline`) zijn
+donker gehouden en lopen van bijna zwart naar donker goud: ze liggen precies
+onder de gouden lijst uit het artwork en zetten hem voort. Een lichte tussenlijn
+zou die lijst juist opsplitsen en de randornamenten er losgeplakt tegenaan laten
+lijken.
 
 De oude `fut-orn-piet-*`-SVG's worden voor de live React-kaart niet meer
 gemonteerd, maar blijven bestaan voor canvas-/postercompatibiliteit. De
 afzonderlijke `pias`-editie wordt niet geraakt. De vaste controle gebeurt via
-`/dev/piet`, `../../scripts/piet-screenshot.sh` en `?debugPiet=1`. De finale
-beelden staan in `../../screenshots/piet/final-desktop.png` en
-`../../screenshots/piet/final-mobile.png`.
+`/dev/piet`, `../../scripts/piet-screenshot.sh` en `?debugPiet=1`, plus de kleine
+maten op `/dev/kaarten` en de dashboard-hero op `/dev/hero`.
 
 **Pias**
 
@@ -1552,6 +1503,11 @@ Twee dingen blijven staan:
 - **Blaaskaak is vereenvoudigd.** De DOM ponst met een `clip-path` de megafoon
   uit de decorlaag en zet hem in de voorlaag 6% lager terug, plus een
   tekstburst; de poster tekent de drie lagen zonder die verfijning.
+- **De Piet houdt één afwijking.** Zijn silhouet, lijstdiktes en contentinzet
+  deelt de poster sinds #834 via het kleurregister, maar de avatar niet: de DOM
+  zet die absoluut op de gemeten referentiepositie (`PietEffect.css`), terwijl de
+  canvasroute de gedeelde gridplek houdt en hem dus hoger en dichter tegen de
+  rating zet. Dat verschil bestond al vóór de herbouw en verandert er niet door.
 
 Verder blijft gelden: laad het artwork vóór het tekenen en wacht op `decode()`.
 Een `HTMLImageElement` dat nog niet gedecodeerd is tekent op canvas als niets —
