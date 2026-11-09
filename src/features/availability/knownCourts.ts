@@ -21,10 +21,10 @@ export type KnownCourt = {
 };
 
 export const KNOWN_COURTS: Record<string, KnownCourt[]> = {
-  // LAGO CLUB Padel Beveren — 2 overdekte banen + 1 buitenbaan.
+  // LAGO CLUB Padel Beveren — 0 overdekte banen + 0 buitenbanen.
   "91d8d419-3736-498e-90be-362de786d588": [
-    { id: "81ba479c-66f6-4568-a450-db6df2f5c589", name: "Terrein 1", type: "roofed" },
-    { id: "aba723a1-2fcb-49a4-b893-885999e04804", name: "Terrein 2", type: "roofed" },
-    { id: "cc9dbe76-6192-4035-a24c-f3db0d556b97", name: "Terrein 3", type: "outdoor" },
+    { id: "81ba479c-66f6-4568-a450-db6df2f5c589", name: "Terrein 1", type: "" },
+    { id: "aba723a1-2fcb-49a4-b893-885999e04804", name: "Terrein 2", type: "" },
+    { id: "cc9dbe76-6192-4035-a24c-f3db0d556b97", name: "Terrein 3", type: "" },
   ],
 };
